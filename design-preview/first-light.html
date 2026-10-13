@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#062A2B">
+<title>First Light NZ</title>
+<!-- DESIGN PREVIEW ONLY. Google Fonts are used here for speed; the production build self-hosts
+     one subset woff2 per face so the strict CSP in netlify.toml still holds. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+@font-face { font-family: "Quicksand"; src: url("../assets/fonts/quicksand-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+
+/* Concept "First Light": the page scrolls from a Chennai night (teal) into an Aotearoa dawn (warm paper).
+   One signature mark, the gold dawn line (the MAA to AKL arc), drawn once. Maroon is reserved for the call to action. */
+:root {
+  --night: #062A2B;      /* hero, dark surfaces */
+  --teal: #0A3B3C;       /* brand teal, headings on paper */
+  --teal-soft: #2F5A5A;  /* muted text on paper */
+  --dusk: #E9B9A0;       /* transition band only */
+  --paper: #FBF5EC;      /* main reading ground */
+  --paper-2: #F3E9DA;    /* quiet panels */
+  --line: #E2D4BF;
+  --ink: #0E2526;
+  --maroon: #8C0B0B;     /* primary CTA only */
+  --maroon-hi: #A51A1A;
+  --gold: #F2B544;       /* dawn line + tiny highlights, never text on paper */
+  --on-night: #F4EFE6;
+  --on-night-2: #B9CBC8;
+
+  --display: "Gloock", "Iowan Old Style", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pass: "Quicksand", ui-rounded, system-ui, sans-serif;
+
+  --r-sm: 10px; --r-md: 18px; --r-lg: 28px;
+  --gut: clamp(16px, 4vw, 40px);
+  --max: 1200px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--body); }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 400; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gut); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ic { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5em; min-height: 52px; padding: 0 1.4em; border-radius: 999px; border: 0; font: 600 1rem/1 var(--body); text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform .2s var(--ease), background .2s; }
+.btn:active { transform: scale(.97); }
+.btn--cta { background: var(--maroon); color: #fff; box-shadow: 0 10px 24px -10px rgba(140, 11, 11, .7); }
+.btn--cta:hover { background: var(--maroon-hi); }
+.btn--line { background: transparent; color: var(--on-night); box-shadow: inset 0 0 0 1.5px rgba(244, 239, 230, .45); }
+.btn--line:hover { box-shadow: inset 0 0 0 1.5px var(--on-night); }
+.btn--block { width: 100%; }
+
+/* ---------- header ---------- */
+.hdr { position: absolute; inset: 0 0 auto; z-index: 20; padding-top: env(safe-area-inset-top, 0px); }
+.hdr .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; }
+.hdr__logo { background: var(--paper); border-radius: 14px; padding: 6px 12px; display: block; }
+.hdr__logo img { height: 40px; width: auto; }
+.hdr__nav { display: none; gap: 28px; color: var(--on-night); font-weight: 500; font-size: .95rem; }
+.hdr__nav a { text-decoration: none; opacity: .85; }
+.hdr__nav a:hover { opacity: 1; }
+.hdr__call { display: none; align-items: center; gap: 8px; color: var(--on-night); text-decoration: none; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hdr__right { display: flex; align-items: center; gap: 18px; }
+.hdr .btn { min-height: 44px; font-size: .92rem; }
+@media (min-width: 1040px) { .hdr__nav, .hdr__call { display: flex; } }
+.hdr__tel { display: none; width: 44px; height: 44px; border-radius: 50%; place-items: center; background: var(--maroon); color: #fff; }
+@media (max-width: 520px) { .hdr .btn { display: none; } .hdr__tel { display: grid; } }
+
+/* ---------- hero ---------- */
+.hero { position: relative; color: var(--on-night); background: var(--night); isolation: isolate; overflow: hidden; }
+.hero__photo { position: absolute; inset: 0; z-index: -2; }
+.hero__photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
+/* night above, first light along the horizon */
+.hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(6, 42, 43, .7) 0%, rgba(6, 42, 43, 0) 60%),
+    linear-gradient(180deg, rgba(6, 42, 43, .96) 0%, rgba(6, 42, 43, .82) 38%, rgba(6, 42, 43, .55) 70%, rgba(80, 60, 50, .45) 100%),
+    radial-gradient(120% 60% at 80% 100%, rgba(242, 181, 68, .35), transparent 60%); }
+.hero__grid { display: grid; gap: 36px; padding-top: 120px; padding-bottom: 56px; }
+.hero__kicker { display: inline-flex; align-items: center; gap: 10px; font: 600 .82rem/1 var(--pass); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.hero__kicker::before { content: ""; width: 28px; height: 2px; background: var(--gold); border-radius: 2px; }
+.hero h1 { font-family: var(--display); font-size: clamp(2.5rem, 5.6vw, 5rem); line-height: .98; letter-spacing: -.01em; margin-top: 18px; }
+.hero h1 span { color: var(--gold); }
+.hero__lead { margin-top: 20px; font-size: clamp(1.05rem, 1.6vw, 1.22rem); color: var(--on-night-2); max-width: 34ch; }
+.hero__lead b { color: var(--on-night); font-weight: 600; }
+.hero__cost { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: .95rem; color: var(--on-night-2); }
+.hero__cost strong { display: block; font: 400 1.5rem/1.1 var(--display); color: var(--on-night); }
+.hero__cost > div { padding-left: 14px; border-left: 2px solid rgba(242, 181, 68, .6); }
+
+/* dawn line, the one signature mark */
+.dawn { position: absolute; left: 0; bottom: 0; width: 100%; height: 220px; z-index: -1; pointer-events: none; }
+.dawn path { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.4s .4s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* boarding pass form, slimmed: 3 fields + consent */
+.pass { position: relative; background: var(--paper); color: var(--ink); border-radius: var(--r-lg); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .6); overflow: hidden; align-self: end; }
+.pass__top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 18px 22px; background: var(--teal); color: var(--on-night); font-family: var(--pass); }
+.pass__city small { display: block; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--on-night-2); }
+.pass__city b { font-size: 1.05rem; font-weight: 700; }
+.pass__city--to { text-align: right; }
+.pass__route { position: relative; height: 2px; background: repeating-linear-gradient(90deg, rgba(242, 181, 68, .8) 0 6px, transparent 6px 12px); }
+.pass__route img { position: absolute; left: 50%; top: 50%; width: 28px; transform: translate(-50%, -50%); }
+.pass__perf { height: 0; border-top: 2px dashed var(--line); margin: 0 22px; position: relative; }
+.pass__perf::before, .pass__perf::after { content: ""; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--night); }
+.pass__perf::before { left: -34px; } .pass__perf::after { right: -34px; }
+.pass form { display: grid; gap: 14px; padding: 20px 22px 22px; }
+.pass h2 { font: 400 1.5rem/1.15 var(--display); color: var(--teal); padding: 20px 22px 0; }
+.pass h2 + p { padding: 6px 22px 16px; color: var(--teal-soft); font-size: .95rem; }
+
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .lbl { font: 600 .82rem/1.2 var(--pass); letter-spacing: .04em; color: var(--teal); }
+.field input, .field select, .field textarea { width: 100%; min-height: 50px; padding: 12px 14px; border-radius: var(--r-sm); border: 1.5px solid var(--line); background: #fff; color: var(--ink); font: 500 1rem/1.3 var(--body); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(10, 59, 60, .15); }
+.phone { display: grid; grid-template-columns: 84px 1fr; gap: 8px; }
+.pass { container-type: inline-size; }
+.row2 { display: grid; gap: 14px; }
+@container (min-width: 460px) { .row2 { grid-template-columns: 1.2fr 1fr; } }
+.consent { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: .84rem; color: var(--teal-soft); line-height: 1.45; }
+.consent input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--maroon); }
+.pass__note { display: flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--teal-soft); }
+.pass__note .ic { color: var(--teal); }
+.form-msg { font-size: .9rem; font-weight: 600; color: var(--teal); min-height: 0; }
+
+@media (max-width: 600px) {
+  .hero__grid { padding-top: 92px; gap: 26px; padding-bottom: 32px; }
+  .hero h1 { font-size: 2.35rem; margin-top: 12px; }
+  .hero__lead { margin-top: 14px; font-size: 1rem; }
+  .hero__cost { margin-top: 18px; flex-wrap: nowrap; gap: 16px; }
+  .hero__cost > div:last-child { display: none; }
+  .hero__cost strong { font-size: 1.3rem; }
+  .hdr .wrap { padding-block: 14px; }
+  .hdr__logo img { height: 34px; }
+  .pass h2 { padding-top: 16px; } .pass h2 + p { display: none; } .pass h2 { padding-bottom: 14px; }
+}
+@media (min-width: 980px) {
+  .hero__grid { grid-template-columns: 1.15fr .85fr; align-items: end; gap: 64px; padding-top: 150px; padding-bottom: 90px; }
+}
+
+/* ---------- trust band (night continues) ---------- */
+.trust { background: var(--night); color: var(--on-night); padding-block: 44px; }
+.trust__grid { display: grid; gap: 28px; }
+.office { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
+.office__ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(242, 181, 68, .14); color: var(--gold); }
+.office b { display: block; font-weight: 600; }
+.office p { color: var(--on-night-2); font-size: .94rem; }
+.team { display: flex; align-items: center; gap: 14px; }
+.faces { display: flex; }
+.faces span { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--night); margin-left: -12px; display: grid; place-items: center; font: 700 .8rem/1 var(--pass); color: var(--night); }
+.faces span:first-child { margin-left: 0; background: #F6C9A8; } .faces span:nth-child(2) { background: #CFE3DE; } .faces span:nth-child(3) { background: var(--gold); }
+.team p { font-size: .94rem; color: var(--on-night-2); } .team b { color: var(--on-night); }
+@media (min-width: 860px) { .trust__grid { grid-template-columns: 1fr 1fr 1.2fr; gap: 40px; } }
+
+/* ---------- dusk transition ---------- */
+.dusk { height: 140px; background: linear-gradient(180deg, var(--night) 0%, #2C4B4A 30%, var(--dusk) 70%, var(--paper) 100%); }
+
+/* ---------- section scaffolding ---------- */
+.sec { padding-block: clamp(64px, 9vw, 120px); }
+.sec__head { display: grid; gap: 14px; max-width: 760px; margin-bottom: clamp(32px, 5vw, 56px); }
+.h2 { font-family: var(--display); font-size: clamp(2rem, 4.6vw, 3.4rem); line-height: 1.02; color: var(--teal); letter-spacing: -.005em; }
+.h2 em { font-style: normal; color: var(--maroon); }
+.lede { color: var(--teal-soft); font-size: 1.08rem; max-width: 58ch; }
+.tag { font: 700 .76rem/1 var(--pass); letter-spacing: .16em; text-transform: uppercase; color: var(--teal-soft); }
+
+/* ---------- 3. what it costs ---------- */
+.cost__grid { display: grid; gap: 28px; }
+.cost__grid > * { min-width: 0; }
+.ledger { border-top: 2px solid var(--teal); }
+.ledger__row { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ledger__row b { font-weight: 600; }
+.ledger__row small { grid-column: 1 / -1; color: var(--teal-soft); font-size: .88rem; }
+.ledger__amt { text-align: right; font: 400 1.45rem/1.1 var(--display); color: var(--teal); font-variant-numeric: tabular-nums; }
+.ledger__amt span { display: block; font: 500 .82rem/1.3 var(--body); color: var(--teal-soft); }
+.ledger__fine { margin-top: 14px; font-size: .82rem; color: var(--teal-soft); }
+.loan { background: var(--teal); color: var(--on-night); border-radius: var(--r-lg); padding: clamp(22px, 3.4vw, 36px); display: grid; gap: 18px; align-content: start; }
+.loan .tag { color: var(--gold); }
+.loan__amt { font: 400 clamp(2.6rem, 6vw, 3.6rem)/1 var(--display); font-variant-numeric: tabular-nums; }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--gold) var(--pct, 27%), rgba(244, 239, 230, .2) var(--pct, 27%)); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: var(--paper); border: 4px solid var(--gold); cursor: grab; }
+.range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--paper); border: 4px solid var(--gold); cursor: grab; }
+.scale { display: flex; justify-content: space-between; font-size: .8rem; color: var(--on-night-2); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 5px; border-radius: 999px; background: rgba(244, 239, 230, .1); border: 0; margin: 0; }
+.seg legend { font-size: .9rem; color: var(--on-night-2); margin-bottom: 10px; padding: 0; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: grid; place-items: center; min-height: 44px; border-radius: 999px; font-weight: 600; font-size: .92rem; cursor: pointer; }
+.seg input:checked + span { background: var(--paper); color: var(--teal); }
+.seg input:focus-visible + span { outline: 3px solid var(--gold); }
+.loan__type { font-size: .95rem; color: var(--on-night-2); }
+.loan__type b { color: var(--on-night); display: block; font-size: 1.05rem; }
+.banks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.banks li { background: #fff; border-radius: 8px; padding: 6px; display: grid; place-items: center; aspect-ratio: 5 / 2; }
+.banks li { min-width: 0; }
+.banks img { max-height: 100%; max-width: 100%; width: auto; object-fit: contain; }
+ul.banks { list-style: none; margin: 0; padding: 0; }
+@media (min-width: 900px) { .cost__grid { grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: start; } }
+
+/* ---------- 4. why NZ: four photographs, four reasons ---------- */
+.why { background: var(--paper-2); }
+.frames { display: grid; gap: 16px; }
+.frame { position: relative; border-radius: var(--r-md); overflow: hidden; min-height: 300px; color: #fff; display: flex; align-items: flex-end; isolation: isolate; }
+.frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform 1.2s var(--ease); }
+.frame:hover img { transform: scale(1.04); }
+.frame::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 30%, rgba(6, 42, 43, .9) 100%); }
+.frame__body { padding: 22px; display: grid; gap: 6px; }
+.frame__place { font: 600 .76rem/1 var(--pass); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.frame h3 { font: 400 1.7rem/1.08 var(--display); }
+.frame p { color: rgba(255, 255, 255, .86); font-size: .96rem; max-width: 40ch; }
+@media (min-width: 860px) {
+  .frames { grid-template-columns: 1.3fr 1fr 1fr; grid-template-rows: 300px 300px; }
+  .frame--big { grid-row: 1 / 3; }
+  .frame--wide { grid-column: 2 / 4; }
+  .frame--big h3 { font-size: 2.4rem; }
+}
+
+/* ---------- 5. intakes ---------- */
+.year { overflow-x: auto; padding-bottom: 8px; }
+.year__inner { min-width: 640px; }
+.year__months { display: grid; grid-template-columns: repeat(12, 1fr); font: 600 .78rem/1 var(--pass); letter-spacing: .08em; text-transform: uppercase; color: var(--teal-soft); border-bottom: 2px solid var(--teal); padding-bottom: 10px; list-style: none; margin: 0; padding-left: 0; }
+.year__rows { display: grid; gap: 10px; padding-top: 14px; grid-template-columns: repeat(12, 1fr); }
+.bar { grid-column: var(--from) / var(--to); border-radius: 999px; padding: 12px 18px; font-weight: 600; font-size: .95rem; display: flex; justify-content: space-between; gap: 10px; }
+.bar small { font-weight: 500; opacity: .85; }
+.bar--s1 { background: var(--teal); color: var(--on-night); }
+.bar--s2 { background: var(--gold); color: var(--ink); }
+.bar--voc { background: transparent; box-shadow: inset 0 0 0 2px var(--teal); color: var(--teal); }
+.intake-note { margin-top: 26px; display: grid; gap: 16px; }
+.intake-note p { color: var(--teal-soft); max-width: 60ch; }
+.inline-cta { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--maroon); text-decoration: none; border-bottom: 2px solid currentColor; padding-bottom: 2px; width: max-content; }
+
+/* ---------- 6. your path ---------- */
+.path { list-style: none; margin: 0; padding: 0; counter-reset: s; display: grid; gap: 0; }
+.path > li { counter-increment: s; display: grid; grid-template-columns: 56px 1fr; gap: 18px; padding: 22px 0; border-top: 1px solid var(--line); }
+.path > li::before { content: counter(s); font: 400 2.2rem/1 var(--display); color: var(--gold); -webkit-text-stroke: 1px var(--teal); }
+.path h3 { font: 600 1.15rem/1.3 var(--body); color: var(--teal); }
+.path p { color: var(--teal-soft); margin-top: 4px; }
+.path .free { display: inline-block; margin-left: 8px; font: 700 .7rem/1 var(--pass); letter-spacing: .1em; text-transform: uppercase; background: var(--teal); color: var(--on-night); padding: 5px 8px; border-radius: 6px; vertical-align: middle; }
+details.more { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; }
+details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--teal); list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::after { content: "+"; font-size: 1.3rem; color: var(--maroon); }
+details.more[open] summary::after { content: "−"; }
+details.more .in { padding: 0 16px 16px; display: grid; gap: 10px; font-size: .95rem; color: var(--teal-soft); }
+details.more .in b { color: var(--ink); }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checks li { display: flex; gap: 10px; align-items: center; }
+.checks input { width: 20px; height: 20px; accent-color: var(--teal); }
+@media (min-width: 900px) { .path-wrap { display: grid; grid-template-columns: .8fr 1.2fr; gap: 64px; } .path-wrap .sec__head { position: sticky; top: 40px; align-self: start; } }
+
+/* ---------- 7. cities ---------- */
+.cities { background: var(--teal); color: var(--on-night); }
+.cities .h2 { color: var(--on-night); } .cities .h2 em { color: var(--gold); } .cities .lede { color: var(--on-night-2); } .cities .tag { color: var(--gold); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.chip { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid rgba(244, 239, 230, .3); background: transparent; color: var(--on-night); font: 600 .92rem/1 var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--paper); color: var(--teal); border-color: var(--paper); }
+.unis { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: rgba(244, 239, 230, .14); border-radius: var(--r-md); overflow: hidden; }
+.uni { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 16px 20px; background: var(--teal); }
+.uni h3 { font: 600 1.05rem/1.3 var(--body); }
+.uni p { font-size: .88rem; color: var(--on-night-2); }
+.uni button { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: rgba(244, 239, 230, .12); color: var(--on-night); font: 600 .88rem/1 var(--body); cursor: pointer; white-space: nowrap; }
+.uni button:hover { background: var(--paper); color: var(--teal); }
+.uni[hidden] { display: none; }
+.cities__grid { display: grid; gap: 32px; }
+.mapbox { display: none; }
+@media (min-width: 960px) {
+  .cities__grid { grid-template-columns: .9fr 1.1fr; gap: 56px; align-items: start; }
+  .mapbox { display: block; position: relative; }
+  .mapbox svg { width: 100%; max-width: 400px; height: auto; }
+}
+.map-land path { fill: rgba(244, 239, 230, .08); stroke: rgba(244, 239, 230, .4); stroke-width: 1.5; }
+.pin circle { fill: var(--gold); }
+.pin text { fill: var(--on-night); font: 600 13px var(--body); }
+.pin.is-dim { opacity: .3; }
+
+/* ---------- 8. parents' corner ---------- */
+.parents__grid { display: grid; gap: 40px; }
+.letter { background: #fff; border-radius: var(--r-lg); padding: clamp(24px, 4vw, 44px); box-shadow: 0 30px 60px -40px rgba(6, 42, 43, .35); display: grid; gap: 16px; }
+.letter p { color: var(--teal-soft); }
+.letter .sig { font-family: var(--display); color: var(--teal); font-size: 1.3rem; }
+.qa { display: grid; gap: 22px; }
+.qa div { display: grid; gap: 4px; padding-left: 18px; border-left: 2px solid var(--gold); }
+.qa b { color: var(--teal); font-weight: 600; font-size: 1.05rem; }
+.qa p { color: var(--teal-soft); }
+@media (min-width: 900px) { .parents__grid { grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; } }
+
+/* ---------- 9. FAQ + final form ---------- */
+.final { background: var(--night); color: var(--on-night); position: relative; overflow: hidden; isolation: isolate; }
+.final::before { content: ""; position: absolute; inset: auto -10% -40% -10%; height: 70%; z-index: -1; background: radial-gradient(60% 60% at 50% 100%, rgba(242, 181, 68, .35), transparent 70%); }
+.final .h2 { color: var(--on-night); } .final .h2 em { color: var(--gold); } .final .tag { color: var(--gold); }
+.final__grid { display: grid; gap: 48px; }
+.faq details { border-bottom: 1px solid rgba(244, 239, 230, .16); }
+.faq summary { cursor: pointer; list-style: none; padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; font-weight: 600; font-size: 1.05rem; min-height: 44px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--gold); font-size: 1.4rem; line-height: 1; }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { padding-bottom: 18px; color: var(--on-night-2); max-width: 60ch; }
+.final .pass { align-self: start; }
+.final .pass__perf::before, .final .pass__perf::after { background: var(--night); }
+.brief { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 22px; }
+.brief span { font: 600 .78rem/1 var(--pass); padding: 7px 10px; border-radius: 999px; background: var(--paper-2); color: var(--teal); }
+@media (min-width: 960px) { .final__grid { grid-template-columns: 1fr 1fr; gap: 72px; } }
+
+/* ---------- footer ---------- */
+.foot { background: var(--night); color: var(--on-night-2); border-top: 1px solid rgba(244, 239, 230, .1); padding-block: 40px 110px; font-size: .9rem; }
+.foot__grid { display: grid; gap: 24px; }
+.foot b { color: var(--on-night); display: block; margin-bottom: 4px; }
+@media (min-width: 860px) { .foot__grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; } .foot { padding-bottom: 40px; } }
+
+/* ---------- sticky mobile bar ---------- */
+.mbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(6, 42, 43, .94); backdrop-filter: blur(10px); transform: translateY(110%); transition: transform .35s var(--ease); }
+.mbar.is-on { transform: none; }
+.mbar .btn { min-height: 48px; }
+@media (min-width: 860px) { .mbar { display: none; } }
+
+/* preview marker */
+.ph { outline: 1.5px dashed rgba(242, 181, 68, .7); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .dawn path { stroke-dashoffset: 0; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.42.25-.69.25-1.29.18-1.41-.08-.13-.28-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89 0-3.18-1.24-6.16-3.48-8.41Z"/></symbol>
+</svg>
+
+<header class="hdr">
+  <div class="wrap">
+    <a class="hdr__logo" href="#top" aria-label="Tutee Connect, back to top"><img src="../assets/img/brand/logo.png" alt="Tutee Connect" width="280" height="114"></a>
+    <nav class="hdr__nav" aria-label="Sections">
+      <a href="#cost">Costs</a><a href="#why">Why NZ</a><a href="#intakes">Intakes</a><a href="#path">How it works</a><a href="#cities">Universities</a><a href="#parents">For parents</a>
+    </nav>
+    <div class="hdr__right">
+      <a class="hdr__call" href="tel:+917010902329"><svg class="ic"><use href="#i-phone"/></svg>+91 70109 02329</a>
+      <a class="btn btn--cta" href="#book">Book a free call</a>
+      <a class="hdr__tel" href="tel:+917010902329" aria-label="Call +91 70109 02329"><svg class="ic"><use href="#i-phone"/></svg></a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- 1. HERO: real photograph, night overhead, first light on the horizon -->
+<section class="hero" aria-labelledby="h1">
+  <div class="hero__photo"><img src="../assets/img/nz/queenstown.jpg" alt="" width="1280" height="960" fetchpriority="high"></div>
+  <svg class="dawn" viewBox="0 0 1440 220" preserveAspectRatio="none" aria-hidden="true">
+    <path pathLength="1" d="M-20 200 C 380 40, 980 20, 1460 150"/>
+  </svg>
+  <div class="wrap hero__grid">
+    <div>
+      <p class="hero__kicker">February &amp; July 2027 intakes</p>
+      <h1 id="h1">Study in New Zealand, <span>planned with you from Chennai.</span></h1>
+      <p class="hero__lead">Pick a time and a counsellor calls you <b>in Tamil or English</b>. Courses, costs, loans and visa, explained to you and your parents.</p>
+      <div class="hero__cost">
+        <div><strong>₹12.5–25 L</strong>tuition a year</div>
+        <div><strong>₹10 L</strong>living costs a year</div>
+        <div><strong>Free</strong>first consultation</div>
+      </div>
+    </div>
+
+    <div class="pass" id="book">
+      <div class="pass__top" aria-label="Chennai to Auckland">
+        <div class="pass__city"><small>From</small><b>Chennai</b></div>
+        <div class="pass__route"><img src="../assets/img/brand/bird.png" alt="" width="26" height="14"></div>
+        <div class="pass__city pass__city--to"><small>To</small><b>Auckland</b></div>
+      </div>
+      <h2>Book your free call</h2>
+      <p>Three details. We call you in the slot you choose.</p>
+      <div class="pass__perf" aria-hidden="true"></div>
+      <form data-demo novalidate>
+        <div class="field"><label for="h-name">Full name</label><input id="h-name" autocomplete="name" placeholder="As on your passport"></div>
+        <div class="row2">
+          <div class="field"><label for="h-phone">Mobile number</label><div class="phone"><select aria-label="Country code"><option>+91</option><option>+971</option></select><input id="h-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="98765 43210"></div></div>
+          <div class="field"><label for="h-time">Best time to call</label><select id="h-time"><option>Today, 4–6 PM IST</option><option>Tomorrow, 10 AM–12 PM</option><option>Tomorrow, 6–7 PM</option></select></div>
+        </div>
+        <label class="consent"><input type="checkbox" id="h-consent"><span>I agree that Tutee Connect may call or WhatsApp me about studying in New Zealand. I can withdraw this any time. <a href="#">Privacy notice</a></span></label>
+        <button class="btn btn--cta btn--block" type="submit">Reserve my free call <svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="form-msg" role="status"></p>
+        <p class="pass__note"><svg class="ic"><use href="#i-clock"/></svg>No fee to talk to a counsellor. Email comes later, only if you want a written plan.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- 2. TRUST: who we are, where we are -->
+<section class="trust" aria-label="About Tutee Connect">
+  <div class="wrap trust__grid">
+    <div class="office"><span class="office__ic"><svg class="ic"><use href="#i-pin"/></svg></span><div><b>Chennai office</b><p>1st Floor, ALA Corner Complex, Virugambakkam, Chennai 600092. Walk in, or call +91 70109 02329.</p></div></div>
+    <div class="office"><span class="office__ic"><svg class="ic"><use href="#i-pin"/></svg></span><div><b>Dubai office</b><p>Tutee Connect LLC FZ, Meydan Grandstand, Dubai. Call +971 55 379 9068.</p></div></div>
+    <div class="team ph" title="Placeholder: replace with real counsellor photos and names">
+      <div class="faces" aria-hidden="true"><span>PR</span><span>AK</span><span>SM</span></div>
+      <p><b>Meet your counsellors.</b> Real names and faces go here, plus our 10 education-loan partners.</p>
+    </div>
+  </div>
+</section>
+
+<div class="dusk" aria-hidden="true"></div>
+
+<!-- 3. COST, in rupees, first -->
+<section class="sec" id="cost" aria-labelledby="cost-h">
+  <div class="wrap cost__grid">
+    <div>
+      <div class="sec__head">
+        <p class="tag">What it costs</p>
+        <h2 class="h2" id="cost-h">The numbers parents ask for, <em>in rupees</em></h2>
+      </div>
+      <div class="ledger">
+        <div class="ledger__row"><b>Tuition, per year</b><div class="ledger__amt">₹12.5–25 L<span>NZ$25,000–50,000</span></div><small>Varies by university and course. Diplomas cost less.</small></div>
+        <div class="ledger__row"><b>Living costs, per year</b><div class="ledger__amt">₹10 L<span>NZ$20,000</span></div><small>The amount Immigration New Zealand asks you to show.</small></div>
+        <div class="ledger__row"><b>Student visa fee</b><div class="ledger__amt">₹42,500<span>NZ$850</span></div><small>Paid once, when you apply.</small></div>
+        <div class="ledger__row"><b>Part-time work while studying</b><div class="ledger__amt">₹1,200/hr<span>NZ$23.95 min. wage</span></div><small>Most student visas allow part-time work. We confirm your limit.</small></div>
+      </div>
+      <p class="ledger__fine">Indicative, at about ₹50 to NZ$1. Figures change each year and we re-check them with you.</p>
+    </div>
+
+    <form class="loan" aria-labelledby="loan-h" onsubmit="return false">
+      <p class="tag" id="loan-h">Education loan in 10 seconds</p>
+      <label class="lbl" for="amt" style="color:var(--on-night-2)">How much do you need?</label>
+      <output class="loan__amt" for="amt" id="amt-out">₹25 lakh</output>
+      <input class="range" id="amt" type="range" min="5" max="80" step="1" value="25" aria-valuetext="25 lakh rupees">
+      <div class="scale" aria-hidden="true"><span>₹5 L</span><span>₹40 L</span><span>₹80 L</span></div>
+      <fieldset class="seg">
+        <legend>Can you offer collateral, such as property or an FD?</legend>
+        <label><input type="radio" name="col" value="yes"><span>Yes</span></label>
+        <label><input type="radio" name="col" value="no" checked><span>No</span></label>
+        <label><input type="radio" name="col" value="unsure"><span>Not sure</span></label>
+      </fieldset>
+      <p class="loan__type" id="loan-type"><b>Unsecured education loan</b>No collateral. Approval is based on your course and your co-applicant's income.</p>
+      <ul class="banks" aria-label="Loan partners">
+        <li><img src="../assets/img/loan-partner/icici.png" alt="ICICI Bank" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/hdfc-credila.jpg" alt="HDFC Credila" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/axis.jpg" alt="Axis Bank" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/avanse.jpg" alt="Avanse" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/idfc.jpg" alt="IDFC FIRST Bank" loading="lazy"></li>
+      </ul>
+      <a class="btn btn--cta btn--block" href="#final">Compare loans on my call <svg class="ic"><use href="#i-arrow"/></svg></a>
+    </form>
+  </div>
+</section>
+
+<!-- 4. WHY NZ: four photographs, four reasons (replaces 10 cards + postcard stack) -->
+<section class="sec why" id="why" aria-labelledby="why-h">
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="tag">Why New Zealand</p>
+      <h2 class="h2" id="why-h">Four reasons families <em>choose Aotearoa</em></h2>
+    </div>
+    <div class="frames">
+      <article class="frame frame--big">
+        <img src="../assets/img/nz/otago.jpg" alt="The University of Otago clocktower in Dunedin" loading="lazy">
+        <div class="frame__body"><p class="frame__place">Dunedin · Otago</p><h3>All eight universities are ranked</h3><p>Every New Zealand university appears in the QS World University Rankings.</p></div>
+      </article>
+      <article class="frame">
+        <img src="../assets/img/nz/auckland.jpg" alt="The Auckland skyline with the Sky Tower" loading="lazy">
+        <div class="frame__body"><p class="frame__place">Auckland</p><h3>Work while you study</h3><p>Part-time work during term, and a post-study work visa after.</p></div>
+      </article>
+      <article class="frame">
+        <img src="../assets/img/nz/christchurch.jpg" alt="Christchurch Arts Centre buildings" loading="lazy">
+        <div class="frame__body"><p class="frame__place">Christchurch</p><h3>Lower fees</h3><p>Competitive tuition, plus scholarships we help you apply for.</p></div>
+      </article>
+      <article class="frame frame--wide">
+        <img src="../assets/img/nz/queenstown.jpg" alt="Queenstown and Lake Wakatipu" loading="lazy" style="object-position:50% 70%">
+        <div class="frame__body"><p class="frame__place">Queenstown · Lake Wakatipu</p><h3>One of the world's most peaceful countries</h3><p>Safe, friendly cities that are easy to get around.</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 5. INTAKES: real calendar, no countdown -->
+<section class="sec" id="intakes" aria-labelledby="int-h">
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="tag">Intakes</p>
+      <h2 class="h2" id="int-h">Two main starts a year: <em>February and July</em></h2>
+    </div>
+    <div class="year" tabindex="0" aria-label="Academic calendar">
+      <div class="year__inner">
+        <ol class="year__months" aria-hidden="true"><li>Jan</li><li>Feb</li><li>Mar</li><li>Apr</li><li>May</li><li>Jun</li><li>Jul</li><li>Aug</li><li>Sep</li><li>Oct</li><li>Nov</li><li>Dec</li></ol>
+        <div class="year__rows">
+          <div class="bar bar--s1" style="--from:2;--to:7">Semester 1 <small>Feb–Jun</small></div>
+          <div class="bar bar--s2" style="--from:7;--to:12">Semester 2 <small>Jul–Nov</small></div>
+          <div class="bar bar--voc" style="--from:3;--to:6">Vocational starts <small>Mar–May</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="intake-note">
+      <p>Applying about six months ahead keeps more courses and scholarships open. For February 2027, that means starting now.</p>
+      <a class="inline-cta" href="#final">Plan my February 2027 start <svg class="ic"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- 6. YOUR PATH: 5 steps, visa + documents folded inside -->
+<section class="sec" id="path" aria-labelledby="path-h" style="padding-top:0">
+  <div class="wrap path-wrap">
+    <div class="sec__head">
+      <p class="tag">How it works</p>
+      <h2 class="h2" id="path-h">Five steps from <em>Chennai to campus</em></h2>
+      <p class="lede">One team from your first question to your first week in New Zealand.</p>
+    </div>
+    <ol class="path">
+      <li><div><h3>Free consultation <span class="free">Free</span></h3><p>Course, country fit, budget and post-study options, mapped to your profile.</p></div></li>
+      <li><div><h3>IELTS, TOEFL or PTE</h3><p>Preparation classes and test booking, so your score is ready on time.</p></div></li>
+      <li><div><h3>Shortlist and apply</h3><p>Colleges that fit your marks and budget. We prepare and submit the applications.</p>
+        <details class="more"><summary>Documents you'll need</summary><div class="in"><ul class="checks">
+          <li><input type="checkbox" id="d1"><label for="d1">Valid passport</label></li>
+          <li><input type="checkbox" id="d2"><label for="d2">Offer of place from a NZ institution</label></li>
+          <li><input type="checkbox" id="d3"><label for="d3">Proof of funds for fees and living costs</label></li>
+          <li><input type="checkbox" id="d4"><label for="d4">Academic transcripts</label></li>
+          <li><input type="checkbox" id="d5"><label for="d5">Medical clearance from an approved panel doctor</label></li>
+        </ul></div></details></div></li>
+      <li><div><h3>Loan and visa</h3><p>Loan offers from our partners, then your visa file and statement of purpose.</p>
+        <details class="more"><summary>Which student visa fits you</summary><div class="in">
+          <p><b>Fee-paying student visa.</b> Most students start here. Part-time work allowed.</p>
+          <p><b>Pathway student visa.</b> Up to 3 courses in a row on one visa, over up to 5 years.</p>
+          <p><b>Exchange student visa.</b> For recognised exchange programmes.</p>
+          <p><b>Government-supported visa.</b> For study funded by a foreign government.</p>
+        </div></details></div></li>
+      <li><div><h3>Land and settle</h3><p>Airport pickup, SIM, accommodation, bank account and part-time work. Later, your post-study work visa.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 7. CITIES & UNIVERSITIES -->
+<section class="sec cities" id="cities" aria-labelledby="cities-h">
+  <div class="wrap cities__grid">
+    <div>
+      <div class="sec__head">
+        <p class="tag">University partners</p>
+        <h2 class="h2" id="cities-h">From Auckland to Christchurch, <em>choose your city</em></h2>
+      </div>
+      <div class="mapbox" aria-hidden="true">
+        <svg viewBox="20 20 440 590">
+          <g class="map-land">
+            <path d="M245 30.6C252 28 257 27 270 49C283 59 305 66 310 96C306 103 320 115 320 132C322 146 344 160 340 140C336 120 352 140 358 167C366 178 394 194 405 195C420 182 430 172 448 180C441 200 440 212 428 232C426 245 410 243 392 263C398 271 382 300 368 328C350 348 335 361 330 353C312 346 333 315 333 308C333 290 325 284 307 276C286 262 281 257 293 244C312 227 318 198 320 186C316 160 305 141 298 122C284 100 270 85 261 65C254 48 245 34 245 30.6Z"/>
+            <path d="M256 310C245 315 251 326 256 324C257 335 262 345 266 345C277 335 286 324 294 331C302 332 303 342 294 354C300 366 290 378 280 398C267 418 251 432 247 448C259 461 254 466 235 464C223 468 196 489 192 514C181 533 177 555 163 565C146 584 131 591 117 594C95 591 83 579 74 574C35 570 30 551 44 526C74 496 104 469 118 465C137 452 158 435 185 412C196 399 198 383 202 367C225 344 226 328 229 323C238 312 247 308 256 310Z"/>
+          </g>
+          <g class="pin" data-pin="auckland" transform="translate(317 142)"><circle r="6"/><text x="-12" y="4" text-anchor="end">Auckland</text></g>
+          <g class="pin" data-pin="hamilton" transform="translate(335 185)"><circle r="6"/><text x="-12" y="4" text-anchor="end">Hamilton</text></g>
+          <g class="pin" data-pin="palmerston" transform="translate(347 303)"><circle r="6"/><text x="-12" y="4" text-anchor="end">Palmerston North</text></g>
+          <g class="pin" data-pin="wellington" transform="translate(318 346)"><circle r="6"/><text x="-12" y="18" text-anchor="end">Wellington</text></g>
+          <g class="pin" data-pin="christchurch" transform="translate(242 450)"><circle r="6"/><text x="12" y="4">Christchurch</text></g>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="chips" role="group" aria-label="Filter by city">
+        <button class="chip" type="button" aria-pressed="true" data-c="all">All cities</button>
+        <button class="chip" type="button" aria-pressed="false" data-c="auckland">Auckland</button>
+        <button class="chip" type="button" aria-pressed="false" data-c="hamilton">Hamilton</button>
+        <button class="chip" type="button" aria-pressed="false" data-c="palmerston">Palmerston North</button>
+        <button class="chip" type="button" aria-pressed="false" data-c="wellington">Wellington</button>
+        <button class="chip" type="button" aria-pressed="false" data-c="christchurch">Christchurch</button>
+      </div>
+      <ul class="unis">
+        <li class="uni" data-city="auckland"><div><h3>University of Auckland</h3><p>Auckland · University</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="auckland"><div><h3>AIS (Auckland Institute of Studies)</h3><p>Auckland · Private institute</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="hamilton"><div><h3>University of Waikato</h3><p>Hamilton · University</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="palmerston"><div><h3>Massey University</h3><p>Palmerston North · University</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="wellington"><div><h3>Victoria University of Wellington</h3><p>Wellington · University</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="christchurch"><div><h3>University of Canterbury</h3><p>Christchurch · University</p></div><button type="button">Check eligibility</button></li>
+        <li class="uni" data-city="christchurch"><div><h3>Lincoln University</h3><p>Lincoln, Canterbury · University</p></div><button type="button">Check eligibility</button></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 8. PARENTS' CORNER -->
+<section class="sec" id="parents" aria-labelledby="par-h">
+  <div class="wrap parents__grid">
+    <div class="letter">
+      <p class="tag">For parents</p>
+      <h2 class="h2" id="par-h">You're paying for this. <em>Ask us anything.</em></h2>
+      <p>Most of our calls include a parent. We explain costs, loans, safety and the return on the degree, in plain terms and in your language. You're welcome to visit our Chennai office before deciding anything.</p>
+      <p class="sig">The Tutee Connect team, Virugambakkam</p>
+    </div>
+    <div class="qa">
+      <div><b>Is my child safe there?</b><p>New Zealand is consistently ranked among the world's most peaceful countries. We arrange airport pickup and first accommodation.</p></div>
+      <div><b>Will they find Indian food and community?</b><p>Auckland, Wellington and Christchurch have large Indian communities, with vegetarian food and temples close to campus.</p></div>
+      <div><b>Can they work to cover some costs?</b><p>Most student visas allow part-time work. We confirm the current hour limit for their visa.</p></div>
+      <div><b>What happens after graduation?</b><p>Graduates can apply for a post-study work visa. We assess residence pathways on the free call.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. FAQ + FINAL FORM, pre-filled from what the visitor chose above -->
+<section class="sec final" id="final" aria-labelledby="final-h">
+  <div class="wrap final__grid">
+    <div>
+      <div class="sec__head">
+        <p class="tag">Questions</p>
+        <h2 class="h2" id="final-h">Still deciding? <em>That's what the call is for.</em></h2>
+      </div>
+      <div class="faq">
+        <details><summary>Is the consultation really free?</summary><p>Yes. Talking to a counsellor costs nothing and there's no obligation. We call in the slot you pick.</p></details>
+        <details><summary>Do I need IELTS?</summary><p>Most providers ask for IELTS, TOEFL or PTE. We prepare you and book the test.</p></details>
+        <details><summary>Can I get an education loan?</summary><p>Yes. Our partners offer secured and unsecured loans covering tuition, flights and living costs.</p></details>
+        <details><summary>Can my family come with me?</summary><p>Partners and children apply for their own visas. Options grow once you hold a post-study work visa.</p></details>
+        <details><summary>Is there a route to PR?</summary><p>New Zealand has post-study work and residence pathways. We assess your profile on the call.</p></details>
+      </div>
+    </div>
+    <div class="pass">
+      <div class="pass__top" aria-label="India to New Zealand">
+        <div class="pass__city"><small>From</small><b>India</b></div>
+        <div class="pass__route"><img src="../assets/img/brand/bird.png" alt="" width="26" height="14"></div>
+        <div class="pass__city pass__city--to"><small>To</small><b>Aotearoa</b></div>
+      </div>
+      <h2>Reserve your free call</h2>
+      <p>We'll bring your plan to the call:</p>
+      <div class="brief" id="brief" aria-live="polite"><span>Loan ₹25 lakh, no collateral</span><span>All cities</span><span>Feb 2027 intake</span></div>
+      <form data-demo novalidate style="padding-top:16px">
+        <div class="field"><label for="f-name">Full name</label><input id="f-name" autocomplete="name" placeholder="As on your passport"></div>
+        <div class="row2">
+          <div class="field"><label for="f-phone">Mobile number</label><div class="phone"><select aria-label="Country code"><option>+91</option><option>+971</option></select><input id="f-phone" type="tel" inputmode="tel" placeholder="98765 43210"></div></div>
+          <div class="field"><label for="f-time">Best time to call</label><select id="f-time"><option>Today, 4–6 PM IST</option><option>Tomorrow, 10 AM–12 PM</option></select></div>
+        </div>
+        <label class="consent"><input type="checkbox" id="f-consent"><span>I agree that Tutee Connect may call or WhatsApp me about studying in New Zealand. <a href="#">Privacy notice</a></span></label>
+        <button class="btn btn--cta btn--block" type="submit">Reserve my free call <svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="form-msg" role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__grid">
+    <div><b>Tutee Connect</b>Overseas education and immigration consultancy. Test prep, admissions, loans, visas and support after you land.</div>
+    <div><b>Chennai</b>1st Floor, ALA Corner Complex, Virugambakkam 600092<br>+91 70109 02329</div>
+    <div><b>Dubai</b>Meydan Grandstand, Dubai<br>+971 55 379 9068</div>
+    <div><b>Email</b>info@tuteeconnect.com</div>
+  </div>
+</footer>
+
+<div class="mbar" id="mbar">
+  <a class="btn btn--line" href="https://wa.me/917010902329" target="_blank" rel="noopener"><svg class="ic"><use href="#i-wa"/></svg>WhatsApp</a>
+  <a class="btn btn--cta" href="#book">Book a free call</a>
+</div>
+
+<script>
+(() => {
+  // loan slider -> amount, type, and the brief chips on the final form
+  const amt = document.getElementById('amt'), out = document.getElementById('amt-out'), type = document.getElementById('loan-type');
+  const brief = document.getElementById('brief');
+  const state = { loan: 25, col: 'no', city: 'All cities' };
+  const types = {
+    yes: ['Secured education loan', 'Backed by property or an FD. Usually higher amounts and lower interest.'],
+    no: ['Unsecured education loan', "No collateral. Approval is based on your course and your co-applicant's income."],
+    unsure: ['We’ll compare both', 'A loan specialist checks which route gives you the better rate.']
+  };
+  const colLabel = { yes: 'with collateral', no: 'no collateral', unsure: 'collateral unsure' };
+  function paint() {
+    out.textContent = '₹' + state.loan + ' lakh';
+    amt.setAttribute('aria-valuetext', state.loan + ' lakh rupees');
+    amt.style.setProperty('--pct', ((state.loan - 5) / 75 * 100) + '%');
+    const [t, d] = types[state.col];
+    type.innerHTML = '<b>' + t + '</b>' + d;
+    brief.children[0].textContent = 'Loan ₹' + state.loan + ' lakh, ' + colLabel[state.col];
+    brief.children[1].textContent = state.city;
+  }
+  amt.addEventListener('input', () => { state.loan = +amt.value; paint(); });
+  document.querySelectorAll('input[name="col"]').forEach(r => r.addEventListener('change', () => { state.col = r.value; paint(); }));
+
+  // city chips -> list + map pins + brief
+  const chips = document.querySelectorAll('.chip'), unis = document.querySelectorAll('.uni'), pins = document.querySelectorAll('.pin');
+  chips.forEach(c => c.addEventListener('click', () => {
+    chips.forEach(x => x.setAttribute('aria-pressed', x === c ? 'true' : 'false'));
+    const k = c.dataset.c;
+    unis.forEach(u => u.hidden = k !== 'all' && u.dataset.city !== k);
+    pins.forEach(p => p.classList.toggle('is-dim', k !== 'all' && p.dataset.pin !== k));
+    state.city = k === 'all' ? 'All cities' : c.textContent; paint();
+  }));
+
+  // demo forms: preview only, nothing is sent
+  document.querySelectorAll('form[data-demo]').forEach(f => f.addEventListener('submit', e => {
+    e.preventDefault();
+    f.querySelector('.form-msg').textContent = 'Preview only. In the live page this sends your details to the counsellor team.';
+  }));
+
+  // sticky mobile bar appears once the hero form is off screen
+  const bar = document.getElementById('mbar'), hero = document.getElementById('book');
+  new IntersectionObserver(([e]) => bar.classList.toggle('is-on', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(hero);
+  paint();
+})();
+</script>
+</body>
+</html>

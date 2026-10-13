@@ -1,911 +1,308 @@
-/* =====================================================================
-   Tutee Connect · Study in New Zealand — page behaviour.
-   No dependencies. Every lead form posts JSON to /api/enquiry
-   (netlify/functions/enquiry.mjs), which emails and stores the lead.
-   ===================================================================== */
-(function () {
-  'use strict';
+/* Tutee Connect · Study in New Zealand landing page. Leads POST to /api/enquiry. */
+(() => {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const G = window.gsap, ST = window.ScrollTrigger;
 
-  var doc = document;
-  var root = doc.documentElement;
-  root.classList.add('js');
+  /* ---------- storage, UTM capture (first touch, 30 days), legacy anchors ---------- */
+  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* blocked */ } } };
+  const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+  const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
+  if (!readUtm()) { const p = new URLSearchParams(location.search), f = {}; UTM_KEYS.forEach(k => { const v = p.get(k); if (v) f[k] = v.slice(0, 150); }); if (Object.keys(f).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: f })); }
+  // universities.html and older campaigns link to the previous page's section ids
+  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', intakes: 'consult', visas: 'process', documents: 'process', universities: 'cities', loans: 'trust' };
+  const legacyId = LEGACY[location.hash.slice(1)];
+  if (legacyId) history.replaceState(null, '', '#' + legacyId);
 
-  var $ = function (s, c) { return (c || doc).querySelector(s); };
-  var $$ = function (s, c) { return Array.prototype.slice.call((c || doc).querySelectorAll(s)); };
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-  var store = {
-    get: function (k, s) { try { return (s ? sessionStorage : localStorage).getItem(k); } catch (e) { return null; } },
-    set: function (k, v, s) { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch (e) { /* storage blocked */ } }
-  };
-
-  var ENDPOINT = '/api/enquiry';
-  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-    'August', 'September', 'October', 'November', 'December'];
-
-  /* ------------------------------------------------------------------ *
-   * UTM capture: first touch, kept for 30 days and attached to leads.
-   * ------------------------------------------------------------------ */
-  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-  var UTM_TTL = 30 * 24 * 60 * 60 * 1000;
-
-  function readUtm() {
-    try {
-      var saved = JSON.parse(store.get('tc_utm') || 'null');
-      if (saved && Date.now() - saved.at < UTM_TTL) return saved.v;
-    } catch (e) { /* corrupt value */ }
-    return null;
-  }
-
-  (function captureUtm() {
-    if (readUtm()) return;
-    var params = new URLSearchParams(location.search);
-    var found = {};
-    UTM_KEYS.forEach(function (k) {
-      var v = params.get(k);
-      if (v) found[k] = v.slice(0, 150);
+  /* ---------- split headings into masked words ---------- */
+  function splitWords(el) {
+    const walk = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const f = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(t => { if (!t) return; if (/^\s+$/.test(t)) { f.appendChild(document.createTextNode(t)); return; } const w = document.createElement('span'), i = document.createElement('span'); w.className = 'w'; i.textContent = t; w.appendChild(i); f.appendChild(w); });
+        n.replaceWith(f);
+      } else if (n.nodeType === 1) walk(n);
     });
-    if (Object.keys(found).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: found }));
+    walk(el);
+  }
+  $$('[data-split]').forEach(splitWords);
+
+  /* ---------- content built from data ---------- */
+  const banks = [['icici.png', 'ICICI Bank'], ['hdfc-credila.jpg', 'HDFC Credila'], ['axis.jpg', 'Axis Bank'], ['avanse.jpg', 'Avanse'], ['auxilo.jpg', 'Auxilo'], ['idfc.jpg', 'IDFC FIRST Bank'], ['incred.jpg', 'InCred'], ['mpower.jpg', 'MPOWER'], ['prodigy.jpg', 'Prodigy Finance'], ['union.jpg', 'Union Bank of India']];
+  const bl = banks.map(b => '<li><img src="./assets/img/loan-partner/' + b[0] + '" alt="' + b[1] + '" loading="lazy"></li>').join('');
+  $('#banks').innerHTML = '<ul>' + bl + '</ul><ul aria-hidden="true">' + bl + '</ul>';
+
+  const POST = [
+    { msg: 'Amma, the lake here changes colour every hour. Classes are small and my lecturer already knows my name!', name: 'Karthik', to: ['Amma & Appa', 'Anna Nagar, Chennai', 'Tamil Nadu, India'], place: 'Wānaka', reo: 'Glendhu Bay', img: 'postcard-wanaka', c: '#0F5556', date: '12 MAR 26' },
+    { msg: 'Got a part-time job at a café in week three. The loan plan is working out exactly as they said.', name: 'Ananya', to: ['Mr & Mrs Rao', 'Indiranagar, Bengaluru', 'Karnataka, India'], place: 'Auckland', reo: 'Tāmaki Makaurau', img: 'postcard-auckland', c: '#8C0B0B', date: '04 APR 26' },
+    { msg: 'Dunedin feels like a whole town of students. Found three Tamil friends in the first week.', name: 'Harini', to: ['Amma', 'RS Puram, Coimbatore', 'Tamil Nadu, India'], place: 'Dunedin', reo: 'Ōtepoti', img: 'postcard-dunedin', c: '#B07510', date: '21 FEB 26' }
+  ];
+  $('#cards').innerHTML = POST.map((p, i) => '<article class="pcard" tabindex="0" aria-label="Postcard from ' + p.name + ' in ' + p.place + '"><div class="pcard__in">' +
+    '<div class="pcard__face pc-back"><div class="pc-msg"><p>' + p.msg + '</p><b>– ' + p.name + '</b></div>' +
+    '<div class="pc-side"><span class="pc-stamp"><svg viewBox="0 0 50 62" aria-hidden="true"><rect width="50" height="62" fill="' + p.c + '"/><path d="M25 54C25 40 24 32 30 25C36 18 34 9 27 9C20 9 17 16 21 21C24 25 29 22 28 18" fill="none" stroke="#F4B73D" stroke-width="2.6" stroke-linecap="round"/><path d="M25 46q-6-2-9-7M25 40q-5-2-7-6M26 46q6-2 9-7M26 40q5-2 7-6" fill="none" stroke="#FBF6EE" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><text x="25" y="59" text-anchor="middle" font-family="DM Mono, monospace" font-size="5.5" fill="#FBF6EE" letter-spacing=".6">AOTEAROA</text></svg></span>' +
+    '<svg class="pc-post" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="30"/><circle cx="40" cy="40" r="22"/><defs><path id="pp' + i + '" d="M40 40m-26 0a26 26 0 1 1 52 0a26 26 0 1 1-52 0"/></defs><text><textPath href="#pp' + i + '">' + p.place.toUpperCase() + ' · NEW ZEALAND ·</textPath></text><text x="40" y="43" text-anchor="middle" style="font-size:7px">' + p.date + '</text><path d="M72 30q6 -4 12 0t12 0M72 40q6 -4 12 0t12 0M72 50q6 -4 12 0t12 0"/></svg>' +
+    '<div class="pc-addr">' + p.to.map(t => '<span>' + t + '</span>').join('') + '</div><span class="pc-from">Postcard · Aotearoa NZ</span></div></div>' +
+    '<div class="pcard__face pc-front"><img src="./assets/img/hd/' + p.img + '-m.jpg" srcset="./assets/img/hd/' + p.img + '-m.jpg 1200w, ./assets/img/hd/' + p.img + '.jpg 1600w" sizes="(max-width: 1000px) 92vw, 30vw" alt="' + p.place + '" loading="lazy" decoding="async"><small>Greetings from</small><strong>' + p.place + '</strong><span class="reo" style="color:var(--kowhai)">' + p.reo + '</span></div>' +
+    '</div></article>').join('');
+  $$('.pcard').forEach(c => { c.addEventListener('click', () => c.classList.toggle('is-flip')); c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.classList.toggle('is-flip'); } }); });
+
+  const FAQ = [
+    ['Is the first consultation really free?', 'Yes. Speaking to a counsellor costs nothing and there is no obligation. We call you in the slot you choose.'],
+    ['Do I need IELTS, PTE or TOEFL?', 'Most universities ask for an English test score. We coach you and book the test, and tell you the exact score each course needs.'],
+    ['Can I work while I study?', 'Most student visas allow part-time work during term and full-time work in scheduled breaks. We confirm the current limits for your visa.'],
+    ['Can I get an education loan?', 'Yes. Our ten lending partners offer secured and unsecured loans covering tuition, flights and living costs. We compare offers for you.'],
+    ['Is there a pathway to work or residence?', 'Eligible graduates can apply for a post-study work visa of up to three years, and some go on to residence pathways. We assess your profile on the call.'],
+    ['Can my family come with me?', 'Partners and children apply for their own visas based on their relationship to you. We plan the right timing in the consultation.'],
+    ['Do you help after I land?', 'Yes. Airport pickup, SIM card, accommodation, bank account and part-time work support, and later your post-study work visa.']
+  ];
+  $('#acc').innerHTML = FAQ.map((f, i) => '<div class="qa"><button type="button" aria-expanded="false" aria-controls="qa' + i + '"><span class="qa__n">' + String(i + 1).padStart(2, '0') + '</span><span class="qa__q">' + f[0] + '</span><span class="qa__x"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="qa__a" id="qa' + i + '" role="region"><div><p>' + f[1] + '</p></div></div></div>').join('');
+  $$('.qa button').forEach(b => b.addEventListener('click', () => { const q = b.parentElement, open = !q.classList.contains('open'); $$('.qa.open').forEach(x => { x.classList.remove('open'); $('button', x).setAttribute('aria-expanded', 'false'); }); if (open) { q.classList.add('open'); b.setAttribute('aria-expanded', 'true'); } setTimeout(() => ST && ST.refresh(), 600); }));
+
+  /* ---------- smooth scroll ---------- */
+  let lenis = null;
+  if (G && ST) G.registerPlugin(ST);
+  if (!reduce && window.Lenis && G) { lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
+  const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; lenis ? lenis.scrollTo(t, { offset: 0, duration: 1.6 }) : t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
+  $$('[data-scroll]').forEach(a => a.addEventListener('click', e => { const h = a.getAttribute('href'); if (h && h[0] === '#') { e.preventDefault(); goTo(h === '#top' ? '#hero' : h); } }));
+  let tt; function toast(m) { const t = $('#toast'); $('span', t).textContent = m; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2400); }
+
+  /* ---------- consult form: 2 steps + country code picker ---------- */
+  const CC = 'AF|Afghanistan|93;AL|Albania|355;DZ|Algeria|213;AS|American Samoa|1684;AD|Andorra|376;AO|Angola|244;AI|Anguilla|1264;AG|Antigua and Barbuda|1268;AR|Argentina|54;AM|Armenia|374;AW|Aruba|297;AU|Australia|61;AT|Austria|43;AZ|Azerbaijan|994;BS|Bahamas|1242;BH|Bahrain|973;BD|Bangladesh|880;BB|Barbados|1246;BY|Belarus|375;BE|Belgium|32;BZ|Belize|501;BJ|Benin|229;BM|Bermuda|1441;BT|Bhutan|975;BO|Bolivia|591;BA|Bosnia and Herzegovina|387;BW|Botswana|267;BR|Brazil|55;IO|British Indian Ocean Territory|246;VG|British Virgin Islands|1284;BN|Brunei|673;BG|Bulgaria|359;BF|Burkina Faso|226;BI|Burundi|257;KH|Cambodia|855;CM|Cameroon|237;CA|Canada|1;CV|Cape Verde|238;KY|Cayman Islands|1345;CF|Central African Republic|236;TD|Chad|235;CL|Chile|56;CN|China|86;CO|Colombia|57;KM|Comoros|269;CG|Congo|242;CD|Congo (DRC)|243;CK|Cook Islands|682;CR|Costa Rica|506;CI|Côte d’Ivoire|225;HR|Croatia|385;CU|Cuba|53;CW|Curaçao|599;CY|Cyprus|357;CZ|Czechia|420;DK|Denmark|45;DJ|Djibouti|253;DM|Dominica|1767;DO|Dominican Republic|1809;EC|Ecuador|593;EG|Egypt|20;SV|El Salvador|503;GQ|Equatorial Guinea|240;ER|Eritrea|291;EE|Estonia|372;SZ|Eswatini|268;ET|Ethiopia|251;FK|Falkland Islands|500;FO|Faroe Islands|298;FJ|Fiji|679;FI|Finland|358;FR|France|33;GF|French Guiana|594;PF|French Polynesia|689;GA|Gabon|241;GM|Gambia|220;GE|Georgia|995;DE|Germany|49;GH|Ghana|233;GI|Gibraltar|350;GR|Greece|30;GL|Greenland|299;GD|Grenada|1473;GP|Guadeloupe|590;GU|Guam|1671;GT|Guatemala|502;GG|Guernsey|44;GN|Guinea|224;GW|Guinea-Bissau|245;GY|Guyana|592;HT|Haiti|509;HN|Honduras|504;HK|Hong Kong|852;HU|Hungary|36;IS|Iceland|354;IN|India|91;ID|Indonesia|62;IR|Iran|98;IQ|Iraq|964;IE|Ireland|353;IM|Isle of Man|44;IL|Israel|972;IT|Italy|39;JM|Jamaica|1876;JP|Japan|81;JE|Jersey|44;JO|Jordan|962;KZ|Kazakhstan|7;KE|Kenya|254;KI|Kiribati|686;XK|Kosovo|383;KW|Kuwait|965;KG|Kyrgyzstan|996;LA|Laos|856;LV|Latvia|371;LB|Lebanon|961;LS|Lesotho|266;LR|Liberia|231;LY|Libya|218;LI|Liechtenstein|423;LT|Lithuania|370;LU|Luxembourg|352;MO|Macau|853;MG|Madagascar|261;MW|Malawi|265;MY|Malaysia|60;MV|Maldives|960;ML|Mali|223;MT|Malta|356;MH|Marshall Islands|692;MQ|Martinique|596;MR|Mauritania|222;MU|Mauritius|230;YT|Mayotte|262;MX|Mexico|52;FM|Micronesia|691;MD|Moldova|373;MC|Monaco|377;MN|Mongolia|976;ME|Montenegro|382;MS|Montserrat|1664;MA|Morocco|212;MZ|Mozambique|258;MM|Myanmar|95;NA|Namibia|264;NR|Nauru|674;NP|Nepal|977;NL|Netherlands|31;NC|New Caledonia|687;NZ|New Zealand|64;NI|Nicaragua|505;NE|Niger|227;NG|Nigeria|234;NU|Niue|683;KP|North Korea|850;MK|North Macedonia|389;MP|Northern Mariana Islands|1670;NO|Norway|47;OM|Oman|968;PK|Pakistan|92;PW|Palau|680;PS|Palestine|970;PA|Panama|507;PG|Papua New Guinea|675;PY|Paraguay|595;PE|Peru|51;PH|Philippines|63;PL|Poland|48;PT|Portugal|351;PR|Puerto Rico|1787;QA|Qatar|974;RE|Réunion|262;RO|Romania|40;RU|Russia|7;RW|Rwanda|250;WS|Samoa|685;SM|San Marino|378;ST|São Tomé and Príncipe|239;SA|Saudi Arabia|966;SN|Senegal|221;RS|Serbia|381;SC|Seychelles|248;SL|Sierra Leone|232;SG|Singapore|65;SX|Sint Maarten|1721;SK|Slovakia|421;SI|Slovenia|386;SB|Solomon Islands|677;SO|Somalia|252;ZA|South Africa|27;KR|South Korea|82;SS|South Sudan|211;ES|Spain|34;LK|Sri Lanka|94;KN|St Kitts and Nevis|1869;LC|St Lucia|1758;VC|St Vincent and the Grenadines|1784;SD|Sudan|249;SR|Suriname|597;SE|Sweden|46;CH|Switzerland|41;SY|Syria|963;TW|Taiwan|886;TJ|Tajikistan|992;TZ|Tanzania|255;TH|Thailand|66;TL|Timor-Leste|670;TG|Togo|228;TO|Tonga|676;TT|Trinidad and Tobago|1868;TN|Tunisia|216;TR|Türkiye|90;TM|Turkmenistan|993;TC|Turks and Caicos Islands|1649;TV|Tuvalu|688;UG|Uganda|256;UA|Ukraine|380;AE|United Arab Emirates|971;GB|United Kingdom|44;US|United States|1;UY|Uruguay|598;VI|US Virgin Islands|1340;UZ|Uzbekistan|998;VU|Vanuatu|678;VA|Vatican City|39;VE|Venezuela|58;VN|Vietnam|84;WF|Wallis and Futuna|681;YE|Yemen|967;ZM|Zambia|260;ZW|Zimbabwe|263'
+    .split(';').map(r => { const [iso, name, dial] = r.split('|'); return { iso: iso.toLowerCase(), name, dial: '+' + dial }; });
+  const POPULAR = ['in', 'ae', 'sa', 'qa', 'om', 'kw', 'bh', 'lk', 'np', 'bd', 'sg', 'my'];
+  const flag = iso => './assets/img/flags/' + iso + '.png';
+  const ccEl = $('#cc'), ccBtn = $('#cc-btn'), ccPop = $('#cc-pop'), ccList = $('#cc-list'), ccQ = $('#cc-q');
+  let ccSel = CC.find(c => c.iso === 'in'), ccHl = -1, ccItems = [];
+  const opt = c => '<li class="cc__opt" role="option" data-iso="' + c.iso + '" aria-selected="' + (c === ccSel) + '"><img src="' + flag(c.iso) + '" alt="" loading="lazy" width="26" height="18"><span>' + c.name + '</span><small>' + c.dial + '</small></li>';
+  function renderCC(q) {
+    q = (q || '').trim().toLowerCase().replace(/^\+/, '');
+    const hit = c => !q || c.name.toLowerCase().includes(q) || c.dial.slice(1).startsWith(q) || c.iso === q;
+    let html = '';
+    if (!q) html += '<li class="cc__group" role="presentation">Popular</li>' + POPULAR.map(i => opt(CC.find(c => c.iso === i))).join('') + '<li class="cc__group" role="presentation">All countries</li>';
+    const rest = CC.filter(hit);
+    html += rest.map(opt).join('') || '<li class="cc__empty">No country matches "' + q + '"</li>';
+    ccList.innerHTML = html; ccItems = $$('.cc__opt', ccList); ccHl = -1;
+  }
+  function openCC(on) {
+    ccPop.hidden = !on; ccEl.classList.toggle('open', on); ccBtn.setAttribute('aria-expanded', on);
+    if (on) { ccQ.value = ''; renderCC(''); setTimeout(() => ccQ.focus(), 30); const s = ccList.querySelector('[aria-selected="true"]'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+  }
+  function pickCC(iso) {
+    ccSel = CC.find(c => c.iso === iso); $('#cc-flag').src = flag(iso); $('#cc-code').textContent = ccSel.dial;
+    ccBtn.setAttribute('aria-label', 'Country code: ' + ccSel.name + ' ' + ccSel.dial); openCC(false); ccBtn.focus();
+  }
+  ccBtn.addEventListener('click', () => openCC(ccPop.hidden));
+  ccQ.addEventListener('input', () => renderCC(ccQ.value));
+  ccList.addEventListener('click', e => { const o = e.target.closest('.cc__opt'); if (o) pickCC(o.dataset.iso); });
+  ccQ.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); ccHl = Math.max(0, Math.min(ccItems.length - 1, ccHl + (e.key === 'ArrowDown' ? 1 : -1))); ccItems.forEach((o, i) => o.classList.toggle('hl', i === ccHl)); ccItems[ccHl] && ccItems[ccHl].scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'Enter') { e.preventDefault(); const o = ccItems[Math.max(0, ccHl)]; if (o) pickCC(o.dataset.iso); }
+    else if (e.key === 'Escape') { openCC(false); ccBtn.focus(); }
+  });
+  document.addEventListener('click', e => { if (!ccEl.contains(e.target)) openCC(false); });
+
+  const panes = $$('#cform .cpane'), stepsUI = $$('#csteps li'); let step = 0;
+  $$('#slots .slot').forEach(s => s.addEventListener('click', () => $$('#slots .slot').forEach(x => x.setAttribute('aria-pressed', x === s))));
+  function go(n) {
+    const back = n < step; step = n;
+    panes.forEach((p, i) => { p.classList.toggle('on', i === n); p.classList.toggle('back-in', i === n && back); });
+    stepsUI.forEach((s, i) => { s.classList.toggle('done', i < n); s.classList.toggle('now', i === n); });
+    $('#c-back').hidden = n === 0; $('#c-n').textContent = 'Step ' + (n + 1) + ' of 2';
+    $('#c-next').innerHTML = n === 1 ? 'Request my call <svg class="ic"><use href="#i-arrow"/></svg>' : 'Continue <svg class="ic"><use href="#i-arrow"/></svg>';
+    $('#c-err').textContent = '';
+  }
+  function check() {
+    $$('#cform .ff').forEach(f => f.classList.remove('bad'));
+    if (step !== 0) return '';
+    const n = $('#c-name'), em = $('#c-email'), p = $('#c-phone');
+    const bad = (el, msg) => { el.parentElement.classList.add('bad'); el.focus(); return msg; };
+    if (n.value.trim().length < 2) return bad(n, 'Add your full name.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em.value.trim())) return bad(em, 'Add a valid email address so we can send your plan.');
+    if (p.value.replace(/\D/g, '').length < 6) return bad(p, 'Add a WhatsApp number we can reach you on.');
+    return '';
+  }
+  $('#c-back').addEventListener('click', () => go(step - 1));
+  $('#cform').addEventListener('submit', e => {
+    e.preventDefault();
+    const err = check(); if (err) { $('#c-err').textContent = err; return; }
+    if (step < 1) { go(step + 1); return; }
+    const slot = $('#slots [aria-pressed="true"]');
+    const slotText = slot.querySelector('b').textContent + ', ' + slot.querySelector('small').textContent;
+    const interest = [$('#h-course').value, $('#h-level').value, $('#h-city').value].filter(Boolean).join(' · ');
+    const data = {
+      name: $('#c-name').value.trim(), email: $('#c-email').value.trim(),
+      phone: ccSel.dial + ' ' + $('#c-phone').value.trim(), destination: 'New Zealand',
+      page: location.host + location.pathname, from_name: 'NZ landing page · Counselling form',
+      botcheck: $('#c-bot').value, preferredCallTime: slotText + ' (' + ccSel.name + ' time)', consent: 'yes',
+      state: $('#c-state').value.trim(), interest
+    };
+    const utm = readUtm() || {}; UTM_KEYS.forEach(k => { if (utm[k]) data[k] = utm[k]; });
+    Object.keys(data).forEach(k => { if (data[k] === '' && k !== 'botcheck') delete data[k]; });
+    const btn = $('#c-next'), btnHtml = btn.innerHTML;
+    btn.disabled = true; btn.textContent = 'Sending…'; $('#c-err').textContent = '';
+    fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
+      .then(r => r.json().catch(() => ({ success: false })))
+      .then(res => {
+        if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 70109 02329.'; return; }
+        store.set('tc_lead', '1');
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: 'generate_lead', lead_source: 'Counselling form', country: 'new-zealand' });
+        $('#sent-h').textContent = "You're booked, " + data.name.split(' ')[0] + '.';
+        const rows = [['Call', slotText], ['WhatsApp', data.phone], ['Email', data.email]];
+        if (interest) rows.push(['Interested in', interest]);
+        $('#sent-card').innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1].replace(/[<>&]/g, '') + '</dd>').join('');
+        stepsUI.forEach(s => { s.classList.add('done'); s.classList.remove('now'); });
+        $('#sent').classList.add('on');
+      })
+      .catch(() => { $('#c-err').textContent = 'Network error. Check your connection and try again, or WhatsApp us on +91 70109 02329.'; })
+      .then(() => { btn.disabled = false; btn.innerHTML = btnHtml; });
+  });
+  // the hero quick-start bar carries its choices into the lead as hidden fields
+  $('#qform').addEventListener('submit', e => { e.preventDefault(); $('#h-course').value = $('#q-course').value; $('#h-level').value = $('#q-level').value; $('#h-city').value = $('#q-city').value; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
+
+  /* ---------- why NZ: expanding photo accordion ---------- */
+    const REASONS = [
+    ['All eight universities are globally ranked', 'QS World Rankings', 'Every New Zealand university features in the QS World University Rankings, so whichever you choose, your degree travels.', 'reason-01-otago', 'University of Otago, Dunedin', '40% 45%'],
+    ['Work while you study', 'Part-time work rights', 'Most student visas allow part-time work during term and full-time work in scheduled breaks, which helps with living costs.', 'reason-02-auckland', 'Auckland skyline', '50% 50%'],
+    ['Stay and work after you graduate', 'Post-study work visa', 'Eligible graduates can apply for a post-study work visa of up to three years to build real New Zealand experience.', 'reason-03-wellington', 'Wellington Harbour', '50% 60%'],
+    ['One of the world’s safest countries', 'Global Peace Index', 'New Zealand is consistently ranked among the most peaceful nations, with friendly cities that are easy to get around.', 'reason-04-tekapo', 'Lake Tekapo', '50% 55%'],
+    ['<span class="reo">Manaakitanga</span>, a culture of care', 'Pastoral Care Code', 'The Māori value of looking after guests shapes how universities and communities welcome international students.', 'reason-05-marae', 'Pukemokimoki Marae, Napier', '50% 50%'],
+    ['Competitive fees and scholarships', 'Scholarship support', 'Tuition compares well with the UK, US and Australia, and we help you find and apply for scholarships.', 'reason-06-hagley-park', 'Hagley Park, Christchurch', '50% 50%'],
+    ['Practical, industry-linked degrees', 'Hands-on learning', 'Small classes, real projects and placements in IT, engineering, health and business.', 'reason-07-unleash-space', 'University of Auckland', '50% 50%'],
+    ['Research that matters', 'Research culture', 'Modern labs and a hands-on research culture, from agritech and climate to earth sciences.', 'reason-08-biology', 'University of Auckland', '50% 50%'],
+    ['A clear, online visa process', 'Online application', 'Immigration New Zealand runs a straightforward online application, and we prepare the full file with you.', 'reason-09-beehive', 'Parliament, Wellington', '50% 50%'],
+    ['Fjords, lakes and mountains on your doorstep', 'Life beyond campus', 'Some of the world’s most dramatic landscapes are a weekend trip away from every campus.', 'reason-10-milford', 'Milford Sound · Piopiotahi', '45% 50%']
+  ];
+  (() => {
+    const box = $('#acc10');
+    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="./assets/img/hd/' + r[3] + '-m.jpg" srcset="./assets/img/hd/' + r[3] + '-m.jpg ' + 1200 + 'w, ./assets/img/hd/' + r[3] + '.jpg ' + 2400 + 'w" sizes="(max-width: 899px) 100vw, 70vw" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
+    const panels = $$('.ap', box);
+    const open = i => { panels.forEach((p, j) => { p.classList.toggle('on', j === i); p.setAttribute('aria-selected', j === i); }); $('#acc10-n').textContent = String(i + 1).padStart(2, '0'); $('#acc10-bar').style.transform = 'scaleX(' + (i + 1) / panels.length + ')'; };
+    const hover = matchMedia('(hover: hover) and (min-width: 900px)').matches;
+    let t; panels.forEach((p, i) => {
+      p.addEventListener('click', () => open(i));
+      p.addEventListener('focus', () => open(i));
+      if (hover) { p.addEventListener('pointerenter', () => { clearTimeout(t); t = setTimeout(() => open(i), 90); }); p.addEventListener('pointerleave', () => clearTimeout(t)); }
+    });
+    box.addEventListener('keydown', e => { const i = panels.findIndex(p => p.classList.contains('on')); if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); panels[Math.min(9, i + 1)].focus(); } if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); panels[Math.max(0, i - 1)].focus(); } });
   })();
 
-  /* ------------------------------------------------------------------ *
-   * Shared select options.
-   * ------------------------------------------------------------------ */
-  var DIAL_CODES = [
-    ['IN', '+91'], ['AE', '+971'], ['NZ', '+64'], ['AU', '+61'], ['UK', '+44'],
-    ['US/CA', '+1'], ['SG', '+65'], ['MY', '+60'], ['LK', '+94'], ['NP', '+977'],
-    ['BD', '+880'], ['SA', '+966'], ['QA', '+974'], ['OM', '+968'], ['KW', '+965'], ['BH', '+973']
+  /* ---------- how it works: compass dial ---------- */
+  const STEPS = [
+    ['i-chat', 'Consult', 'Free consultation', 'One call to map your course, university options, budget and career goals, with your parents if you like.', ['Profile assessment', 'Course and country fit', 'Budget plan']],
+    ['i-lang', 'English test', 'English test preparation', 'IELTS, PTE or TOEFL coaching and test booking, so your score is ready before applications open.', ['Coaching classes', 'Mock tests', 'Test booking']],
+    ['i-compass', 'Apply', 'Shortlist and apply', 'A university shortlist that fits your marks and budget. We prepare and submit every application.', ['University shortlist', 'Application packs', 'Offer tracking']],
+    ['i-file', 'Documents', 'Documents and offer letter', 'Transcripts, financials and references assembled and checked before they go out.', ['Document checklist', 'Verification', 'Offer of place']],
+    ['i-cash', 'Loan', 'Education loan', 'Secured and unsecured offers compared across our ten lending partners, so you choose with confidence.', ['Lender comparison', 'Paperwork support', 'Sanction letter']],
+    ['i-passport', 'Visa', 'Visa and statement of purpose', 'The right student visa for your plan, and an SOP that sounds like you.', ['Visa file', 'SOP review', 'Interview prep']],
+    ['i-plane', 'Arrive', 'Land and settle in', 'Airport pickup, SIM, accommodation, bank account and part-time work support. Later, your post-study work visa.', ['Pre-departure briefing', 'Arrival support', 'Post-study visa help']]
   ];
-
-  function fillSelects() {
-    $$('select[data-cc]').forEach(function (sel) {
-      sel.innerHTML = DIAL_CODES.map(function (c) {
-        return '<option value="' + c[1] + '"' + (c[1] === '+91' ? ' selected' : '') + '>' + c[0] + ' ' + c[1] + '</option>';
-      }).join('');
-    });
-
-    var slots = ['<option value="">Pick a slot</option>'];
-    for (var h = 9; h <= 19; h++) {
-      var label = (h > 12 ? h - 12 : h) + ':00 ' + (h < 12 ? 'AM' : 'PM') + ' IST';
-      slots.push('<option value="' + label + '">' + label + '</option>');
+  (() => {
+    const stage = $('#dial-stage'), dial = $('#dial'), CX = 500, CY = 510, R = 420, N = STEPS.length;
+    // instrument ticks every 5°, longer every 30°
+    let ticks = ''; for (let a = 0; a <= 180; a += 5) { const r1 = R + 14, r2 = R + (a % 30 === 0 ? 30 : 22), c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180); ticks += '<line class="dial__tick' + (a % 30 === 0 ? ' major' : '') + '" x1="' + (CX - r1 * c).toFixed(1) + '" y1="' + (CY - r1 * s).toFixed(1) + '" x2="' + (CX - r2 * c).toFixed(1) + '" y2="' + (CY - r2 * s).toFixed(1) + '"/>'; }
+    $('#dial-ticks').innerHTML = ticks;
+    stage.insertAdjacentHTML('beforeend', STEPS.map((s, i) => { const a = Math.PI - i * Math.PI / (N - 1), x = CX + R * Math.cos(a), y = CY - R * Math.sin(a); return '<button class="dnode" type="button" role="tab" data-i="' + i + '" style="left:' + (x / 10).toFixed(2) + '%;top:' + (y / 5.6).toFixed(2) + '%" aria-label="Step ' + (i + 1) + ': ' + s[2] + '"><span class="dnode__c"><svg class="ic"><use href="#' + s[0] + '"/></svg></span><b>' + s[1] + '</b></button>'; }).join(''));
+    const nodes = $$('.dnode', stage); let at = 0, timer = null, inView = false, user = false;
+    const paint = i => { const s = STEPS[i]; $('#dl-n').textContent = 'Step ' + String(i + 1).padStart(2, '0') + ' of 07'; $('#dl-h').textContent = s[2]; $('#dl-p').textContent = s[3]; $('#dl-ul').innerHTML = s[4].map(d => '<li><svg class="ic"><use href="#i-check"/></svg>' + d + '</li>').join(''); };
+    function show(i, fromUser) {
+      at = (i + N) % N; if (fromUser) user = true;
+      nodes.forEach((n, j) => { n.classList.toggle('on', j === at); n.classList.toggle('done', j < at); n.setAttribute('aria-selected', j === at); });
+      $('#dial-prog').style.strokeDashoffset = 1 - at / (N - 1);
+      dial.classList.add('is-swapping'); setTimeout(() => { paint(at); dial.classList.remove('is-swapping'); }, 220);
+      clearTimeout(timer); if (inView && !user && !reduce) timer = setTimeout(() => show(at + 1), 5000);
     }
-    $$('select[data-calltime]').forEach(function (sel) { sel.innerHTML = slots.join(''); });
+    nodes.forEach(n => n.addEventListener('click', () => show(+n.dataset.i, true)));
+    $('#dl-next').addEventListener('click', () => show(at + 1, true));
+    $('#dl-prev').addEventListener('click', () => show(at - 1, true));
+    dial.addEventListener('keydown', e => { if (e.key === 'ArrowRight') show(at + 1, true); if (e.key === 'ArrowLeft') show(at - 1, true); });
+    new IntersectionObserver(([e]) => { inView = e.isIntersecting; clearTimeout(timer); if (inView && !user && !reduce) timer = setTimeout(() => show(at + 1), 5000); }, { threshold: .45 }).observe(dial);
+    paint(0); show(0);
+  })();
 
-    var opts = ['<option value="">Not sure yet</option>'];
-    upcomingIntakes(4).forEach(function (d) {
-      var v = MONTHS[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear();
-      opts.push('<option value="' + v + '">' + v + '</option>');
-    });
-    $$('select[data-intake-select]').forEach(function (sel) { sel.innerHTML = opts.join(''); });
-  }
-
-  /* Next February / July starts that are at least a month away. */
-  function upcomingIntakes(count) {
-    var now = new Date();
-    var cutoff = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-    var out = [];
-    for (var y = now.getFullYear(); out.length < count; y++) {
-      [1, 6].forEach(function (m) {
-        var d = new Date(y, m, 1);
-        if (d > cutoff && out.length < count) out.push(d);
-      });
-    }
-    return out;
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Header, mobile menu, scrollspy, progress bird.
-   * ------------------------------------------------------------------ */
-  function initHeader() {
-    var header = $('[data-header]');
-    var toggle = $('[data-menu-toggle]');
-    var menu = $('[data-menu]');
-
-    function setMenu(open) {
-      toggle.setAttribute('aria-expanded', String(open));
-      menu.hidden = !open;
-    }
-    toggle.addEventListener('click', function () { setMenu(menu.hidden); });
-    menu.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
-    doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { setMenu(false); toggle.focus(); } });
-    doc.addEventListener('click', function (e) { if (!menu.hidden && !header.contains(e.target)) setMenu(false); });
-
-    var links = $$('.header__nav a');
-    var byId = {};
-    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
-    var spy = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        links.forEach(function (a) { a.classList.remove('is-active'); });
-        if (byId[en.target.id]) byId[en.target.id].classList.add('is-active');
-      });
-    }, { rootMargin: '-45% 0px -50% 0px' });
-    $$('main section[id]').forEach(function (s) { spy.observe(s); });
-
-    var line = $('.flightline');
-    var hero = $('.hero');
-    var consult = $('#consult');
-    var mbar = $('[data-mbar]');
-    var consultVisible = false;
-    new IntersectionObserver(function (en) { consultVisible = en[0].isIntersecting; onScroll(); }, { threshold: .15 }).observe(consult);
-
-    var ticking = false;
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(function () {
-        ticking = false;
-        var y = window.scrollY;
-        var max = root.scrollHeight - window.innerHeight;
-        line.style.setProperty('--p', max > 0 ? Math.min(1, y / max).toFixed(4) : 0);
-        header.classList.toggle('is-scrolled', y > 30);
-        var showBar = y > hero.offsetHeight * .55 && !consultVisible;
-        mbar.classList.toggle('is-on', showBar);
-        doc.body.classList.toggle('mbar-on', showBar && window.innerWidth <= 900);
-      });
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    onScroll();
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Scroll reveals and counters.
-   * ------------------------------------------------------------------ */
-  function initReveal() {
-    $$('.lenders li').forEach(function (li, i) { li.style.setProperty('--i', i); });
-
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        en.target.classList.add('is-in');
-        io.unobserve(en.target);
-      });
-    }, { threshold: .12, rootMargin: '0px 0px -6% 0px' });
-    $$('[data-reveal]').forEach(function (el) { io.observe(el); });
-
-    var counters = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (!en.isIntersecting) return;
-        counters.unobserve(en.target);
-        countUp(en.target);
-      });
-    }, { threshold: .6 });
-    $$('[data-count]').forEach(function (el) {
-      if (!reduce) el.textContent = '0';
-      counters.observe(el);
-    });
-  }
-
-  function countUp(el) {
-    var target = +el.getAttribute('data-count');
-    if (reduce) { el.textContent = target; return; }
-    var start = null;
-    var dur = 1500;
-    function step(t) {
-      if (start === null) start = t;
-      var k = Math.min(1, (t - start) / dur);
-      el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
-      if (k < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Hero: headline split, stars, parallax, pass tilt.
-   * ------------------------------------------------------------------ */
-  function splitWords(el) {
-    var i = 0;
-    el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
-    (function walk(node) {
-      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
-        if (n.nodeType === 1) { n.setAttribute('aria-hidden', 'true'); walk(n); return; }
-        if (n.nodeType !== 3) return;
-        var frag = doc.createDocumentFragment();
-        n.textContent.split(/(\s+)/).forEach(function (part) {
-          if (!part) return;
-          if (/^\s+$/.test(part)) { frag.appendChild(doc.createTextNode(' ')); return; }
-          var w = doc.createElement('span');
-          w.className = 'w';
-          w.setAttribute('aria-hidden', 'true');
-          var inner = doc.createElement('span');
-          inner.className = 'w__i';
-          inner.style.setProperty('--i', i++);
-          inner.textContent = part;
-          w.appendChild(inner);
-          frag.appendChild(w);
-        });
-        node.replaceChild(frag, n);
-      });
-    })(el);
-    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('is-split'); }); });
-  }
-
-  function initHero() {
-    var title = $('[data-split]');
-    if (title && !reduce) splitWords(title);
-
-    var sky = $('[data-stars]');
-    var n = window.innerWidth < 700 ? 40 : 80;
-    var html = '';
-    for (var i = 0; i < n; i++) {
-      html += '<i class="star" style="left:' + (Math.random() * 100).toFixed(2) + '%;top:' + (Math.random() * 100).toFixed(2) +
-        '%;--s:' + (1 + Math.random() * 1.6).toFixed(1) + 'px;--t:' + (2.5 + Math.random() * 4).toFixed(1) +
-        's;--dl:-' + (Math.random() * 6).toFixed(1) + 's"></i>';
-    }
-    sky.innerHTML = html;
-
-    if (reduce) {
-      $$('svg').forEach(function (s) { if (s.pauseAnimations) s.pauseAnimations(); });
-      return;
-    }
-
-    var hero = $('.hero');
-    var layers = $$('[data-parallax]', hero);
-    var px = 0, inView = true;
-    new IntersectionObserver(function (en) { inView = en[0].isIntersecting; }).observe(hero);
-
-    function paint() {
-      var y = window.scrollY;
-      layers.forEach(function (el) {
-        var f = +el.getAttribute('data-parallax');
-        el.style.transform = 'translate3d(' + (px * f * -60).toFixed(1) + 'px,' + (y * f).toFixed(1) + 'px,0)';
-      });
-    }
-    window.addEventListener('scroll', function () { if (inView) requestAnimationFrame(paint); }, { passive: true });
-    if (finePointer) {
-      hero.addEventListener('pointermove', function (e) {
-        px = e.clientX / window.innerWidth - .5;
-        requestAnimationFrame(paint);
-      });
-    }
-
-    if (!finePointer) return;
-    $$('.hero__pass, .consult__pass').forEach(function (wrap) {
-      var pass = $('.pass', wrap);
-      wrap.addEventListener('pointermove', function (e) {
-        if (wrap.contains(doc.activeElement) && doc.activeElement.matches('input,select,textarea')) return;
-        var r = wrap.getBoundingClientRect();
-        var x = (e.clientX - r.left) / r.width - .5;
-        var y = (e.clientY - r.top) / r.height - .5;
-        pass.style.setProperty('--ry', (x * 6).toFixed(2) + 'deg');
-        pass.style.setProperty('--rx', (y * -5).toFixed(2) + 'deg');
-      });
-      function reset() { pass.style.setProperty('--rx', '0deg'); pass.style.setProperty('--ry', '0deg'); }
-      wrap.addEventListener('pointerleave', reset);
-      wrap.addEventListener('focusin', reset);
-    });
-  }
-
-  /* The perforation notches are punched with a CSS mask at --perf-y. */
-  function initPassNotches() {
-    var passes = $$('.pass').filter(function (p) { return !p.classList.contains('pass--modal'); });
-    function place() {
-      passes.forEach(function (p) {
-        var perf = $('.pass__perf', p);
-        if (perf) p.style.setProperty('--perf-y', (perf.offsetTop + 1) + 'px');
-      });
-    }
-    place();
-    if ('ResizeObserver' in window) {
-      var ro = new ResizeObserver(place);
-      passes.forEach(function (p) { ro.observe(p); });
-    } else {
-      window.addEventListener('resize', place);
-    }
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Small pointer flourishes.
-   * ------------------------------------------------------------------ */
-  function initPointerFx() {
-    if (!finePointer || reduce) return;
-    $$('[data-magnetic]').forEach(function (el) {
-      el.addEventListener('pointermove', function (e) {
-        var r = el.getBoundingClientRect();
-        var x = (e.clientX - r.left - r.width / 2) * .18;
-        var y = (e.clientY - r.top - r.height / 2) * .28;
-        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-      });
-      el.addEventListener('pointerleave', function () { el.style.transform = ''; });
-    });
-    $$('.reason').forEach(function (el) {
-      el.addEventListener('pointermove', function (e) {
-        var r = el.getBoundingClientRect();
-        el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-        el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  /* ---------- footer: Kia ora letters react to the pointer ---------- */
+  (() => {
+    const g = $('#giant'); g.innerHTML = [...'Kia ora'].map(ch => ch === ' ' ? '<span class="gsp"></span>' : '<span class="gl">' + ch + '</span>').join('');
+    const letters = $$('.gl', g), foot = $('.foot');
+    const reset = () => { g.classList.remove('is-live'); letters.forEach(l => { l.style.color = ''; l.style.fontWeight = ''; l.style.transform = ''; l.style.webkitTextStrokeColor = ''; }); };
+    foot.addEventListener('pointermove', e => {
+      g.classList.add('is-live');
+      letters.forEach(l => {
+        const r = l.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const d = Math.hypot(e.clientX - cx, (e.clientY - cy) * 1.4), t = Math.max(0, 1 - d / 340);
+        l.style.fontWeight = Math.round(300 + t * 500);
+        l.style.color = 'rgba(244,183,61,' + t.toFixed(3) + ')';
+        l.style.webkitTextStrokeColor = 'rgba(245,239,228,' + (.28 + t * .5).toFixed(3) + ')';
+        l.style.transform = 'translateY(' + (-t * 6).toFixed(1) + '%) rotate(' + ((e.clientX - cx) / 60 * t).toFixed(2) + 'deg)';
       });
     });
-  }
+    foot.addEventListener('pointerleave', reset);
+    letters.forEach((l, i) => l.addEventListener('click', () => { l.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-14%) scale(1.05)', color: '#F4B73D' }, { transform: 'translateY(0)' }], { duration: 700, easing: 'cubic-bezier(.34,1.56,.64,1)' }); }));
+  })();
 
-  /* ------------------------------------------------------------------ *
-   * Reasons: pick what matters, postcards shuffle.
-   * ------------------------------------------------------------------ */
-  function initReasons() {
-    var cards = $$('[data-reason]');
-    var countEl = $('[data-pick-count]');
-    var cta = $('[data-pick-cta]');
+  /* ---------- header, progress, mobile bar ---------- */
+  const hdr = $('#hdr'), prog = $('#prog'), mbar = $('#mbar'); let lastY = 0;
+  function onScroll() { const y = scrollY, h = innerHeight, max = document.documentElement.scrollHeight - h; hdr.classList.toggle('is-solid', y > 60); hdr.classList.toggle('is-hidden', y > lastY && y > h * 1.2); lastY = y; prog.style.strokeDashoffset = 1 - y / max; mbar.classList.toggle('is-on', y > h * .7); }
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-    function update() {
-      var picked = cards.filter(function (c) { return c.getAttribute('aria-pressed') === 'true'; })
-        .map(function (c) { return c.getAttribute('data-reason'); });
-      countEl.textContent = picked.length;
-      countEl.classList.remove('bump');
-      void countEl.offsetWidth;
-      countEl.classList.add('bump');
-      var arrow = cta.querySelector('svg').outerHTML;
-      cta.innerHTML = (picked.length
-        ? 'Build my plan around ' + (picked.length === 1 ? 'this' : 'these ' + picked.length)
-        : 'Get my free NZ plan') + ' ' + arrow;
-      cta.setAttribute('data-interest', picked.length ? 'NZ plan. Priorities: ' + picked.join('; ') : 'Personalised NZ plan');
-    }
-    cards.forEach(function (c) {
-      c.addEventListener('click', function () {
-        c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
-        update();
-      });
-    });
-    cta.setAttribute('data-interest', 'Personalised NZ plan');
+  /* ---------- GSAP choreography ---------- */
+  const pre = $('#pre');
+  const counters = () => $$('[data-count]').forEach(el => { const end = +el.dataset.count; if (!G || reduce) { el.textContent = end.toLocaleString('en-IN'); return; } const o = { v: 0 }; G.to(o, { v: end, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' }, onUpdate: () => el.textContent = Math.round(o.v).toLocaleString('en-IN') }); });
+  if (!G || !ST || reduce) { pre.classList.add('is-gone'); counters(); return; }
 
-    var stack = $('[data-postcards]');
-    var order = $$('.postcard', stack);
-    function layout() { order.forEach(function (p, i) { p.setAttribute('data-pos', i); }); }
-    layout();
-    var busy = false;
-    function shuffle() {
-      if (busy) return;
-      busy = true;
-      var top = order[0];
-      top.classList.add('is-flying');
-      setTimeout(function () {
-        order.push(order.shift());
-        top.classList.remove('is-flying');
-        layout();
-        busy = false;
-      }, reduce ? 0 : 480);
-    }
-    var timer = null;
-    function auto(on) {
-      clearInterval(timer);
-      if (on && !reduce) timer = setInterval(shuffle, 4200);
-    }
-    new IntersectionObserver(function (en) { auto(en[0].isIntersecting); }, { threshold: .4 }).observe(stack);
-    stack.addEventListener('click', function () { shuffle(); auto(true); });
-    stack.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shuffle(); auto(true); }
-    });
-  }
+  const mist = $$('.mist');
+  const intro = G.timeline({ defaults: { ease: 'expo.out' } });
+  intro.to('#pre-line', { scaleX: 1, duration: .7, ease: 'power2.inOut' }, 0)
+    .to('.pre__inner', { opacity: 0, duration: .3, ease: 'power1.in' }, .75)
+    .to('#pre', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, .9)
+    .add(() => pre.classList.add('is-gone'), 1.9)
+    .from(mist, { opacity: 0, duration: 2, ease: 'power1.out' }, 1.2)
+    .from('#hero-h .w > span', { yPercent: 105, duration: 1.1, stagger: .045 }, 1.25)
+    .from('#hero [data-in]', { y: 24, opacity: 0, duration: 1, stagger: .1 }, 1.45)
+    .from('#facts > div', { x: 30, opacity: 0, duration: 1, stagger: .1 }, 1.6)
+    .from('#qform', { y: 40, opacity: 0, duration: 1.1 }, 1.75)
+    .from('.hdr__bar', { y: -30, opacity: 0, duration: .9 }, 1.5);
+  setTimeout(() => { pre.classList.add('is-gone'); if (intro.progress() < 1) intro.progress(1); }, 3500);
+  mist.forEach((m, i) => G.to(m, { x: (i % 2 ? -1 : 1) * (40 + i * 20), duration: 14 + i * 4, yoyo: true, repeat: -1, ease: 'sine.inOut' }));
 
-  /* ------------------------------------------------------------------ *
-   * Intakes: live labels, countdowns and "you are here".
-   * ------------------------------------------------------------------ */
-  function initIntakes() {
-    var now = new Date();
-    $$('[data-intake-card]').forEach(function (card) {
-      var m = +card.getAttribute('data-intake-card') - 1;
-      var d = new Date(now.getFullYear(), m, 1);
-      if (d <= now) d = new Date(now.getFullYear() + 1, m, 1);
-      var monthName = MONTHS[m];
-      var months = (d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth());
-      $('[data-intake-name]', card).textContent = monthName + ' ' + d.getFullYear();
-      $('[data-intake-count]', card).textContent = months <= 1
-        ? 'Starts next month. Talk to us today'
-        : months <= 5 ? 'Starts in about ' + months + ' months. Plan now'
-        : 'Starts in about ' + months + ' months';
-      var btn = $('[data-lead]', card);
-      var label = monthName + ' ' + d.getFullYear();
-      btn.setAttribute('data-intake-value', monthName.slice(0, 3) + ' ' + d.getFullYear());
-      btn.setAttribute('data-interest', 'Intake: ' + label);
-      btn.setAttribute('data-title', 'Plan my ' + label + ' intake');
-      btn.firstChild.textContent = 'Plan my ' + label + ' intake ';
-    });
+  const mm = G.matchMedia();
+  mm.add('(min-width: 1000px)', () => {
+    // hero: gentle parallax as it scrolls away (no pin, so no empty gap)
+    G.timeline({ scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } })
+      .to('#slides', { yPercent: 18, ease: 'none' }, 0)
+      .to(mist[0], { xPercent: -30, ease: 'none' }, 0).to(mist[1], { xPercent: 30, ease: 'none' }, 0)
+      .fromTo('#hero-copy', { y: 0 }, { y: -90, ease: 'none' }, 0)
+      .fromTo('#facts', { y: 0 }, { y: -140, ease: 'none' }, 0);
 
-    var today = $('[data-today]');
-    var days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    today.style.setProperty('--today', ((now.getMonth() + (now.getDate() - 1) / days) / 12).toFixed(4));
-    today.hidden = false;
-  }
+    // cities: horizontal scroll (unchanged)
+    const track = $('#track'), dist = () => track.scrollWidth - innerWidth + 60;
+    const tween = G.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: '#cities-pin', start: 'top top', end: () => '+=' + dist(), scrub: 1, pin: true, invalidateOnRefresh: true, onUpdate: s => G.set('#cities-bar', { scaleX: s.progress }) } });
+    $$('.city__img').forEach(img => G.fromTo(img, { xPercent: -8 }, { xPercent: 8, ease: 'none', scrollTrigger: { trigger: img.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
+    $$('.city__big').forEach(b => G.fromTo(b, { xPercent: 30 }, { xPercent: -20, ease: 'none', scrollTrigger: { trigger: b.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
+  });
 
-  /* ------------------------------------------------------------------ *
-   * Documents checklist.
-   * ------------------------------------------------------------------ */
-  function initDocs() {
-    var boxes = $$('[data-checklist] input');
-    var fill = $('[data-meter-fill]');
-    var meter = fill.closest('.meter');
-    var count = $('[data-doc-count]');
-    var msg = $('[data-doc-msg]');
-    var cta = $('[data-doc-cta]');
-    var label = $('[data-doc-cta-label]');
-    var celebrated = false;
+  // headings + reveals
+  $$('[data-split]').forEach(h => { if (h.id === 'hero-h') return; G.from(h.querySelectorAll('.w > span'), { yPercent: 108, duration: 1.1, stagger: .045, ease: 'expo.out', scrollTrigger: { trigger: h, start: 'top 86%' } }); });
+  $$('[data-in]').forEach(el => { if (el.closest('#hero')) return; G.from(el, { y: 40, opacity: 0, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } }); });
+  counters();
+  G.from('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: '#services', start: 'top 82%' } });
+  G.from('.stat', { y: 30, opacity: 0, duration: 1, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.stats', start: 'top 85%' } });
 
-    function update() {
-      var have = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
-      var missing = boxes.filter(function (b) { return !b.checked; }).map(function (b) { return b.value; });
-      var n = have.length;
-      fill.style.setProperty('--off', 100 - n / boxes.length * 100);
-      count.textContent = n;
-      meter.classList.toggle('is-full', n === boxes.length);
-      msg.textContent = n === 0 ? "Let's build your file from scratch. It's what we do every day."
-        : n < 3 ? 'Good start! ' + missing.length + ' to go, and we\'ll guide you through each one.'
-        : n === 3 ? 'Halfway there! Just 3 to go.'
-        : n < boxes.length ? 'Almost there! Just ' + missing.length + ' left.'
-        : 'Your file looks complete. Let\'s get it reviewed before you apply.';
-      label.textContent = n === boxes.length ? 'Get my file reviewed free'
-        : n === 0 ? 'Get help with my documents'
-        : 'Get help with the ' + missing.length + ' missing';
-      cta.setAttribute('data-interest', 'Documents: ' + n + '/' + boxes.length + ' ready' +
-        (missing.length ? '. Missing: ' + missing.join(', ') : '. Wants a file review'));
-      if (n === boxes.length && !celebrated) { celebrated = true; confetti($('[data-confetti]')); }
-      if (n < boxes.length) celebrated = false;
-    }
-    boxes.forEach(function (b) { b.addEventListener('change', update); });
-    update();
-  }
+  // reasons + process reveals
+  G.from('.ap', { y: 60, opacity: 0, duration: 1.1, stagger: .05, ease: 'expo.out', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#acc10', start: 'top 85%' } });
+  G.from('#dial-prog', { strokeDashoffset: 1, duration: 1.4, ease: 'power2.out', scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
+  G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
+  G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
 
-  function confetti(host) {
-    if (reduce) return;
-    var colors = ['#f9c74f', '#f08a2c', '#8c0b0b', '#176566', '#fcd97a'];
-    for (var i = 0; i < 32; i++) {
-      var p = doc.createElement('i');
-      p.style.background = colors[i % colors.length];
-      p.style.setProperty('--x', (Math.random() * 360 - 180).toFixed(0) + 'px');
-      p.style.setProperty('--y', (Math.random() * -240 + 40).toFixed(0) + 'px');
-      p.style.setProperty('--rot', (Math.random() * 720 - 360).toFixed(0) + 'deg');
-      p.style.animationDelay = (Math.random() * .15).toFixed(2) + 's';
-      host.appendChild(p);
-    }
-    setTimeout(function () { host.innerHTML = ''; }, 1700);
-  }
+  // postcards drop in like they've been dealt onto a table
+  G.from('.pcard', { y: 80, rotate: (i) => [-6, 3, -3][i] || 0, opacity: 0, duration: 1.2, stagger: .14, ease: 'expo.out', scrollTrigger: { trigger: '#cards', start: 'top 82%' } });
+  // faq + consult
+  G.from('.qa', { y: 24, opacity: 0, duration: .8, stagger: .06, ease: 'power3.out', scrollTrigger: { trigger: '#acc', start: 'top 85%' } });
+  G.from('#cbox', { y: 80, opacity: 0, duration: 1.3, ease: 'expo.out', scrollTrigger: { trigger: '#cbox', start: 'top 85%' } });
+  G.from('.cnext li', { x: -24, opacity: 0, duration: 1, stagger: .12, ease: 'expo.out', scrollTrigger: { trigger: '.cnext', start: 'top 88%' } });
+  G.from('.gl', { yPercent: 35, opacity: 0, duration: 1.1, stagger: .06, ease: 'expo.out', clearProps: 'transform,opacity', scrollTrigger: { trigger: '.foot', start: 'top 85%' } });
 
-  /* ------------------------------------------------------------------ *
-   * Process: a route drawn through the steps, flown by the logo's bird.
-   * ------------------------------------------------------------------ */
-  function initJourney() {
-    var box = $('[data-journey]');
-    var path = $('[data-journey-path]');
-    var ghost = $('[data-journey-ghost]');
-    var bird = $('[data-journey-bird]');
-    var steps = $$('[data-step]', box);
-    var landing = $('.landing', box);
-    var samples = [];
-    var total = 0;
-    var dotsY = [];
-
-    function catmull(pts) {
-      var d = 'M' + pts[0][0] + ' ' + pts[0][1];
-      for (var i = 0; i < pts.length - 1; i++) {
-        var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-        var c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
-        var c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
-        d += 'C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
-      }
-      return d;
-    }
-
-    function build() {
-      var br = box.getBoundingClientRect();
-      var pts = [];
-      dotsY = [];
-      steps.forEach(function (s, i) {
-        var r = $('.step__dot', s).getBoundingClientRect();
-        var x = r.left + r.width / 2 - br.left;
-        var y = r.top + r.height / 2 - br.top;
-        if (i === 0) pts.push([x, y - 70]);
-        pts.push([x, y]);
-        dotsY.push(y);
-      });
-      var lr = landing.getBoundingClientRect();
-      var first = pts[0][0];
-      pts.push([lr.left + lr.width / 2 - br.left, lr.top - br.top - 40]);
-      if (window.innerWidth <= 760) pts[pts.length - 1][0] = first;
-      var d = catmull(pts);
-      path.setAttribute('d', d);
-      ghost.setAttribute('d', d);
-      path.setAttribute('pathLength', '1');
-      total = path.getTotalLength();
-      samples = [];
-      var N = 240;
-      for (var k = 0; k <= N; k++) {
-        var pt = path.getPointAtLength(total * k / N);
-        samples.push({ l: total * k / N, x: pt.x, y: pt.y });
-      }
-      update();
-    }
-
-    function update() {
-      if (!samples.length) return;
-      var br = box.getBoundingClientRect();
-      var target = window.innerHeight * .55 - br.top;
-      if (reduce) target = Infinity;
-      var idx = 0;
-      while (idx < samples.length - 1 && samples[idx + 1].y <= target) idx++;
-      var s = samples[idx];
-      var frac = s.l / total;
-      if (target < samples[0].y) frac = 0;
-      path.style.setProperty('--draw', (1 - frac).toFixed(4));
-      var a = samples[Math.max(0, idx - 2)], b = samples[Math.min(samples.length - 1, idx + 2)];
-      var ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90;
-      var w = bird.offsetWidth, h = bird.offsetHeight;
-      bird.style.setProperty('--bx', (s.x - w / 2).toFixed(1) + 'px');
-      bird.style.setProperty('--by', (s.y - h / 2).toFixed(1) + 'px');
-      bird.style.setProperty('--ba', ang.toFixed(1) + 'deg');
-      steps.forEach(function (st, i) { st.classList.toggle('is-lit', dotsY[i] <= s.y + 2); });
-    }
-
-    var queued = false;
-    window.addEventListener('scroll', function () {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(function () { queued = false; update(); });
-    }, { passive: true });
-    if ('ResizeObserver' in window) new ResizeObserver(build).observe(box);
-    window.addEventListener('load', build);
-    build();
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Universities: map pins + city chips filter the list.
-   * ------------------------------------------------------------------ */
-  function initUnis() {
-    var chips = $$('[data-city-filter]');
-    var unis = $$('[data-uni-list] .uni');
-    var pins = $$('.pin');
-    var map = $('.map');
-
-    function filter(city) {
-      chips.forEach(function (c) {
-        var on = c.getAttribute('data-city-filter') === city;
-        c.classList.toggle('is-on', on);
-        c.setAttribute('aria-pressed', String(on));
-      });
-      var i = 0;
-      unis.forEach(function (u) {
-        var show = city === 'all' || u.getAttribute('data-city') === city;
-        u.hidden = !show;
-        u.classList.remove('is-pop');
-        if (show) {
-          void u.offsetWidth;
-          u.style.setProperty('--i', i++);
-          u.classList.add('is-pop');
-        }
-      });
-      pins.forEach(function (p) { p.classList.toggle('is-on', p.getAttribute('data-city') === city); });
-      map.classList.toggle('has-filter', city !== 'all');
-    }
-    chips.forEach(function (c) {
-      c.addEventListener('click', function () { filter(c.getAttribute('data-city-filter')); });
-    });
-    pins.forEach(function (p) {
-      p.addEventListener('click', function () {
-        var city = p.getAttribute('data-city');
-        filter(p.classList.contains('is-on') ? 'all' : city);
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Loan match.
-   * ------------------------------------------------------------------ */
-  function initLoan() {
-    var range = $('[data-loan-amt]');
-    var out = $('[data-loan-out]');
-    var type = $('[data-loan-type]');
-    var desc = $('[data-loan-desc]');
-    var result = $('[data-loan-result]');
-    var cta = $('[data-loan-cta]');
-    var radios = $$('[data-loan-col]');
-    var COPY = {
-      yes: ['Secured education loan', 'Backed by collateral such as property or an FD. Usually allows higher amounts and lower interest.'],
-      no: ['Unsecured education loan', 'No collateral needed. Approval is based on your profile, course and co-applicant income.'],
-      unsure: ["We'll compare both", 'A loan specialist will compare secured and unsecured options for your case.']
-    };
-
-    function update(flash) {
-      var v = +range.value;
-      var pct = (v - range.min) / (range.max - range.min) * 100;
-      range.style.setProperty('--pct', pct + '%');
-      out.textContent = '₹' + v + ' lakh';
-      range.setAttribute('aria-valuetext', v + ' lakh rupees');
-      var col = (radios.filter(function (r) { return r.checked; })[0] || radios[1]).value;
-      type.textContent = COPY[col][0];
-      desc.textContent = COPY[col][1];
-      cta.setAttribute('data-interest', 'Education loan: ₹' + v + ' lakh, collateral: ' + col);
-      if (flash) {
-        result.classList.remove('flash');
-        void result.offsetWidth;
-        result.classList.add('flash');
-      }
-    }
-    range.addEventListener('input', function () { update(false); });
-    radios.forEach(function (r) { r.addEventListener('change', function () { update(true); }); });
-    update(false);
-  }
-
-  /* ------------------------------------------------------------------ *
-   * FAQ accordion.
-   * ------------------------------------------------------------------ */
-  function initFaq() {
-    $$('[data-accordion] .acc').forEach(function (acc, i) {
-      var btn = $('button', acc);
-      function set(open) {
-        acc.classList.toggle('is-open', open);
-        btn.setAttribute('aria-expanded', String(open));
-      }
-      btn.addEventListener('click', function () { set(!acc.classList.contains('is-open')); });
-      if (i === 0) set(true);
-    });
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Lead forms.
-   * ------------------------------------------------------------------ */
-  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  function fieldWrap(el) { return el.closest('.field') || el.closest('.consent'); }
-
-  function clearErrors(form) {
-    $$('.is-invalid', form).forEach(function (w) { w.classList.remove('is-invalid'); });
-    $$('.err', form).forEach(function (e) { e.remove(); });
-    $$('[aria-invalid]', form).forEach(function (e) { e.removeAttribute('aria-invalid'); e.removeAttribute('aria-describedby'); });
-    $('[data-form-msg]', form).textContent = '';
-  }
-
-  var errId = 0;
-  function flag(el, text) {
-    var wrap = fieldWrap(el);
-    wrap.classList.add('is-invalid');
-    el.setAttribute('aria-invalid', 'true');
-    if (wrap.classList.contains('field')) {
-      var e = doc.createElement('small');
-      e.className = 'err';
-      e.id = 'err-' + (++errId);
-      e.textContent = text;
-      wrap.appendChild(e);
-      el.setAttribute('aria-describedby', e.id);
-    }
-  }
-
-  function validate(form) {
-    clearErrors(form);
-    var bad = [];
-    var name = form.elements.name, email = form.elements.email, phone = form.elements.phone_number;
-    var slot = form.elements.preferredCallTime, consent = form.elements.consent;
-    if (name.value.trim().length < 2) { flag(name, 'Please enter your full name.'); bad.push(name); }
-    var digits = phone.value.replace(/\D/g, '');
-    if (digits.length < 7 || digits.length > 15) { flag(phone, 'Enter a valid phone number (7–15 digits).'); bad.push(phone); }
-    if (!EMAIL_RE.test(email.value.trim())) { flag(email, 'Enter a valid email address.'); bad.push(email); }
-    if (slot && !slot.value) { flag(slot, 'Pick a time for our call.'); bad.push(slot); }
-    if (consent && !consent.checked) { flag(consent, ''); bad.push(consent); }
-    if (bad.length) {
-      bad[0].focus({ preventScroll: false });
-      if (consent && !consent.checked && bad.length === 1) {
-        $('[data-form-msg]', form).textContent = 'Please tick the box so we can contact you.';
-      }
-    }
-    return !bad.length;
-  }
-
-  function buildPayload(form) {
-    var f = form.elements;
-    var val = function (n) { return f[n] ? String(f[n].value || '').trim() : ''; };
-    var data = {
-      name: val('name'),
-      email: val('email'),
-      phone: (val('country_code') + ' ' + val('phone_number')).trim(),
-      destination: 'New Zealand',
-      page: location.host + location.pathname,
-      from_name: 'NZ landing page · ' + (form.getAttribute('data-source') || 'Form'),
-      botcheck: val('botcheck'),
-      preferredCallTime: val('preferredCallTime'),
-      consent: f.consent && f.consent.checked ? 'yes' : '',
-      studyLevel: val('studyLevel'),
-      intake: val('intake'),
-      englishTest: val('englishTest'),
-      interest: val('interest'),
-      question: val('question')
-    };
-    var utm = readUtm() || {};
-    UTM_KEYS.forEach(function (k) { if (utm[k]) data[k] = utm[k]; });
-    Object.keys(data).forEach(function (k) { if (data[k] === '' && k !== 'botcheck') delete data[k]; });
-    return data;
-  }
-
-  function showDone(form, data) {
-    var tpl = $('#tpl-done').content.cloneNode(true);
-    var first = (data.name || '').split(/\s+/)[0];
-    $('[data-done-name]', tpl).textContent = first || 'friend';
-    $('[data-done-slot]', tpl).textContent = data.preferredCallTime ? 'at ' + data.preferredCallTime : 'soon';
-    var done = tpl.firstElementChild;
-    form.hidden = true;
-    form.parentNode.insertBefore(done, form.nextSibling);
-    done.setAttribute('tabindex', '-1');
-    done.focus({ preventScroll: true });
-  }
-
-  function initForms() {
-    $$('form[data-lead-form]').forEach(function (form) {
-      var btn = $('[data-submit]', form);
-      var btnHtml = btn.innerHTML;
-      var msg = $('[data-form-msg]', form);
-
-      var phone = form.elements.phone_number;
-      phone.addEventListener('input', function () {
-        var clean = phone.value.replace(/[^\d\s-]/g, '');
-        if (clean !== phone.value) phone.value = clean;
-      });
-      form.addEventListener('input', function (e) {
-        var w = fieldWrap(e.target);
-        if (w && w.classList.contains('is-invalid')) {
-          w.classList.remove('is-invalid');
-          var err = $('.err', w);
-          if (err) err.remove();
-          e.target.removeAttribute('aria-invalid');
-        }
-      });
-      form.addEventListener('change', function (e) {
-        if (e.target.name === 'consent' && e.target.checked) fieldWrap(e.target).classList.remove('is-invalid');
-      });
-
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        if (!validate(form)) return;
-        var data = buildPayload(form);
-        btn.disabled = true;
-        btn.textContent = 'Reserving your call…';
-
-        fetch(ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(data)
-        })
-          .then(function (r) { return r.json().catch(function () { return { success: false }; }); })
-          .then(function (res) {
-            if (res && res.success) {
-              store.set('tc_lead', '1');
-              window.dataLayer = window.dataLayer || [];
-              window.dataLayer.push({ event: 'generate_lead', lead_source: form.getAttribute('data-source') || '', country: 'new-zealand' });
-              showDone(form, data);
-            } else {
-              msg.textContent = (res && res.message) || 'Something went wrong. Please try again.';
-            }
-          })
-          .catch(function () {
-            msg.textContent = 'Network error. Please check your connection and try again, or WhatsApp us on +91 70109 02329.';
-          })
-          .then(function () {
-            btn.disabled = false;
-            btn.innerHTML = btnHtml;
-          });
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Lead pop-up: every "[data-lead]" button opens it with context.
-   * ------------------------------------------------------------------ */
-  function initModal() {
-    var dlg = $('[data-modal]');
-    var form = $('form', dlg);
-    var titleEl = $('[data-modal-title]', dlg);
-    var subEl = $('[data-modal-sub]', dlg);
-    var ctxEl = $('[data-modal-ctx]', dlg);
-    var interest = $('[data-modal-interest]', dlg);
-    var intake = $('[data-modal-intake]', dlg);
-    var supported = typeof dlg.showModal === 'function';
-
-    function resetForm() {
-      var done = $('.done', dlg);
-      if (done) done.remove();
-      form.hidden = false;
-      clearErrors(form);
-    }
-
-    function open(opts) {
-      if (!supported) { location.hash = '#consult'; return; }
-      resetForm();
-      titleEl.textContent = opts.title || 'Book a free consultation';
-      subEl.textContent = opts.sub || 'Pick a slot and a counsellor will call you.';
-      interest.value = opts.interest || opts.title || '';
-      intake.value = opts.intake || '';
-      ctxEl.hidden = !opts.ctx;
-      ctxEl.textContent = opts.ctx || '';
-      form.setAttribute('data-source', opts.source || 'Popup');
-      dlg.classList.remove('is-closing');
-      dlg.showModal();
-      setTimeout(function () { form.elements.name.focus(); }, 60);
-    }
-
-    function close() {
-      if (!dlg.open) return;
-      if (reduce) { dlg.close(); return; }
-      dlg.classList.add('is-closing');
-      setTimeout(function () { dlg.classList.remove('is-closing'); dlg.close(); }, 240);
-    }
-
-    $$('[data-lead]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var ctx = btn.getAttribute('data-interest');
-        open({
-          title: btn.getAttribute('data-title'),
-          sub: btn.getAttribute('data-sub'),
-          interest: ctx,
-          ctx: ctx && ctx.length < 90 ? ctx.replace(/^NZ plan\. /, '') : (ctx ? ctx.slice(0, 86) + '…' : ''),
-          intake: btn.getAttribute('data-intake-value'),
-          source: btn.getAttribute('data-source')
-        });
-      });
-    });
-    $('[data-modal-close]', dlg).addEventListener('click', close);
-    dlg.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
-    dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
-
-    // Exit intent: once per session, desktop only, never after a lead.
-    if (!finePointer || !supported) return;
-    var armedAt = Date.now() + 20000;
-    doc.addEventListener('mouseout', function (e) {
-      if (e.relatedTarget || e.clientY > 8 || Date.now() < armedAt) return;
-      if (dlg.open || store.get('tc_lead') || store.get('tc_exit', true)) return;
-      store.set('tc_exit', '1', true);
-      open({
-        title: 'Before you go: a free profile check',
-        sub: 'Leave your number and a counsellor will tell you your best-fit universities and intake. It costs nothing.',
-        interest: 'Free profile check (exit intent)',
-        source: 'Exit intent'
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------------ *
-   * Marquee loop + WhatsApp hint.
-   * ------------------------------------------------------------------ */
-  function initMisc() {
-    var list = $('.marquee__list');
-    var copy = list.cloneNode(true);
-    copy.setAttribute('aria-hidden', 'true');
-    $$('img', copy).forEach(function (i) { i.alt = ''; });
-    list.parentNode.appendChild(copy);
-
-    var fab = $('[data-fab]');
-    setTimeout(function () {
-      fab.classList.add('show-tip');
-      setTimeout(function () { fab.classList.remove('show-tip'); }, 4500);
-    }, 9000);
-  }
-
-  /* universities.html still links to the old section ids. */
-  function mapLegacyHash() {
-    var LEGACY = {
-      home: 'top', contact: 'consult', services: 'process', testimonials: 'reasons',
-      scholarships: 'loans', 'financial-aid': 'loans', 'earn-while-you-learn': 'reasons', relocate: 'visas'
-    };
-    var id = LEGACY[location.hash.slice(1)];
-    if (!id) return;
-    history.replaceState(null, '', '#' + id);
-    setTimeout(function () { doc.getElementById(id).scrollIntoView(); }, 50);
-  }
-
-  function boot() {
-    mapLegacyHash();
-    fillSelects();
-    initHeader();
-    initHero();
-    initPassNotches();
-    initReveal();
-    initPointerFx();
-    initReasons();
-    initIntakes();
-    initDocs();
-    initJourney();
-    initUnis();
-    initLoan();
-    initFaq();
-    initForms();
-    initModal();
-    initMisc();
-  }
-
-  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  addEventListener('load', () => { ST.refresh(); const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) { intro.progress(1); const jump = () => { const y = t.getBoundingClientRect().top + scrollY; lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); }; setTimeout(jump, 60); setTimeout(() => { ST.refresh(); jump(); }, 900); } });
+  window.__shot = (at, p) => { intro.progress(1); pre.classList.add('is-gone'); const el = $('#' + at), base = el.closest('.pin-spacer') || el; const y = base.getBoundingClientRect().top + scrollY + (p || 0) * Math.max(0, base.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); ST.update(); return Math.round(y); };
 })();

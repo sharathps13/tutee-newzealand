@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aotearoa Awaits Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;600&display=swap">
+<style>
+/* Presentation board: desktop at 1440px scaled down, phone at 375px, side by side */
+:root { --bg: #04191A; --fg: #F5EFE4; --muted: #A9C2BF; --gold: #F4B73D; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 "Figtree", system-ui, sans-serif; padding: 32px clamp(16px, 3vw, 48px) 48px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+h1 { font: 400 clamp(2rem, 4vw, 3rem)/1 "Young Serif", Georgia, serif; margin: 0; }
+h1 span { color: var(--gold); }
+header p { margin: 6px 0 0; color: var(--muted); max-width: 64ch; }
+.swatches { display: flex; gap: 8px; }
+.swatches i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); }
+.board { display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: start; }
+.label { font: 600 .74rem/1 "Figtree"; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+.desk { width: 100%; aspect-ratio: 1440 / 900; overflow: hidden; border-radius: 14px; box-shadow: 0 40px 80px -30px #000; background: #000; position: relative; }
+.desk iframe { width: 1440px; height: 900px; border: 0; transform-origin: 0 0; position: absolute; }
+.phone { width: 395px; padding: 10px; border-radius: 48px; background: #111; box-shadow: 0 40px 80px -30px #000, inset 0 0 0 2px #333; }
+.phone iframe { width: 375px; height: 780px; border: 0; border-radius: 38px; display: block; background: #fff; }
+a { color: var(--gold); }
+@media (max-width: 1100px) { .board { grid-template-columns: 1fr; justify-items: center; } .desk-col { width: 100%; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Aotearoa Awaits <span>· NZ landing page</span></h1>
+    <p>Cinematic scroll from cloud to cave to coast to stars. For the full effect, <a href="aotearoa.html" target="_blank">open the full page</a> and scroll with a mouse or trackpad. Earlier concepts: <a href="long-white-cloud.html" target="_blank">Long White Cloud</a> · <a href="first-light.html" target="_blank">First Light</a></p>
+  </div>
+  <div class="swatches" aria-label="Palette"><i style="background:#FBF6EE"></i><i style="background:#F4B73D"></i><i style="background:#0F5556"></i><i style="background:#8C0B0B"></i><i style="background:#04191A"></i></div>
+</header>
+<div class="board">
+  <div class="desk-col"><p class="label">Desktop · 1440px</p><div class="desk" id="desk"><iframe src="aotearoa.html" title="Desktop preview"></iframe></div></div>
+  <div><p class="label">Phone · 375px</p><div class="phone"><iframe src="aotearoa.html" title="Phone preview"></iframe></div></div>
+</div>
+<script>
+  const d = document.getElementById('desk'), f = d.querySelector('iframe');
+  const fit = () => { f.style.transform = 'scale(' + d.clientWidth / 1440 + ')'; };
+  new ResizeObserver(fit).observe(d); fit();
+</script>
+</body>
+</html>

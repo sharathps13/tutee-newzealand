@@ -7,12 +7,17 @@ section ends in a way to become a lead, and every lead goes to `POST /api/enquir
 ## Files
 
 ```
-index.html                  the landing page (hand-written, edit directly)
+index.html                  the landing page ("Aotearoa Awaits" design)
 assets/css/nz.css           its stylesheet: brand tokens, layout, every animation
-assets/js/nz.js             its behaviour: forms, lead pop-up, UTM capture, scroll/pointer effects
+assets/css/nz-fonts.css     @font-face rules for the self-hosted fonts in assets/fonts/nz/
+assets/js/nz.js             its behaviour: counselling form → /api/enquiry, UTM capture, legacy anchors, animations
+assets/vendor/              GSAP 3.12.5 + ScrollTrigger, Lenis 1.1.13 (self-hosted so script-src 'self' holds)
+assets/img/hd/              the 19 HD CC0 photographs, each used once (+ 1200px "-m" copies for phones); CREDITS.md
+assets/img/flags/           country flags for the dial-code picker (flagcdn, public domain)
 assets/img/brand/           logo.png (from the master logo), mark-64/192.png, bird.png (the logo's bird, cut out)
-assets/img/nz/              web-sized copies of the four CC0 photographs (credits in assets/img/photos/CREDITS.md)
+assets/img/nz/              the previous page's four 1200px photos, no longer used by index.html
 assets/img/loan-partner/    the ten education-loan partner logos
+design-preview/             the design concepts reviewed with the team; aotearoa.html is the approved one
 
 universities.html           the 195-provider directory (generated — see below)
 assets/css/main.css         universities.html only: the compiled Tailwind from the old design
@@ -21,7 +26,8 @@ netlify/functions/enquiry.mjs   shared lead endpoint (canonical copy lives in _t
 serve.py                    local preview server
 ```
 
-No build step and no third-party scripts, fonts or images, so the strict CSP in `netlify.toml` holds
+No build step and no third-party scripts, fonts or images (libraries, fonts, flags and photos are all
+self-hosted), so the strict CSP in `netlify.toml` holds
 (`script-src 'self'`). The two JSON-LD blocks in `<head>` are data, not scripts, so CSP leaves them
 alone.
 
@@ -29,45 +35,40 @@ alone.
 
 | # | Section | Lead hook |
 |---|---|---|
-| 1 | Hero | "Free consultation pass" form (name, phone, email, call slot) |
-| 2 | Trust strip | Counters + loan-partner marquee |
-| 3 | Top 10 reasons | Visitors tap the reasons they care about → "Build my plan around these" |
-| 4 | Intakes | Live countdown to the next Feb/Jul start → "Plan my February 2027 intake" |
-| 5 | Visa types | "Get a free visa assessment" |
-| 6 | Documents checklist | Visitors tick what they have → "Get help with the N missing" |
-| 7 | How we help (7 steps) | "Start step 1 today" |
-| 8 | University partners | NZ map + city filter → "Check eligibility" per institution |
-| 9 | Education loans | Amount slider + collateral → "Check my loan options" |
-| 10 | FAQ | "Ask a counsellor" question form |
-| 11 | Enquiry form | Full form: adds study level, intake, English test |
-| 12 | Footer | Offices, phones, email, socials |
+| 1 | Hero (HD Queenstown, slow drift) | "Book a free consultation" + a quick-start bar (subject · level · city) that carries into the form |
+| 2 | Why Tutee Connect | Stats, six services, loan-partner logos |
+| 3 | City gallery (horizontal scroll) | End card → "Talk to a counsellor" |
+| 4 | 10 reasons (photo accordion) | — |
+| 5 | How it works (compass dial, 7 steps) | "Start with step one" |
+| 6 | Postcards home | — |
+| 7 | FAQ | Contact card |
+| 8 | Counselling form (2 steps) | Name, email, WhatsApp (searchable dial codes with flags), state/region; then call time |
+| 9 | Footer | Offices; the "Kia ora" letters react to the pointer |
 
-Always on: WhatsApp bubble, a sticky WhatsApp / Free consultation bar on phones, and a once-per-session
-exit-intent pop-up on desktop (never shown after a lead has been submitted).
-
-Every `data-lead` button opens the same pop-up form and passes its context, so the email says
-*why* the person enquired, for example `interest: Education loan: ₹55 lakh, collateral: yes` or
-`Documents: 4/6 ready. Missing: Academic transcripts, Medical clearance`.
+Always on: the header "Talk to a counsellor" button and, on phones, a sticky WhatsApp / Call / Free
+consultation bar.
 
 ### What a lead carries
 
-`name`, `email`, `phone` (dial code + number), `destination` (always New Zealand), `page`, and
-`from_name` (`NZ landing page · <which form>`), plus these extras, which the function forwards
-as their own rows: `preferredCallTime`, `consent`, `studyLevel`, `intake`, `englishTest`,
-`interest`, `question`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`.
+`name`, `email`, `phone` (dial code + number), `destination` (always New Zealand), `page`,
+`from_name` (`NZ landing page · Counselling form`), `botcheck` (honeypot), plus extras the function
+forwards as their own rows: `preferredCallTime`, `consent` (the form states that requesting a call is
+consent to be contacted), `state`, `interest` (from the hero bar), and `utm_*`. That is at most 10
+extras, inside `MAX_EXTRA_FIELDS` (12).
 
-UTM tags are captured on the first visit and kept for 30 days in `localStorage`. The function
-forwards at most 12 extra fields; the fullest possible lead uses exactly 12, so **adding another
-field means raising `MAX_EXTRA_FIELDS` in `_tooling`'s canonical `enquiry.mjs` first.**
+UTM tags are captured on the first visit and kept for 30 days in `localStorage`. On success the page
+pushes `{ event: 'generate_lead' }` to `window.dataLayer`. Old anchors (`#contact`, `#services`,
+`#reasons`, …) used by `universities.html` and past campaigns are mapped to the new sections.
 
 On success the page pushes `{ event: 'generate_lead' }` to `window.dataLayer`, ready for GTM / GA4 /
 Meta Pixel. Loading any of those also means widening the CSP in `netlify.toml`.
 
 ## Before launch
 
-- **Sign off the public claims** in the trust strip (`index.html`, `#trust`): 99% visa success,
-  200+ NZ institution tie-ups, 5k+ students guided. They are carried over from the previous page
-  and are unverified.
+- **Sign off the public claims** in `#trust` and the hero facts: 5,000+ students guided, 200+ NZ
+  institution tie-ups, 10 loan partners, up to 3-year post-study work visa. They are unverified.
+- **Replace the placeholder testimonials**: the postcards (Karthik, Ananya, Harini) are illustrative
+  and must be swapped for real, consented student stories before launch.
 - **Confirm the university partners** listed in `#universities` (from SPEC §6). Manukau Institute of
   Technology and Unitec are being reorganised (see below), so check how they should be named.
 - **Have a counsellor check** the visa summaries and FAQ answers, and the part-time work hour limits.

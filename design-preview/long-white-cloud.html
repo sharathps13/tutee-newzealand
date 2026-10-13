@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A3B3C">
+<title>Long White Cloud</title>
+<!-- DESIGN PREVIEW. Google Fonts used for speed; production self-hosts subset woff2 files. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Concept: "Long White Cloud". A boarding pass to Aotearoa that fills in as you scroll.
+   One paper-cut illustration language (layered silhouettes, soft drop shadows, grain).
+   Colour arc down the page: dawn > glow-worm cave > fjord day > pōhutukawa dusk > Matariki night. */
+:root {
+  --paper: #FBF6EE;     /* dawn paper */
+  --cloud: #FFFFFF;
+  --sand: #F1E6D4;
+  --kowhai: #F4B73D;    /* gold: kōwhai flower */
+  --kowhai-deep: #C98612;
+  --fjord: #0F5556;     /* day teal */
+  --teal: #0A3B3C;      /* brand teal */
+  --night: #04191A;     /* cave + night */
+  --pohutukawa: #8C0B0B;/* brand maroon: pōhutukawa flower, CTA only */
+  --pohu-hi: #B01717;
+  --dusk: #4A0D12;
+  --ink: #0D2324;
+  --muted: #4B6564;
+  --on-dark: #F5EFE4;
+  --on-dark-2: #A9C2BF;
+  --glow: #8FF5E4;      /* glow-worm light */
+
+  --display: "Young Serif", "Iowan Old Style", Georgia, serif;
+  --sans: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --gut: clamp(16px, 4vw, 44px);
+  --max: 1220px;
+  --r: 22px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --paper-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 18px 40px -22px rgba(4, 25, 26, .45), 0 4px 10px -6px rgba(4, 25, 26, .25);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--sans); }
+/* paper grain over everything, the glue of the paper-cut language */
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 90; opacity: .07; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+h1, h2, h3, h4 { margin: 0; font-weight: 400; text-wrap: balance; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--kowhai); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gut); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ic { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* te reo word + plain-English gloss */
+.reo { font-family: var(--display); }
+.gloss { display: block; font: 500 .82rem/1.35 var(--sans); letter-spacing: .02em; opacity: .75; margin-top: 6px; }
+
+/* ---------- buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .55em; min-height: 54px; padding: 0 1.5em; border: 0; border-radius: 999px; font: 700 1rem/1 var(--sans); text-decoration: none; cursor: pointer; white-space: nowrap; transition: transform .25s var(--spring), background .2s, box-shadow .2s; }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: scale(.97); }
+.btn--go { background: var(--pohutukawa); color: #fff; box-shadow: 0 14px 28px -12px rgba(140, 11, 11, .75); }
+.btn--go:hover { background: var(--pohu-hi); }
+.btn--gold { background: var(--kowhai); color: var(--ink); box-shadow: 0 14px 28px -14px rgba(201, 134, 18, .9); }
+.btn--ghost { background: rgba(255,255,255,.12); color: var(--on-dark); box-shadow: inset 0 0 0 1.5px rgba(245,239,228,.45); backdrop-filter: blur(6px); }
+.btn--ghost:hover { box-shadow: inset 0 0 0 1.5px var(--on-dark); }
+.btn--line { background: transparent; color: var(--teal); box-shadow: inset 0 0 0 1.5px var(--teal); }
+.btn--block { width: 100%; }
+.btn--sm { min-height: 44px; padding: 0 1.1em; font-size: .9rem; }
+
+/* ---------- header ---------- */
+.hdr { position: fixed; inset: 0 0 auto; z-index: 50; padding-top: env(safe-area-inset-top, 0px); transition: background .3s, box-shadow .3s; }
+.hdr.is-solid { background: rgba(251, 246, 238, .86); backdrop-filter: blur(14px) saturate(1.3); box-shadow: 0 1px 0 rgba(10,59,60,.08); }
+.hdr .wrap { display: flex; align-items: center; gap: 16px; padding-block: 12px; }
+.logo { position: relative; display: grid; place-items: center; width: 54px; height: 54px; flex: none; }
+.logo img { width: 38px; height: 38px; border-radius: 50%; background: #fff; padding: 3px; }
+.logo svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.logo circle { fill: none; stroke-width: 3; }
+.logo .track { stroke: rgba(255,255,255,.35); }
+.hdr.is-solid .logo .track { stroke: rgba(10,59,60,.12); }
+.logo .prog { stroke: var(--kowhai); stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.brand { font: 400 1.15rem/1 var(--display); color: #fff; text-decoration: none; }
+.brand small { display: block; font: 600 .66rem/1.4 var(--sans); letter-spacing: .16em; text-transform: uppercase; opacity: .8; }
+.hdr.is-solid .brand { color: var(--teal); }
+.hdr__nav { display: none; gap: 26px; margin-left: auto; font-weight: 600; font-size: .93rem; color: #fff; }
+.hdr.is-solid .hdr__nav { color: var(--teal); }
+.hdr__nav a { text-decoration: none; opacity: .85; }
+.hdr__nav a:hover { opacity: 1; }
+.hdr__cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+@media (min-width: 1080px) { .hdr__nav { display: flex; } .hdr__nav + .hdr__cta { margin-left: 18px; } }
+@media (max-width: 560px) { .hdr__cta .btn { display: none; } }
+
+/* ---------- 1. HERO: break through the cloud ---------- */
+.hero { position: relative; min-height: 100svh; color: #fff; isolation: isolate; overflow: clip; background: var(--teal); display: grid; }
+.hero__photo { position: absolute; inset: 0; z-index: -3; }
+.hero__photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; transform: scale(calc(1.06 + var(--p, 0) * .08)); }
+/* duotone grade: teal shadows, warm highlights, shared by every photo on the page */
+.duo { isolation: isolate; }
+.duo:not(.hero__photo) { position: relative; }
+.duo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,59,60,.0), rgba(10,59,60,.35)); mix-blend-mode: multiply; pointer-events: none; }
+.duo img { filter: saturate(.85) contrast(1.05) sepia(.12); }
+.hero__shade { position: absolute; inset: 0; z-index: -2; background:
+  radial-gradient(90% 60% at 20% 30%, rgba(4,25,26,.55), transparent 70%),
+  linear-gradient(180deg, rgba(4,25,26,.72) 0%, rgba(4,25,26,.35) 45%, rgba(244,183,61,.18) 78%, rgba(4,25,26,.5) 100%); }
+/* paper-cut clouds */
+.clouds { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.cloud { position: absolute; fill: var(--cloud); filter: drop-shadow(0 18px 24px rgba(4,25,26,.28)); will-change: transform; }
+.cloud--a { width: 62vw; max-width: 900px; left: -14vw; bottom: 0; transform: translate3d(calc(var(--p, 0) * -38vw), calc(var(--p, 0) * -6vh), 0); opacity: .96; animation: drift 26s ease-in-out infinite alternate; }
+.cloud--b { width: 58vw; max-width: 860px; right: -16vw; bottom: 5vh; transform: translate3d(calc(var(--p, 0) * 40vw), 0, 0); opacity: .9; animation: drift 32s ease-in-out infinite alternate-reverse; }
+.cloud--c { width: 44vw; max-width: 620px; left: 30vw; top: 9vh; transform: translate3d(calc(var(--p, 0) * 18vw), calc(var(--p, 0) * -20vh), 0); opacity: .5; }
+@keyframes drift { from { translate: 0 0; } to { translate: 3vw -1vh; } }
+.ridges { position: absolute; left: 0; bottom: -1px; width: 100%; height: clamp(90px, 16vw, 220px); z-index: 0; }
+.ridges path { filter: drop-shadow(0 -6px 10px rgba(4,25,26,.35)); }
+
+.hero__grid { position: relative; z-index: 1; display: grid; gap: 28px; align-content: center; padding-top: calc(112px + env(safe-area-inset-top, 0px)); padding-bottom: clamp(120px, 18vw, 230px); }
+.hello { display: inline-flex; align-items: baseline; gap: 12px; font-size: .95rem; color: var(--on-dark); }
+.hello .reo { font-size: 1.5rem; color: var(--kowhai); }
+.hero h1 { font: 400 clamp(2.5rem, 6.4vw, 5.6rem)/.98 var(--display); letter-spacing: -.015em; margin-top: 14px; text-shadow: 0 2px 30px rgba(4,25,26,.4); }
+.hero h1 em { font-style: normal; color: var(--kowhai); }
+.hero__lead { margin-top: 18px; max-width: 40ch; font-size: clamp(1.02rem, 1.5vw, 1.2rem); color: var(--on-dark); }
+.clock { margin-top: 22px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 16px; border-radius: 999px; background: rgba(4,25,26,.45); backdrop-filter: blur(8px); font: 500 .86rem/1.3 var(--mono); color: var(--on-dark); }
+.clock b { color: var(--kowhai); font-weight: 500; }
+.clock i { width: 6px; height: 6px; border-radius: 50%; background: var(--kowhai); box-shadow: 0 0 0 4px rgba(244,183,61,.25); animation: pulse 2s infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(244,183,61,0); } }
+.hero__alt { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* pass builder card (step 1 of the lead) */
+.builder { position: relative; background: var(--paper); color: var(--ink); border-radius: var(--r); box-shadow: 0 50px 90px -40px rgba(0,0,0,.7); overflow: hidden; }
+.builder__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; background: var(--teal); color: var(--on-dark); font: 500 .78rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.builder__head b { color: var(--kowhai); font-weight: 500; }
+.builder__body { padding: 20px; display: grid; gap: 16px; }
+.builder h2 { font: 400 1.5rem/1.15 var(--display); color: var(--teal); }
+.row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .q__label { font: 700 .76rem/1.2 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select, .gate input, .gate select { width: 100%; min-height: 50px; padding: 12px 14px; border: 1.5px solid #E3D6C2; border-radius: 12px; background: #fff; color: var(--ink); font: 600 1rem/1.2 var(--sans); }
+.field input:focus, .field select:focus, .gate input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15,85,86,.14); }
+.tel { display: grid; grid-template-columns: 82px 1fr; gap: 8px; }
+.picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pick { position: relative; display: grid; justify-items: center; gap: 6px; padding: 12px 6px 10px; border-radius: 14px; border: 1.5px solid #E3D6C2; background: #fff; cursor: pointer; font: 700 .82rem/1.15 var(--sans); color: var(--teal); text-align: center; transition: transform .25s var(--spring), border-color .2s, background .2s; min-height: 76px; }
+.pick .ic { width: 26px; height: 26px; color: var(--fjord); }
+.pick:hover { transform: translateY(-2px); border-color: var(--fjord); }
+.pick[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #fff; }
+.pick[aria-pressed="true"] .ic { color: var(--kowhai); }
+.builder__foot { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); }
+.ticket-notch { height: 0; border-top: 2px dashed #E3D6C2; margin: 0 20px; position: relative; }
+.ticket-notch::before, .ticket-notch::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--teal); }
+.ticket-notch::before { left: -31px; } .ticket-notch::after { right: -31px; }
+
+@media (min-width: 980px) {
+  .hero__grid { grid-template-columns: 1.15fr .85fr; align-items: center; gap: 60px; }
+}
+@media (max-width: 600px) {
+  .hero h1 { font-size: 2.45rem; }
+  .hero__lead { font-size: 1rem; margin-top: 12px; }
+  .hero__grid { gap: 22px; padding-top: calc(84px + env(safe-area-inset-top, 0px)); }
+  .clock { margin-top: 14px; font-size: .78rem; }
+  .clock .mood, .cloud--c { display: none; }
+  .hero__alt { display: none; }
+}
+
+/* ---------- section shared ---------- */
+.sec { position: relative; padding-block: clamp(72px, 10vw, 140px); }
+.eyebrow { font: 700 .76rem/1 var(--sans); letter-spacing: .18em; text-transform: uppercase; }
+.h2 { font: 400 clamp(2.1rem, 4.8vw, 3.8rem)/1.02 var(--display); letter-spacing: -.01em; }
+.lede { font-size: 1.1rem; max-width: 56ch; }
+.head { display: grid; gap: 14px; margin-bottom: clamp(36px, 5vw, 60px); max-width: 780px; }
+.divider { position: absolute; left: 0; width: 100%; height: clamp(50px, 8vw, 110px); pointer-events: none; z-index: 2; }
+.divider--top { top: -1px; transform: translateY(-99%); }
+.divider path { filter: drop-shadow(0 -5px 8px rgba(4,25,26,.18)); }
+[data-reveal] { transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.js [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(26px); }
+
+/* ---------- 2. PROOF: glow-worm cave ---------- */
+.cave { background: var(--night); color: var(--on-dark); overflow: clip; isolation: isolate; }
+.cave canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.cave .eyebrow { color: var(--glow); }
+.cave .h2 em { font-style: normal; color: var(--glow); text-shadow: 0 0 24px rgba(143,245,228,.5); }
+.cave__grid { display: grid; gap: 34px; }
+.quote { position: relative; background: rgba(245,239,228,.06); border: 1px solid rgba(143,245,228,.16); border-radius: var(--r); padding: 26px; display: grid; gap: 18px; backdrop-filter: blur(6px); }
+.quote blockquote { margin: 0; font: 400 clamp(1.3rem, 2.4vw, 1.75rem)/1.3 var(--display); }
+.who { display: flex; align-items: center; gap: 14px; }
+.avatar { width: 58px; height: 58px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 400 1.3rem/1 var(--display); color: var(--night); background: radial-gradient(circle at 30% 30%, #FFE3B0, var(--kowhai)); box-shadow: 0 0 0 3px var(--night), 0 0 0 5px rgba(143,245,228,.5); }
+.who b { display: block; } .who span { font-size: .9rem; color: var(--on-dark-2); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: rgba(143,245,228,.14); border-radius: var(--r); overflow: hidden; }
+.stat { background: var(--night); padding: 22px 18px; }
+.stat strong { display: block; font: 400 clamp(2rem, 4vw, 2.8rem)/1 var(--display); color: var(--glow); text-shadow: 0 0 18px rgba(143,245,228,.45); font-variant-numeric: tabular-nums; }
+.stat span { font-size: .9rem; color: var(--on-dark-2); }
+.cave__hint { margin-top: 18px; font-size: .88rem; color: var(--on-dark-2); display: flex; gap: 8px; align-items: center; }
+.cave__hint i { width: 10px; height: 10px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 12px var(--glow); }
+.worm { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; z-index: 2; }
+.worm::before { content: ""; position: absolute; inset: 15px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 14px 4px rgba(143,245,228,.7); animation: glow 3s ease-in-out infinite; }
+.worm:nth-of-type(2n)::before { animation-delay: -1.3s; }
+@keyframes glow { 50% { transform: scale(.6); opacity: .6; } }
+.worm__tip { position: absolute; left: 50%; bottom: 46px; transform: translate(-50%, 6px); white-space: nowrap; background: var(--on-dark); color: var(--night); padding: 8px 12px; border-radius: 10px; font: 600 .82rem/1.3 var(--sans); opacity: 0; pointer-events: none; transition: .25s var(--ease); }
+.worm:hover .worm__tip, .worm:focus-visible .worm__tip, .worm.is-on .worm__tip { opacity: 1; transform: translate(-50%, 0); }
+.banks { margin-top: 48px; display: grid; gap: 14px; }
+.banks p { font-size: .82rem; letter-spacing: .14em; text-transform: uppercase; color: var(--on-dark-2); }
+.banks ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.banks li { background: #fff; border-radius: 10px; height: 52px; display: grid; place-items: center; padding: 8px 12px; opacity: .92; }
+.banks img { max-height: 100%; width: auto; object-fit: contain; }
+@media (min-width: 900px) { .cave__grid { grid-template-columns: 1.1fr .9fr; gap: 60px; align-items: center; } }
+
+/* ---------- 3. FIND YOUR NZ CITY: quiz + map ---------- */
+.finder { background: var(--paper); }
+.finder .eyebrow { color: var(--fjord); }
+.finder .h2 { color: var(--teal); } .finder .h2 em { font-style: normal; color: var(--pohutukawa); }
+.finder .lede { color: var(--muted); }
+.finder__grid { display: grid; gap: 28px; }
+.quiz { background: #fff; border-radius: var(--r); box-shadow: var(--paper-shadow); padding: clamp(20px, 3vw, 32px); display: grid; gap: 18px; align-content: start; min-height: 440px; }
+.dots { display: flex; gap: 6px; }
+.dots span { height: 6px; flex: 1; border-radius: 9px; background: var(--sand); transition: background .4s; }
+.dots span.on { background: var(--kowhai); }
+.q { display: grid; gap: 16px; animation: qin .55s var(--ease); }
+@keyframes qin { from { opacity: 0; transform: translateX(24px); } }
+.q h3 { font: 400 clamp(1.5rem, 2.6vw, 2rem)/1.15 var(--display); color: var(--teal); }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opt { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; padding: 16px; border-radius: 16px; border: 1.5px solid #E7DBC8; background: var(--paper); cursor: pointer; text-align: left; font: 700 .98rem/1.25 var(--sans); color: var(--teal); min-height: 72px; transition: transform .25s var(--spring), border-color .2s, background .2s; }
+.opt small { display: block; font-weight: 500; font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.opt .ic { width: 28px; height: 28px; color: var(--fjord); }
+.opt:hover { transform: translateY(-3px); border-color: var(--fjord); }
+.opt:active { transform: scale(.98); }
+.back { justify-self: start; background: none; border: 0; color: var(--muted); font-weight: 600; cursor: pointer; padding: 8px 0; min-height: 44px; }
+
+/* result card */
+.result { display: grid; gap: 16px; animation: flip .8s var(--ease); transform-origin: 50% 0; }
+@keyframes flip { from { opacity: 0; transform: perspective(900px) rotateX(-24deg) translateY(20px); } }
+.result__photo { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 8; background: var(--fjord); }
+.result__photo img { width: 100%; height: 100%; object-fit: cover; }
+.result__photo .badge { position: absolute; left: 14px; bottom: 14px; z-index: 2; background: var(--kowhai); color: var(--ink); font: 700 .78rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; padding: 8px 10px; border-radius: 8px; }
+.result h3 { font: 400 clamp(1.7rem, 3vw, 2.3rem)/1.05 var(--display); color: var(--teal); }
+.result h3 small { display: block; font: 600 .95rem/1.4 var(--sans); color: var(--muted); margin-top: 6px; }
+.locked { position: relative; border-radius: 16px; background: var(--paper); padding: 16px; display: grid; gap: 10px; }
+.locked ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.locked li { display: flex; justify-content: space-between; gap: 10px; font-size: .95rem; border-bottom: 1px dashed #E3D6C2; padding-bottom: 8px; }
+.locked li b { color: var(--teal); text-align: right; }
+.locked.is-locked ul { filter: blur(5px); user-select: none; }
+.gate { display: grid; gap: 12px; }
+.gate p { font-weight: 700; color: var(--teal); display: flex; gap: 8px; align-items: center; }
+.consent { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: .8rem; line-height: 1.45; color: var(--muted); }
+.consent input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--pohutukawa); }
+
+/* paper-cut map */
+.map { position: relative; border-radius: var(--r); background: linear-gradient(180deg, #CFE6E2, #A9D2CC); overflow: hidden; box-shadow: var(--paper-shadow); min-height: 420px; display: grid; place-items: center; }
+.map::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(circle at 70% 40%, transparent 0 22px, rgba(255,255,255,.18) 22px 23px); }
+.map svg { position: relative; width: min(100%, 440px); height: auto; padding: 18px; }
+.land .shadow { fill: var(--fjord); opacity: .35; transform: translate(6px, 8px); }
+.land .mid { fill: var(--sand); transform: translate(3px, 4px); }
+.land .top { fill: var(--paper); }
+.mapsea { font: italic 400 13px var(--display); fill: var(--fjord); opacity: .6; letter-spacing: .1em; }
+.pin { cursor: pointer; transition: transform .5s var(--spring); }
+.pin .halo { fill: var(--kowhai); opacity: 0; transition: opacity .4s, r .5s var(--spring); }
+.pin .dot { fill: var(--teal); stroke: #fff; stroke-width: 2.5; transition: fill .3s; }
+.pin text { font: 700 13px var(--sans); fill: var(--teal); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; }
+.pin.is-warm .halo { opacity: .35; }
+.pin.is-lead .halo { opacity: .55; animation: halo 1.6s ease-in-out infinite; }
+.pin.is-lead .dot { fill: var(--pohutukawa); }
+@keyframes halo { 50% { opacity: .15; } }
+.map__legend { position: absolute; left: 16px; top: 16px; background: rgba(251,246,238,.92); border-radius: 12px; padding: 10px 12px; font: 600 .8rem/1.35 var(--sans); color: var(--teal); max-width: 220px; box-shadow: var(--paper-shadow); }
+.map__legend b { display: block; font: 400 1.05rem/1.2 var(--display); }
+@media (min-width: 960px) { .finder__grid { grid-template-columns: 1fr 1fr; gap: 44px; align-items: stretch; } }
+@media (max-width: 960px) {
+  .map { min-height: 0; order: -1; grid-template-columns: 1fr auto; place-items: center start; padding: 14px; gap: 10px; }
+  .map svg { width: min(46vw, 230px); padding: 0; }
+  .map__legend { position: static; box-shadow: none; }
+  .pin text { font-size: 20px; stroke-width: 6px; }
+  .pin .dot { r: 11; }
+}
+@media (max-width: 480px) { .opts { grid-template-columns: 1fr; } }
+
+/* ---------- 4. CAN WE AFFORD IT: pōhutukawa dusk ---------- */
+.afford { color: var(--on-dark); background: linear-gradient(180deg, var(--fjord) 0%, #2A3B3A 26%, var(--dusk) 70%, #2A0A0D 100%); overflow: clip; isolation: isolate; }
+.afford .eyebrow { color: var(--kowhai); }
+.afford .h2 em { font-style: normal; color: var(--kowhai); }
+.afford .lede { color: #E8D9CC; }
+.flowers { position: absolute; right: -60px; top: 40px; width: 380px; opacity: .35; z-index: -1; }
+.afford__grid { display: grid; gap: 22px; }
+.panel { background: rgba(251,246,238,.07); border: 1px solid rgba(251,246,238,.14); border-radius: var(--r); padding: clamp(20px, 3vw, 30px); display: grid; gap: 18px; align-content: start; backdrop-filter: blur(8px); min-width: 0; }
+.panel h3 { font: 400 1.4rem/1.15 var(--display); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(0,0,0,.25); }
+.seg button { min-height: 44px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font-weight: 700; font-size: .9rem; color: var(--on-dark-2); }
+.seg button[aria-pressed="true"] { background: var(--paper); color: var(--teal); }
+.ctl { display: grid; gap: 8px; }
+.ctl > span { font: 700 .74rem/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: #E8D9CC; }
+.donut { display: grid; grid-template-columns: 170px 1fr; gap: 20px; align-items: center; }
+.donut svg { width: 170px; height: 170px; transform: rotate(-90deg); }
+.donut circle { fill: none; stroke-width: 16; transition: stroke-dasharray .7s var(--ease), stroke-dashoffset .7s var(--ease); }
+.donut__mid { position: relative; }
+.donut__mid > div { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.donut__mid strong { font: 400 1.7rem/1 var(--display); display: block; font-variant-numeric: tabular-nums; }
+.donut__mid small { font-size: .74rem; color: #E8D9CC; }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: .92rem; }
+.legend li { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; }
+.legend b { font-variant-numeric: tabular-nums; }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--kowhai) var(--pct, 40%), rgba(255,255,255,.18) var(--pct, 40%)); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; border-radius: 50%; background: var(--paper); border: 5px solid var(--kowhai); box-shadow: 0 6px 14px rgba(0,0,0,.35); cursor: grab; }
+.range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--paper); border: 5px solid var(--kowhai); cursor: grab; }
+.bigline { font: 400 clamp(1.4rem, 2.6vw, 1.9rem)/1.2 var(--display); }
+.bigline b { color: var(--kowhai); font-weight: 400; font-variant-numeric: tabular-nums; }
+.future { border-top: 1px dashed rgba(251,246,238,.25); padding-top: 16px; display: grid; gap: 6px; }
+.future p { color: #E8D9CC; font-size: .95rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (min-width: 960px) { .afford__grid { grid-template-columns: 1.1fr .9fr; gap: 28px; } }
+@media (max-width: 480px) { .donut { grid-template-columns: 1fr; justify-items: center; } }
+
+/* ---------- 5. WHY NZ: unfurl the koru ---------- */
+.why { background: #062B2C; color: var(--on-dark); overflow: clip; }
+.why .eyebrow { color: var(--kowhai); }
+.why .h2 em { font-style: normal; color: var(--kowhai); }
+.why__grid { display: grid; gap: 40px; }
+.koru { position: relative; }
+.koru svg { width: 100%; max-width: 440px; height: auto; display: block; margin-inline: auto; }
+.koru path { fill: none; stroke: var(--kowhai); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--k, 0)); }
+.koru path.frond { stroke: #3E8C7E; stroke-width: 3; }
+.koru figcaption { text-align: center; font-size: .9rem; color: var(--on-dark-2); margin-top: 10px; }
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.reason { width: 100%; height: 100%; display: grid; gap: 6px; align-content: start; text-align: left; padding: 18px; border-radius: 18px; border: 1.5px solid rgba(245,239,228,.14); background: rgba(245,239,228,.04); cursor: pointer; color: var(--on-dark); transition: transform .25s var(--spring), background .25s, border-color .25s; position: relative; }
+.reason:hover { transform: translateY(-3px); border-color: rgba(244,183,61,.6); }
+.reason .ic { width: 26px; height: 26px; color: var(--kowhai); }
+.reason b { font-size: 1.02rem; line-height: 1.3; }
+.reason b .reo { font-weight: 400; font-size: 1.12rem; }
+.reason span { font-size: .88rem; color: var(--on-dark-2); }
+.reason .add { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid rgba(245,239,228,.35); font-size: 1.1rem; line-height: 1; transition: .3s var(--spring); }
+.reason[aria-pressed="true"] { background: var(--paper); color: var(--teal); border-color: var(--paper); }
+.reason[aria-pressed="true"] span { color: var(--muted); }
+.reason[aria-pressed="true"] .ic { color: var(--pohutukawa); }
+.reason[aria-pressed="true"] .add { background: var(--pohutukawa); border-color: var(--pohutukawa); color: #fff; transform: rotate(45deg); }
+.photostrip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 40px; }
+.photostrip figure { margin: 0; border-radius: 18px; overflow: hidden; aspect-ratio: 4 / 5; position: relative; }
+.photostrip figure:nth-child(2) { transform: translateY(26px); }
+.photostrip img { width: 100%; height: 100%; object-fit: cover; }
+.photostrip figcaption { position: absolute; left: 12px; bottom: 10px; z-index: 2; font: 600 .78rem/1.2 var(--sans); color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+@media (min-width: 960px) { .why__grid { grid-template-columns: .8fr 1.2fr; gap: 64px; align-items: start; } .koru { position: sticky; top: 100px; } }
+@media (max-width: 520px) { .reasons { grid-template-columns: 1fr; } }
+
+/* ---------- 6. JOURNEY + INTAKES ---------- */
+.journey { background: linear-gradient(180deg, #062B2C 0%, #05211F 100%); color: var(--on-dark); overflow: clip; }
+.journey .eyebrow { color: var(--kowhai); }
+.journey .h2 em { font-style: normal; color: var(--kowhai); }
+.flight { position: relative; }
+.flight__svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+.flight__svg .ghost { fill: none; stroke: rgba(245,239,228,.14); stroke-width: 2; stroke-dasharray: 6 8; }
+.flight__svg .trail { fill: none; stroke: var(--kowhai); stroke-width: 3; stroke-linecap: round; }
+.bird { position: absolute; left: 0; top: 0; width: 46px; z-index: 3; pointer-events: none; filter: drop-shadow(0 6px 10px rgba(0,0,0,.4)); will-change: transform; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(28px, 5vw, 60px); position: relative; z-index: 2; }
+.step { width: min(100%, 470px); background: var(--paper); color: var(--ink); border-radius: var(--r); padding: 22px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); display: grid; gap: 8px; transition: transform .6s var(--ease), opacity .6s; }
+.step:nth-child(odd) { justify-self: start; } .step:nth-child(even) { justify-self: end; }
+.step__n { font: 500 .78rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--kowhai-deep); }
+.step h3 { font: 400 1.4rem/1.2 var(--display); color: var(--teal); }
+.step p { color: var(--muted); font-size: .96rem; }
+.ticks { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.ticks label { display: flex; gap: 10px; align-items: center; min-height: 40px; padding: 6px 10px; border-radius: 10px; background: var(--paper); border: 1px solid #E7DBC8; cursor: pointer; font-size: .93rem; font-weight: 600; color: var(--teal); }
+.ticks input { width: 20px; height: 20px; accent-color: var(--teal); }
+.intakes { margin-top: clamp(60px, 9vw, 110px); display: grid; gap: 14px; }
+.intake { position: relative; border-radius: var(--r); padding: 24px; display: grid; gap: 10px; overflow: hidden; }
+.intake--feb { background: var(--kowhai); color: var(--ink); }
+.intake--jul { background: rgba(245,239,228,.08); border: 1px solid rgba(245,239,228,.18); }
+.intake__tag { font: 500 .78rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+.intake h3 { font: 400 2.2rem/1 var(--display); }
+.count { display: flex; gap: 8px; }
+.count div { min-width: 64px; text-align: center; background: rgba(4,25,26,.12); border-radius: 12px; padding: 8px 6px; }
+.intake--jul .count div { background: rgba(245,239,228,.08); }
+.count b { display: block; font: 400 1.6rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.count small { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.postcards { margin-top: clamp(60px, 9vw, 100px); }
+.postcards__row { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 380px); gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 10px 4px 22px; scrollbar-width: thin; }
+.postcard { scroll-snap-align: start; background: #FFFDF8; color: var(--ink); border-radius: 6px; padding: 22px; display: grid; grid-template-columns: 1fr auto; gap: 14px; box-shadow: 0 24px 40px -24px rgba(0,0,0,.7); position: relative; }
+.postcard:nth-child(odd) { rotate: -1.2deg; } .postcard:nth-child(even) { rotate: 1deg; }
+.postcard p { font: 400 1.08rem/1.45 var(--display); grid-column: 1 / -1; }
+.postcard .from { font-size: .86rem; color: var(--muted); }
+.postcard .from b { color: var(--teal); display: block; }
+.stamp { width: 62px; height: 72px; border: 2px dashed var(--pohutukawa); border-radius: 4px; display: grid; place-items: center; text-align: center; font: 500 .62rem/1.2 var(--mono); color: var(--pohutukawa); padding: 4px; rotate: 6deg; }
+@media (min-width: 860px) { .intakes { grid-template-columns: 1.2fr 1fr; } }
+@media (max-width: 760px) { .step:nth-child(even) { justify-self: start; } .step { margin-left: 34px; width: calc(100% - 34px); } }
+
+/* ---------- 7. FINAL: Matariki rising ---------- */
+.final { background: radial-gradient(120% 80% at 50% 0%, #0B2E3A 0%, #041014 60%); color: var(--on-dark); overflow: clip; isolation: isolate; }
+.aurora { position: absolute; inset: -20% -10% auto; height: 80%; z-index: -1; filter: blur(60px); opacity: .7; }
+.aurora span { position: absolute; border-radius: 50%; mix-blend-mode: screen; animation: aur 18s ease-in-out infinite alternate; }
+.aurora span:nth-child(1) { width: 60%; height: 50%; left: 5%; top: 20%; background: #1FD6A6; }
+.aurora span:nth-child(2) { width: 50%; height: 40%; left: 40%; top: 10%; background: #8F4BD8; animation-duration: 24s; }
+.aurora span:nth-child(3) { width: 45%; height: 35%; left: 25%; top: 40%; background: #1A9BD1; animation-duration: 21s; animation-direction: alternate-reverse; }
+@keyframes aur { to { transform: translate3d(8%, 10%, 0) scale(1.15) rotate(8deg); } }
+.matariki { position: absolute; right: 6%; top: 70px; width: 220px; z-index: -1; }
+.matariki circle { fill: #fff; }
+.matariki .tw { animation: tw 3.2s ease-in-out infinite; }
+@keyframes tw { 50% { opacity: .35; } }
+.final .eyebrow { color: var(--kowhai); }
+.final .h2 em { font-style: normal; color: var(--kowhai); }
+.final__grid { display: grid; gap: 44px; }
+.bigpass { background: var(--paper); color: var(--ink); border-radius: 26px; overflow: hidden; box-shadow: 0 60px 100px -40px rgba(0,0,0,.85); display: grid; }
+.bigpass__top { background: var(--teal); color: var(--on-dark); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bigpass__top .brandline { font: 400 1.1rem/1 var(--display); }
+.bigpass__top .cls { font: 500 .74rem/1 var(--mono); letter-spacing: .14em; color: var(--kowhai); text-transform: uppercase; }
+.route { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 22px 24px 8px; }
+.route .code { font: 400 clamp(2.4rem, 6vw, 3.4rem)/1 var(--display); color: var(--teal); }
+.route small { display: block; font: 500 .72rem/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.route .to { text-align: right; }
+.route .arc { position: relative; height: 40px; }
+.route .arc svg { width: 100%; height: 40px; overflow: visible; }
+.route .arc path { fill: none; stroke: var(--kowhai-deep); stroke-width: 2; stroke-dasharray: 4 6; }
+.meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #E7DBC8; margin: 12px 24px 0; border-radius: 12px; overflow: hidden; }
+.meta div { background: var(--paper); padding: 10px 12px; min-width: 0; }
+.meta small { display: block; font: 500 .66rem/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.meta b { font-size: .95rem; color: var(--teal); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stamps { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 24px 0; min-height: 30px; }
+.stamps span { font: 500 .72rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--pohutukawa); border: 1.5px solid var(--pohutukawa); border-radius: 6px; padding: 6px 8px; rotate: -2deg; animation: stampin .5s var(--spring); }
+.stamps span:nth-child(even) { rotate: 2deg; }
+@keyframes stampin { from { transform: scale(1.8); opacity: 0; } }
+.stamps em { font-style: normal; font-size: .85rem; color: var(--muted); }
+.bigpass form { display: grid; gap: 14px; padding: 18px 24px 24px; }
+.barcode { height: 46px; margin: 0 24px 22px; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 9px, var(--ink) 9px 12px, transparent 12px 14px); opacity: .85; border-radius: 2px; }
+.faq details { border-bottom: 1px solid rgba(245,239,228,.14); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 16px; padding: 18px 0; font-weight: 700; min-height: 44px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--kowhai); font-size: 1.4rem; line-height: 1; transition: transform .3s var(--spring); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq p { padding-bottom: 18px; color: var(--on-dark-2); max-width: 58ch; }
+@media (min-width: 980px) { .final__grid { grid-template-columns: .9fr 1.1fr; gap: 70px; align-items: start; } }
+
+/* ---------- footer ---------- */
+.foot { background: #030C0E; color: var(--on-dark-2); padding-block: 56px calc(110px + env(safe-area-inset-bottom, 0px)); font-size: .92rem; position: relative; overflow: clip; }
+.foot__grid { display: grid; gap: 26px; position: relative; z-index: 1; }
+.foot b { display: block; color: var(--on-dark); margin-bottom: 6px; }
+.foot .brandline { font: 400 1.6rem/1.1 var(--display); color: var(--on-dark); }
+.foot__flowers { position: absolute; right: -40px; bottom: -40px; width: 300px; opacity: .5; }
+@media (min-width: 860px) { .foot__grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; } .foot { padding-bottom: 56px; } }
+
+/* ---------- pinned boarding-pass chip (the lead spine) ---------- */
+.chip { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: none; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 16px; border: 0; background: var(--paper); color: var(--ink); box-shadow: 0 20px 40px -16px rgba(0,0,0,.55), 0 0 0 1px rgba(10,59,60,.1); cursor: pointer; text-align: left; transform: translateY(140%); transition: transform .6s var(--spring); }
+.chip.is-on { transform: none; }
+.chip.is-on.is-away { transform: translateY(140%); }
+.chip__ic { width: 42px; height: 42px; border-radius: 12px; background: var(--teal); color: var(--kowhai); display: grid; place-items: center; }
+.chip small { display: block; font: 500 .66rem/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.chip b { font: 500 .92rem/1.3 var(--mono); color: var(--teal); }
+.chip__n { margin-left: 6px; min-width: 26px; height: 26px; border-radius: 99px; background: var(--pohutukawa); color: #fff; display: grid; place-items: center; font: 700 .8rem/1 var(--sans); padding: 0 6px; }
+.chip.bump { animation: bump .5s var(--spring); }
+@keyframes bump { 40% { transform: scale(1.08); } }
+@media (min-width: 861px) { .chip { display: flex; } }
+
+/* mobile bar */
+.mbar { position: fixed; inset: auto 0 0; z-index: 60; display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(4,25,26,.92); backdrop-filter: blur(12px); transform: translateY(110%); transition: transform .4s var(--ease); }
+.mbar.is-on { transform: none; }
+.mbar .btn { min-height: 48px; padding: 0 .6em; font-size: .88rem; }
+.mbar .btn .chip__n { margin-left: 2px; }
+@media (min-width: 861px) { .mbar { display: none; } }
+
+/* ---------- one shared modal ---------- */
+dialog.modal { border: 0; padding: 0; width: min(94vw, 460px); border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 0 60px 120px -30px rgba(0,0,0,.8); }
+dialog.modal::backdrop { background: rgba(4,25,26,.7); backdrop-filter: blur(4px); }
+dialog.modal[open] { animation: pop .5s var(--spring); }
+@keyframes pop { from { transform: translateY(24px) scale(.96); opacity: 0; } }
+.modal__head { background: var(--teal); color: var(--on-dark); padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.modal__head h2 { font: 400 1.35rem/1.2 var(--display); }
+.modal__x { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: grid; place-items: center; }
+.modal form { padding: 20px 22px 24px; display: grid; gap: 14px; }
+.modal .sub { color: var(--muted); font-size: .95rem; }
+.toast { position: fixed; left: 50%; top: 88px; z-index: 80; transform: translate(-50%, -20px); background: var(--teal); color: var(--on-dark); padding: 12px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; box-shadow: 0 20px 40px -16px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: .4s var(--spring); display: flex; gap: 8px; align-items: center; max-width: calc(100vw - 32px); }
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.toast .ic { color: var(--kowhai); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .cloud { transform: none !important; }
+  .koru path { stroke-dashoffset: 0; }
+  .js [data-reveal]:not(.is-in) { opacity: 1; transform: none; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<!-- icons (Lucide paths) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></symbol>
+  <symbol id="i-briefcase" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></symbol>
+  <symbol id="i-chef" viewBox="0 0 24 24"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+  <symbol id="i-landmark" viewBox="0 0 24 24"><path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M12 2 20 7H4z"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 2v7.31"/><path d="M14 9.3V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></symbol>
+  <symbol id="i-cash" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol>
+  <symbol id="i-passport" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 17h8"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27L7.76 16.24l1.8-5.41a2 2 0 0 1 1.27-1.27z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.42.25-.69.25-1.29.18-1.41-.08-.13-.28-.2-.57-.35m-5.42 7.4h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.89-9.88 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89 0-3.18-1.24-6.16-3.48-8.41Z"/></symbol>
+  <!-- paper-cut cloud bank -->
+  <symbol id="cloud" viewBox="0 0 600 200"><path d="M40 170c-30 0-40-40-10-52 0-34 40-50 66-34 10-40 62-56 96-30 22-44 92-48 118-8 28-30 84-22 98 18 34-10 70 14 66 46 34 0 50 40 26 60H40z"/></symbol>
+</svg>
+
+<!-- ============ header ============ -->
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Back to top">
+      <svg viewBox="0 0 54 54" aria-hidden="true"><circle class="track" cx="27" cy="27" r="24"/><circle class="prog" id="prog" cx="27" cy="27" r="24" pathLength="1"/></svg>
+      <img src="../assets/img/brand/mark-64.png" alt="" width="64" height="64">
+    </a>
+    <a class="brand" href="#top">Tutee Connect<small>Study in New Zealand</small></a>
+    <nav class="hdr__nav" aria-label="Sections">
+      <a href="#finder">Find your city</a><a href="#afford">Costs</a><a href="#why">Why NZ</a><a href="#journey">Journey</a><a href="#final">Book</a>
+    </nav>
+    <div class="hdr__cta">
+      <button class="btn btn--go btn--sm" type="button" data-open="Talk to a counsellor">Talk to a counsellor</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ 1. HERO: break through the cloud ============ -->
+<section class="hero" id="hero" aria-labelledby="hero-h">
+  <div class="hero__photo duo"><img src="../assets/img/nz/queenstown.jpg" alt="" width="1280" height="960" fetchpriority="high"></div>
+  <div class="hero__shade"></div>
+  <div class="clouds" aria-hidden="true">
+    <svg class="cloud cloud--c" viewBox="0 0 600 200"><use href="#cloud"/></svg>
+    <svg class="cloud cloud--b" viewBox="0 0 600 200"><use href="#cloud"/></svg>
+    <svg class="cloud cloud--a" viewBox="0 0 600 200"><use href="#cloud"/></svg>
+  </div>
+  <svg class="ridges" viewBox="0 0 1440 220" preserveAspectRatio="none" aria-hidden="true">
+    <path fill="#0F5556" d="M0 120 120 70 220 110 340 40 440 100 560 60 660 120 780 50 900 110 1020 70 1140 120 1260 60 1360 100 1440 80V220H0Z"/>
+    <path fill="#0A3B3C" d="M0 160 160 110 300 150 460 100 600 160 760 120 900 170 1060 120 1200 160 1340 130 1440 150V220H0Z"/>
+    <path fill="#04191A" d="M0 190C200 170 360 200 560 186S940 170 1120 190 1340 200 1440 186V220H0Z"/>
+  </svg>
+
+  <div class="wrap hero__grid">
+    <div>
+      <p class="hello"><span class="reo">Kia ora</span> <span>Hello, from New Zealand</span></p>
+      <h1 id="hero-h">Your seat to New Zealand <em>starts with one tap.</em></h1>
+      <p class="hero__lead">Aotearoa means <b>land of the long white cloud</b>. Tell us what you want to study and we'll match you to a city, a university and a budget in rupees.</p>
+      <p class="clock" aria-live="off"><i></i><span id="clock-home">9:42 PM Chennai</span><span aria-hidden="true">→</span><span id="clock-nz"><b>5:12 AM Auckland</b> · first light</span></p>
+      <div class="hero__alt">
+        <a class="btn btn--ghost" href="https://wa.me/917010902329" target="_blank" rel="noopener"><svg class="ic"><use href="#i-wa"/></svg>WhatsApp us</a>
+      </div>
+    </div>
+
+    <div class="builder">
+      <div class="builder__head"><span>Boarding pass · <b>Step 1 of 3</b></span><span>TC-NZ</span></div>
+      <div class="builder__body">
+        <h2>Let's make your pass</h2>
+        <div class="row">
+          <div class="field"><label for="b-name">First name</label><input id="b-name" autocomplete="given-name" placeholder="Priya"></div>
+          <div class="field"><label for="b-from">Flying from</label>
+            <select id="b-from"><option value="MAA|Chennai|Asia/Kolkata">Chennai</option><option value="CJB|Coimbatore|Asia/Kolkata">Coimbatore</option><option value="BLR|Bengaluru|Asia/Kolkata">Bengaluru</option><option value="HYD|Hyderabad|Asia/Kolkata">Hyderabad</option><option value="COK|Kochi|Asia/Kolkata">Kochi</option><option value="BOM|Mumbai|Asia/Kolkata">Mumbai</option><option value="DEL|Delhi|Asia/Kolkata">Delhi</option><option value="DXB|Dubai|Asia/Dubai">Dubai</option></select></div>
+        </div>
+        <div class="field">
+          <span class="q__label" id="study-l">What do you want to study?</span>
+          <div class="picks" role="group" aria-labelledby="study-l" id="study">
+            <button class="pick" type="button" aria-pressed="false" data-v="IT" data-w="AKL:2,WLG:1"><svg class="ic"><use href="#i-laptop"/></svg>IT &amp; data</button>
+            <button class="pick" type="button" aria-pressed="false" data-v="Business" data-w="AKL:2,WLG:1"><svg class="ic"><use href="#i-briefcase"/></svg>Business</button>
+            <button class="pick" type="button" aria-pressed="false" data-v="Engineering" data-w="CHC:2,AKL:1"><svg class="ic"><use href="#i-wrench"/></svg>Engineering</button>
+            <button class="pick" type="button" aria-pressed="false" data-v="Health" data-w="DUD:2,AKL:1"><svg class="ic"><use href="#i-heart"/></svg>Health</button>
+            <button class="pick" type="button" aria-pressed="false" data-v="Hospitality" data-w="CHC:1,AKL:1"><svg class="ic"><use href="#i-chef"/></svg>Hospitality</button>
+            <button class="pick" type="button" aria-pressed="false" data-v="Design" data-w="WLG:2"><svg class="ic"><use href="#i-palette"/></svg>Design</button>
+          </div>
+        </div>
+        <button class="btn btn--go btn--block" type="button" id="start">Find my NZ city <svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="builder__foot"><svg class="ic"><use href="#i-check"/></svg>Takes 40 seconds. No phone number needed yet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. PROOF: glow-worm cave ============ -->
+<section class="sec cave" id="proof" aria-labelledby="proof-h">
+  <canvas id="worms" aria-hidden="true"></canvas>
+  <button class="worm" style="left:12%;top:16%" type="button" aria-label="Arjun, from Chennai to University of Auckland"><span class="worm__tip">Arjun · Chennai → Univ. of Auckland</span></button>
+  <button class="worm" style="left:46%;top:9%" type="button" aria-label="Meera, from Kochi to University of Otago"><span class="worm__tip">Meera · Kochi → Univ. of Otago</span></button>
+  <button class="worm" style="left:84%;top:20%" type="button" aria-label="Rahul, from Coimbatore to University of Canterbury"><span class="worm__tip">Rahul · Coimbatore → Canterbury</span></button>
+  <button class="worm" style="left:70%;top:88%" type="button" aria-label="Sana, from Dubai to Victoria University of Wellington"><span class="worm__tip">Sana · Dubai → Victoria Univ.</span></button>
+  <div class="wrap">
+    <div class="cave__grid">
+      <div>
+        <div class="head" style="margin-bottom:28px">
+          <p class="eyebrow">Waitomo glow-worm caves</p>
+          <h2 class="h2" id="proof-h">Every light here is <em>a student we've sent.</em></h2>
+        </div>
+        <figure class="quote" data-reveal>
+          <blockquote>"They sorted my loan, my visa and even my SIM card. I landed in Auckland and it already felt planned."</blockquote>
+          <figcaption class="who"><span class="avatar" aria-hidden="true">D</span><div><b>Divya R.</b><span>Chennai → Master of IT, Auckland</span></div></figcaption>
+        </figure>
+        <p class="cave__hint"><i></i>Tap a glowing light to meet a student.</p>
+      </div>
+      <div class="stats" data-reveal>
+        <div class="stat"><strong data-count="5000" data-suf="+">0</strong><span>students guided abroad</span></div>
+        <div class="stat"><strong data-count="200" data-suf="+">0</strong><span>NZ institution tie-ups</span></div>
+        <div class="stat"><strong data-count="10">0</strong><span>education loan partners</span></div>
+        <div class="stat"><strong data-count="2">0</strong><span>offices: Chennai &amp; Dubai</span></div>
+      </div>
+    </div>
+    <div class="banks">
+      <p>Loans through</p>
+      <ul>
+        <li><img src="../assets/img/loan-partner/icici.png" alt="ICICI Bank" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/hdfc-credila.jpg" alt="HDFC Credila" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/axis.jpg" alt="Axis Bank" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/avanse.jpg" alt="Avanse" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/auxilo.jpg" alt="Auxilo" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/idfc.jpg" alt="IDFC FIRST Bank" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/incred.jpg" alt="InCred" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/mpower.jpg" alt="MPOWER Financing" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/prodigy.jpg" alt="Prodigy Finance" loading="lazy"></li>
+        <li><img src="../assets/img/loan-partner/union.jpg" alt="Union Bank of India" loading="lazy"></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. FIND YOUR NZ CITY: quiz + map ============ -->
+<section class="sec finder" id="finder" aria-labelledby="finder-h">
+  <svg class="divider divider--top" viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true"><path fill="#FBF6EE" d="M0 110V70l120-30 140 40 160-60 150 50 170-40 160 50 150-60 170 50 120-30 100 20v70Z"/></svg>
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">North Island · South Island</p>
+      <h2 class="h2" id="finder-h">Answer three questions. <em>Watch your city light up.</em></h2>
+      <p class="lede">Each answer warms a city on the map. At the end you get your match, the universities there, and what it costs in rupees.</p>
+    </div>
+    <div class="finder__grid">
+      <div class="quiz" id="quiz" aria-live="polite">
+        <div class="dots" aria-hidden="true"><span class="on"></span><span></span><span></span><span></span></div>
+        <div id="qbox"></div>
+      </div>
+      <div class="map" aria-label="Map of New Zealand showing your matching city">
+        <div class="map__legend" id="legend"><b>Your match: …</b>Answer to light up a city</div>
+        <svg viewBox="10 10 450 620" role="img" aria-labelledby="map-t">
+          <title id="map-t">New Zealand, with Auckland, Wellington, Christchurch and Dunedin</title>
+          <g class="land">
+            <g class="shadow"><use href="#nz-n"/><use href="#nz-s"/></g>
+            <g class="mid"><use href="#nz-n"/><use href="#nz-s"/></g>
+            <g class="top">
+              <path id="nz-n" d="M245 30.6C244.4 27.7 248.9 30.3 250.9 30.1C252.9 30.0 253.9 26.6 257.1 29.7C260.3 32.9 267.4 44.9 270 49C272.6 53.1 270.4 53.0 272.4 54.5C274.4 56.0 277.1 56.5 282.1 58.2C287.1 59.9 297.7 60.1 302.2 64.6C306.7 69.1 307.8 80.1 309.2 85.3C310.6 90.5 311.4 93.0 310.9 95.9C310.4 98.8 306.3 100.7 306.4 102.8C306.5 104.9 309.5 106.6 311.6 108.8C313.8 111.0 317.9 111.9 319.3 115.7C320.8 119.5 319.9 127.4 320.3 131.8C320.8 136.3 319.4 138.8 322 142.4C324.6 146.0 332.2 151.3 335.9 153.4C339.6 155.5 343.6 157.5 344.3 155.2C345.0 152.9 341.2 144.7 340.1 139.6C339.1 134.5 337.3 126.3 338 124.4C338.8 122.5 342.5 125.3 344.6 128.1C346.7 130.9 348.6 136.0 350.5 141C352.4 146.0 354.8 153.6 356.1 158C357.4 162.4 356.8 163.9 358.5 167.2C360.2 170.5 361.5 174.1 366.1 177.8C370.7 181.5 381.6 186.9 386.3 189.3C391.1 191.8 391.5 191.6 394.6 192.5C397.7 193.4 401.0 196.4 405 194.8C409.0 193.2 414.5 186.4 418.5 182.8C422.5 179.2 423.9 173.6 429 173.2C434.1 172.8 446.9 175.9 448.8 180.5C450.7 185.1 441.8 195.6 440.4 200.8C438.9 206.0 441.8 207.6 440.1 211.8C438.4 216.0 432.3 222.8 430.4 226.1C428.5 229.4 429.3 228.4 428.6 231.6C427.9 234.8 427.5 243.5 426.2 245.4C424.9 247.3 423.7 243.5 421 243.1C418.3 242.7 414.7 239.7 409.9 243.1C405.1 246.5 394.1 258.7 392.2 263.3C390.3 267.9 400.1 264.5 398.4 270.7C396.6 276.9 384.5 294.1 381.7 300.6C378.9 307.1 383.9 305.2 381.7 309.8C379.4 314.4 373.2 322.1 368.2 328.2C363.2 334.3 357.0 341.2 351.5 346.6C346.0 352.1 338.8 359.9 335.2 360.9C331.6 361.9 331.6 354.0 329.7 352.6C327.8 351.2 325.8 353.3 323.8 352.6C321.8 351.9 319.8 349.8 317.9 348.4C316.0 347.0 311.9 346.4 312.3 344.3C312.7 342.2 318.1 338.7 320.3 336C322.5 333.3 323.4 332.8 325.5 328.2C327.6 323.6 333.1 315.7 333.1 308.4C333.1 301.1 329.8 289.9 325.5 284.5C321.2 279.1 313.8 279.6 307.1 275.8C300.5 272.0 289.7 265.2 285.6 261.5C281.5 257.8 281.2 256.7 282.5 253.7C283.8 250.7 288.6 248.0 293.6 243.6C298.6 239.2 308.2 234.6 312.3 227C316.4 219.4 316.9 204.9 318.2 198C319.5 191.1 320.8 190.8 320.3 185.6C319.8 180.4 317.0 172.4 315.1 166.7C313.3 160.9 310.8 155.4 309.2 151.1C307.6 146.8 307.3 145.8 305.4 141C303.5 136.2 301.3 128.8 297.7 122.1C294.1 115.3 287.4 105.5 283.8 100.5C280.2 95.5 278.4 95.4 275.9 92.2C273.4 89.0 271.0 85.8 268.6 81.2C266.2 76.6 263.7 70.2 261.3 64.6C258.9 59.0 257.0 53.3 254.3 47.6C251.6 41.9 245.6 33.5 245 30.6Z"/>
+              <path id="nz-s" d="M256.1 309.8C256.5 310.7 245.9 312.6 245 315.3C244.1 318.0 249.1 324.5 250.9 325.9C252.8 327.3 255.1 322.2 256.1 323.6C257.1 325.0 255.2 330.6 256.8 334.2C258.4 337.8 262.5 345.0 265.8 345.2C269.1 345.4 273.5 338.7 276.9 335.1C280.3 331.5 283.4 324.4 286.3 323.6C289.2 322.8 291.7 329.1 294.3 330.5C296.9 331.9 300.5 330.4 301.9 332.3C303.3 334.2 304.2 338.5 302.9 342C301.6 345.5 294.8 349.4 294.3 353.5C293.9 357.6 300.9 362.3 300.2 366.4C299.5 370.5 293.4 372.6 290.1 377.9C286.8 383.2 284.2 391.4 280.4 398.1C276.6 404.9 272.1 412.8 267.2 418.4C262.3 424.0 254.2 426.8 250.9 431.7C247.6 436.6 247.7 444.4 247.4 447.8C247.1 451.3 247.1 450.3 249.1 452.4C251.1 454.5 258.6 458.4 259.5 460.7C260.4 463.0 258.4 465.7 254.3 466.2C250.3 466.7 240.4 463.5 235.2 463.9C230.0 464.3 226.8 466.6 223.1 468.5C219.3 470.4 217.3 471.9 212.7 475.4C208.1 478.8 199.2 482.8 195.7 489.2C192.2 495.6 193.4 508.6 191.8 514C190.2 519.4 187.8 518.2 185.9 521.4C184.1 524.6 182.2 527.8 180.7 533.4C179.2 539.0 179.8 549.7 176.9 555C174.0 560.3 168.6 560.4 163.4 565.1C158.2 569.9 151.1 579.1 145.7 583.5C140.3 587.9 135.8 589.6 131.1 591.3C126.3 593.0 123.3 593.6 117.2 593.6C111.1 593.6 100.3 593.7 94.6 591.3C88.9 588.9 86.7 582.2 83.2 579.4C79.7 576.6 81.9 575.8 73.8 574.3C65.7 572.8 41.8 574.0 34.6 570.2C27.4 566.4 28.8 558.7 30.4 551.3C32.0 543.9 37.1 535.2 44.3 526C51.5 516.8 63.8 505.5 73.8 496.1C83.8 486.7 96.5 474.5 104 469.4C111.5 464.3 113.0 468.1 118.6 465.3C124.1 462.5 130.8 457.5 137.3 452.4C143.8 447.3 149.8 441.7 157.8 434.9C165.8 428.1 179.3 417.4 185.3 411.5C191.3 405.6 191.5 404.2 193.6 399.5C195.7 394.8 196.6 388.8 198.1 383.4C199.6 378.0 197.9 373.8 202.3 367.3C206.8 360.8 220.4 351.7 224.8 344.3C229.3 336.9 226.0 328.4 229 322.7C232.0 316.9 238.4 311.9 242.9 309.8C247.4 307.7 255.8 308.9 256.1 309.8Z"/>
+            </g>
+          </g>
+          <text class="mapsea" x="40" y="250">TASMAN SEA</text>
+          <text class="mapsea" x="350" y="470">PACIFIC OCEAN</text>
+          <g class="pin" data-city="AKL" transform="translate(317 142)"><circle class="halo" r="26"/><circle class="dot" r="8"/><text x="-14" y="5" text-anchor="end">Auckland</text></g>
+          <g class="pin" data-city="WLG" transform="translate(318 346)"><circle class="halo" r="26"/><circle class="dot" r="8"/><text x="-14" y="22" text-anchor="end">Wellington</text></g>
+          <g class="pin" data-city="CHC" transform="translate(242 450)"><circle class="halo" r="26"/><circle class="dot" r="8"/><text x="-14" y="5" text-anchor="end">Christchurch</text></g>
+          <g class="pin" data-city="DUD" transform="translate(178 532)"><circle class="halo" r="26"/><circle class="dot" r="8"/><text x="-14" y="5" text-anchor="end">Dunedin</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. CAN WE AFFORD IT: pōhutukawa dusk ============ -->
+<section class="sec afford" id="afford" aria-labelledby="afford-h">
+  <svg class="flowers" id="flowers1" viewBox="0 0 400 400" aria-hidden="true"></svg>
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">For parents · Can we afford it?</p>
+      <h2 class="h2" id="afford-h">The whole year in rupees, <em>and how a loan covers it.</em></h2>
+      <p class="lede">Move the controls. The numbers update instantly, and you can send them to the family on WhatsApp.</p>
+    </div>
+    <div class="afford__grid">
+      <div class="panel" data-reveal>
+        <h3>Your yearly budget</h3>
+        <div class="ctl"><span>Course</span><div class="seg" id="course"><button type="button" aria-pressed="false" data-v="dip">Diploma</button><button type="button" aria-pressed="true" data-v="ug">Bachelor's</button><button type="button" aria-pressed="false" data-v="pg">Master's</button></div></div>
+        <div class="ctl"><span>City</span><div class="seg" id="city"><button type="button" aria-pressed="true" data-v="AKL">Auckland</button><button type="button" aria-pressed="false" data-v="WLG">Wellington</button><button type="button" aria-pressed="false" data-v="CHC">Christchurch</button><button type="button" aria-pressed="false" data-v="DUD">Dunedin</button></div></div>
+        <div class="ctl"><span>Lifestyle</span><div class="seg" id="life"><button type="button" aria-pressed="true" data-v="lean">Thrifty</button><button type="button" aria-pressed="false" data-v="mid">Comfortable</button></div></div>
+        <div class="donut">
+          <div class="donut__mid">
+            <svg viewBox="0 0 170 170" aria-hidden="true" id="donut"></svg>
+            <div><span><strong id="total">₹0</strong><small>per year</small></span></div>
+          </div>
+          <ul class="legend" id="legend-cost"></ul>
+        </div>
+      </div>
+      <div class="panel" data-reveal>
+        <h3>Your loan</h3>
+        <div class="ctl"><span>Family can contribute</span><output id="own-out" class="bigline"><b>₹10 lakh</b></output>
+          <input class="range" id="own" type="range" min="0" max="40" value="10" step="1" aria-label="Family contribution in lakh rupees"></div>
+        <p class="bigline">You need <b id="need">₹0</b> a year. A loan covers <b id="loan">₹0</b>.</p>
+        <div class="future">
+          <p><b style="color:var(--on-dark)">Future you:</b> up to 3 years of post-study work rights. A graduate role in NZ pays around <b style="color:var(--kowhai)" id="sal">₹33 lakh</b> a year.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn--gold" type="button" id="add-budget">Add to my plan <svg class="ic"><use href="#i-ticket"/></svg></button>
+          <a class="btn btn--ghost" id="share" href="https://wa.me/?text=" target="_blank" rel="noopener"><svg class="ic"><use href="#i-wa"/></svg>Share with Amma / Papa</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. WHY NZ: unfurl the koru ============ -->
+<section class="sec why" id="why" aria-labelledby="why-h">
+  <div class="wrap why__grid">
+    <div class="koru" id="koru">
+      <div class="head" style="margin-bottom:24px">
+        <p class="eyebrow">10 reasons to study in NZ</p>
+        <h2 class="h2" id="why-h">Pick what matters. <em>We'll plan around it.</em></h2>
+      </div>
+      <svg viewBox="0 0 400 420" aria-hidden="true">
+        <path class="frond" id="koru-leaves" pathLength="1" d=""/>
+        <path id="koru-spiral" pathLength="1" d=""/>
+      </svg>
+      <figcaption>The <span class="reo">koru</span>: an unfolding fern frond, a symbol of new beginnings.</figcaption>
+    </div>
+    <div>
+      <ul class="reasons" id="reasons">
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Ranked universities"><span class="add">+</span><svg class="ic"><use href="#i-landmark"/></svg><b>All 8 universities ranked</b><span>Every NZ university is in the QS World Rankings.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Work while studying"><span class="add">+</span><svg class="ic"><use href="#i-cash"/></svg><b>Work while you study</b><span>Part-time work during term, full-time in breaks.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Post-study work"><span class="add">+</span><svg class="ic"><use href="#i-briefcase"/></svg><b>Stay and work after</b><span>Post-study work visas for graduates.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Safety"><span class="add">+</span><svg class="ic"><use href="#i-shield"/></svg><b>One of the safest countries</b><span>Consistently among the world's most peaceful.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Welcome"><span class="add">+</span><svg class="ic"><use href="#i-users"/></svg><b><span class="reo">Manaakitanga</span></b><span>The Māori value of caring for guests. You'll feel it on day one.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Lower fees"><span class="add">+</span><svg class="ic"><use href="#i-tag"/></svg><b>Lower fees, scholarships</b><span>Competitive tuition and help applying for aid.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Practical courses"><span class="add">+</span><svg class="ic"><use href="#i-book"/></svg><b>Hands-on degrees</b><span>Industry projects in IT, engineering and health.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Research"><span class="add">+</span><svg class="ic"><use href="#i-flask"/></svg><b>Real research</b><span>From agritech to earth sciences.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Simple visa"><span class="add">+</span><svg class="ic"><use href="#i-passport"/></svg><b>A clear visa process</b><span>Online, and we prepare the file with you.</span></button></li>
+        <li><button class="reason" type="button" aria-pressed="false" data-v="Nature"><span class="add">+</span><svg class="ic"><use href="#i-mountain"/></svg><b>Mountains to beaches</b><span>Weekends at fjords, lakes and glaciers.</span></button></li>
+      </ul>
+      <div class="photostrip">
+        <figure class="duo"><img src="../assets/img/nz/auckland.jpg" alt="Auckland skyline" loading="lazy"><figcaption>Auckland · Tāmaki Makaurau</figcaption></figure>
+        <figure class="duo"><img src="../assets/img/nz/otago.jpg" alt="University of Otago clocktower" loading="lazy"><figcaption>Dunedin · Ōtepoti</figcaption></figure>
+        <figure class="duo"><img src="../assets/img/nz/christchurch.jpg" alt="Christchurch Arts Centre" loading="lazy"><figcaption>Christchurch · Ōtautahi</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. JOURNEY + INTAKES ============ -->
+<section class="sec journey" id="journey" aria-labelledby="journey-h">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Your flight plan</p>
+      <h2 class="h2" id="journey-h">Seven steps, <em>one team,</em> door to door.</h2>
+    </div>
+    <div class="flight" id="flight">
+      <svg class="flight__svg" aria-hidden="true"><path class="ghost" id="fghost"/><path class="trail" id="ftrail"/></svg>
+      <img class="bird" id="bird" src="../assets/img/brand/bird.png" alt="" width="64" height="35">
+      <ol class="steps">
+        <li class="step"><span class="step__n">Step 1 · Free</span><h3>Free consultation</h3><p>Course, city, budget and career goals mapped in one call.</p></li>
+        <li class="step"><span class="step__n">Step 2</span><h3>IELTS, TOEFL or PTE</h3><p>Coaching and test booking so your score is ready on time.</p></li>
+        <li class="step"><span class="step__n">Step 3</span><h3>Shortlist and apply</h3><p>Universities that fit your marks and budget. We submit the applications.</p></li>
+        <li class="step"><span class="step__n">Step 4</span><h3>Your documents</h3><p>Tick what you already have. It's stamped on your pass.</p>
+          <ul class="ticks" id="docs">
+            <li><label><input type="checkbox" value="Passport">Valid passport</label></li>
+            <li><label><input type="checkbox" value="Transcripts">Academic transcripts</label></li>
+            <li><label><input type="checkbox" value="English score">English test score</label></li>
+            <li><label><input type="checkbox" value="Funds">Proof of funds</label></li>
+          </ul></li>
+        <li class="step"><span class="step__n">Step 5</span><h3>Education loan</h3><p>Secured and unsecured offers from our ten lending partners.</p></li>
+        <li class="step"><span class="step__n">Step 6</span><h3>Visa and SOP</h3><p>The right student visa for you, and a statement of purpose that reads like you.</p></li>
+        <li class="step"><span class="step__n">Step 7 · Kia ora!</span><h3>Land and settle</h3><p>Airport pickup, SIM, a room, a bank account and part-time work.</p></li>
+      </ol>
+    </div>
+
+    <div class="intakes">
+      <article class="intake intake--feb" data-reveal>
+        <p class="intake__tag">Semester 1 · Next intake</p>
+        <h3>February 2027</h3>
+        <div class="count" id="count" aria-label="Time until February 2027 intake"><div><b data-u="d">0</b><small>days</small></div><div><b data-u="h">0</b><small>hours</small></div><div><b data-u="m">0</b><small>mins</small></div></div>
+        <button class="btn btn--go" type="button" data-open="Reserve my February seat" data-intake="Feb 2027" style="justify-self:start">Reserve my Feb seat <svg class="ic"><use href="#i-arrow"/></svg></button>
+      </article>
+      <article class="intake intake--jul" data-reveal>
+        <p class="intake__tag">Semester 2</p>
+        <h3>July 2027</h3>
+        <p style="color:var(--on-dark-2)">More time to prepare your English score and loan. Vocational courses also start March to May.</p>
+        <button class="btn btn--ghost" type="button" data-open="Plan my July start" data-intake="Jul 2027" style="justify-self:start">Plan my July start</button>
+      </article>
+    </div>
+
+    <div class="postcards">
+      <p class="eyebrow" style="margin-bottom:12px">Postcards home</p>
+      <div class="postcards__row" tabindex="0" aria-label="Student postcards">
+        <article class="postcard"><p>"Ma, the lake here changes colour every hour. Classes are small and my lecturer knows my name."</p><span class="from"><b>Karthik</b>Chennai → Queenstown campus</span><span class="stamp">NZ<br>KIA ORA</span></article>
+        <article class="postcard"><p>"Got my part-time job at a café in week three. Wellington wind is no joke!"</p><span class="from"><b>Ananya</b>Bengaluru → Wellington</span><span class="stamp">NZ<br>TE IKA</span></article>
+        <article class="postcard"><p>"Lincoln's farm labs are unreal. Dad, the loan EMI plan is working out exactly as they said."</p><span class="from"><b>Vishnu</b>Kochi → Lincoln University</span><span class="stamp">NZ<br>ŌTAUTAHI</span></article>
+        <article class="postcard"><p>"Otago feels like a whole town of students. Found three Tamil friends in the first week."</p><span class="from"><b>Harini</b>Coimbatore → Dunedin</span><span class="stamp">NZ<br>ŌTEPOTI</span></article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. FINAL: Matariki rising ============ -->
+<section class="sec final" id="final" aria-labelledby="final-h">
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+  <svg class="matariki" viewBox="0 0 220 160" aria-hidden="true">
+    <circle cx="110" cy="70" r="5"/><circle class="tw" cx="80" cy="50" r="3.5"/><circle cx="140" cy="45" r="3.5"/><circle class="tw" cx="125" cy="95" r="3"/><circle cx="92" cy="98" r="3"/><circle class="tw" cx="60" cy="80" r="2.5"/><circle cx="160" cy="80" r="2.5"/><circle class="tw" cx="105" cy="30" r="2.2"/><circle cx="150" cy="115" r="2"/>
+  </svg>
+  <div class="wrap final__grid">
+    <div>
+      <div class="head">
+        <p class="eyebrow"><span class="reo">Matariki</span> · the Māori New Year</p>
+        <h2 class="h2" id="final-h">When Matariki rises, New Zealand celebrates <em>new beginnings.</em> Here's yours.</h2>
+        <p class="lede" style="color:var(--on-dark-2)">Your boarding pass is ready. Add a call time and a counsellor calls you to make it real.</p>
+      </div>
+      <div class="faq">
+        <details><summary>Is the consultation really free?</summary><p>Yes. Talking to a counsellor costs nothing and there is no obligation.</p></details>
+        <details><summary>Do I need IELTS?</summary><p>Most universities ask for IELTS, TOEFL or PTE. We coach you and book the test.</p></details>
+        <details><summary>Can I get an education loan?</summary><p>Yes. Our partners offer secured and unsecured loans for tuition, flights and living costs.</p></details>
+        <details><summary>Is there a route to PR?</summary><p>NZ has post-study work and residence pathways. We assess your profile on the call.</p></details>
+        <details><summary>Do you help after I land?</summary><p>Airport pickup, SIM, accommodation, bank account and part-time work support.</p></details>
+      </div>
+    </div>
+
+    <div class="bigpass" data-reveal>
+      <div class="bigpass__top"><span class="brandline">Tutee Connect</span><span class="cls">Boarding pass · Free consult</span></div>
+      <div class="route">
+        <div><small id="p-fromcity">Chennai</small><span class="code" id="p-from">MAA</span></div>
+        <div class="arc"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 36Q100-20 196 36"/></svg></div>
+        <div class="to"><small id="p-tocity">Your NZ city</small><span class="code" id="p-to">NZ</span></div>
+      </div>
+      <div class="meta">
+        <div><small>Passenger</small><b id="p-name">Your name</b></div>
+        <div><small>Course</small><b id="p-course">Not chosen</b></div>
+        <div><small>Gate</small><b id="p-intake">Feb 2027</b></div>
+      </div>
+      <div class="stamps" id="p-stamps"><em>Stamps you collect on this page appear here.</em></div>
+      <form id="final-form" novalidate>
+        <div class="row">
+          <div class="field"><label for="f-name">Full name</label><input id="f-name" autocomplete="name" placeholder="As on your passport"></div>
+          <div class="field"><label for="f-slot">Call me</label><select id="f-slot"><option>Today, 4–6 PM IST</option><option>Today, 6–8 PM IST</option><option>Tomorrow, 10 AM–12 PM</option><option>Tomorrow, 2–4 PM</option></select></div>
+        </div>
+        <div class="field" id="f-phone-wrap"><label for="f-phone">WhatsApp number</label><div class="tel"><select aria-label="Country code"><option>+91</option><option>+971</option></select><input id="f-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="98765 43210"></div></div>
+        <label class="consent"><input type="checkbox" id="f-consent"><span>Tutee Connect may call or WhatsApp me about studying in New Zealand. I can opt out any time.</span></label>
+        <button class="btn btn--go btn--block" type="submit">Confirm my seat <svg class="ic"><use href="#i-arrow"/></svg></button>
+      </form>
+      <div class="barcode" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <svg class="foot__flowers" id="flowers2" viewBox="0 0 400 400" aria-hidden="true"></svg>
+  <div class="wrap foot__grid">
+    <div><p class="brandline">Tutee Connect</p><p style="margin-top:8px">Study abroad and immigration. Counselling, test prep, admissions, loans, visas and support after you land.</p></div>
+    <div><b>Chennai</b>1st Floor, ALA Corner Complex, Virugambakkam 600092<br>+91 70109 02329</div>
+    <div><b>Dubai</b>Tutee Connect LLC FZ, Meydan Grandstand<br>+971 55 379 9068</div>
+    <div><b>Write to us</b>info@tuteeconnect.com</div>
+  </div>
+</footer>
+
+<!-- pinned pass chip (desktop) -->
+<button class="chip" id="chip" type="button" aria-label="Open my NZ plan">
+  <span class="chip__ic"><svg class="ic"><use href="#i-ticket"/></svg></span>
+  <span><small>My NZ plan</small><b id="chip-line">GUEST · MAA → NZ</b></span>
+  <span class="chip__n" id="chip-n">0</span>
+</button>
+
+<!-- mobile bar -->
+<div class="mbar" id="mbar">
+  <a class="btn btn--ghost" href="https://wa.me/917010902329" target="_blank" rel="noopener"><svg class="ic"><use href="#i-wa"/></svg>WhatsApp</a>
+  <a class="btn btn--ghost" href="tel:+917010902329"><svg class="ic"><use href="#i-phone"/></svg>Call</a>
+  <a class="btn btn--go" href="#final"><svg class="ic"><use href="#i-ticket"/></svg>My plan <span class="chip__n" id="mbar-n">0</span></a>
+</div>
+
+<!-- the one shared lead modal -->
+<dialog class="modal" id="modal" aria-labelledby="m-title">
+  <div class="modal__head"><h2 id="m-title">Talk to a counsellor</h2><button class="modal__x" type="button" id="m-x" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <form id="m-form" novalidate>
+    <p class="sub" id="m-sub">Pick a time and we'll call you. Your plan comes with you.</p>
+    <div class="field" id="m-name-wrap"><label for="m-name">Full name</label><input id="m-name" autocomplete="name"></div>
+    <div class="field" id="m-phone-wrap"><label for="m-phone">WhatsApp number</label><div class="tel"><select aria-label="Country code"><option>+91</option><option>+971</option></select><input id="m-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="98765 43210"></div></div>
+    <div class="field"><label for="m-slot">Best time to call</label><select id="m-slot"><option>Today, 4–6 PM IST</option><option>Today, 6–8 PM IST</option><option>Tomorrow, 10 AM–12 PM</option></select></div>
+    <label class="consent" id="m-consent-wrap"><input type="checkbox" id="m-consent"><span>Tutee Connect may call or WhatsApp me about studying in New Zealand.</span></label>
+    <button class="btn btn--go btn--block" type="submit">Book my free call <svg class="ic"><use href="#i-arrow"/></svg></button>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"><svg class="ic"><use href="#i-check"/></svg><span></span></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lakh = n => '₹' + (n >= 100 ? (n / 100).toFixed(2) + ' Cr' : (Math.round(n * 10) / 10) + ' L');
+
+  /* ---------- the one lead record ---------- */
+  const plan = { name: '', from: 'MAA', fromCity: 'Chennai', tz: 'Asia/Kolkata', study: '', city: '', cityName: '', intake: 'Feb 2027', phone: '', stamps: [] };
+  const CITY = {
+    AKL: { name: 'Auckland', code: 'AKL', nick: 'City of Sails', reo: 'Tāmaki Makaurau', img: '../assets/img/nz/auckland.jpg', unis: 'University of Auckland · AUT · AIS', rent: 4.2, jobs: 'Biggest job market in NZ', sal: 34 },
+    WLG: { name: 'Wellington', code: 'WLG', nick: 'The coolest little capital', reo: 'Te Whanganui-a-Tara', img: '../assets/img/nz/queenstown.jpg', unis: 'Victoria University of Wellington · Massey (Wellington)', rent: 3.8, jobs: 'Government, film and tech', sal: 33 },
+    CHC: { name: 'Christchurch', code: 'CHC', nick: 'The Garden City', reo: 'Ōtautahi', img: '../assets/img/nz/christchurch.jpg', unis: 'University of Canterbury · Lincoln University', rent: 3.2, jobs: 'Engineering and agritech', sal: 31 },
+    DUD: { name: 'Dunedin', code: 'DUD', nick: 'NZ\'s student city', reo: 'Ōtepoti', img: '../assets/img/nz/otago.jpg', unis: 'University of Otago · Otago Polytechnic', rent: 2.8, jobs: 'Health and research', sal: 30 }
+  };
+  const score = { AKL: 0, WLG: 0, CHC: 0, DUD: 0 };
+  const addW = w => w.split(',').forEach(p => { const [k, v] = p.split(':'); score[k] += +v; });
+
+  function stamp(label) {
+    if (plan.stamps.includes(label)) return;
+    plan.stamps.push(label); paintPass();
+    const c = $('#chip'); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump');
+    toast('Stamped on your pass: ' + label);
+  }
+  function unstamp(label) { plan.stamps = plan.stamps.filter(s => s !== label); paintPass(); }
+  function paintPass() {
+    const nm = plan.name ? plan.name.toUpperCase() : 'GUEST';
+    $('#chip-line').textContent = nm + ' · ' + plan.from + ' → ' + (plan.city || 'NZ');
+    $('#chip-n').textContent = $('#mbar-n').textContent = plan.stamps.length;
+    $('#p-from').textContent = plan.from; $('#p-fromcity').textContent = plan.fromCity;
+    $('#p-to').textContent = plan.city || 'NZ'; $('#p-tocity').textContent = plan.cityName || 'Your NZ city';
+    $('#p-name').textContent = plan.name || 'Your name';
+    $('#p-course').textContent = plan.study || 'Not chosen';
+    $('#p-intake').textContent = plan.intake;
+    const box = $('#p-stamps');
+    box.innerHTML = plan.stamps.length ? plan.stamps.map(s => '<span>' + s + '</span>').join('') : '<em>Stamps you collect on this page appear here.</em>';
+    if (plan.name && !$('#f-name').value) $('#f-name').value = plan.name;
+    $('#f-phone-wrap').hidden = !!plan.phone;
+  }
+  let tt; function toast(msg) { const t = $('#toast'); $('span', t).textContent = msg; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2200); }
+
+  /* ---------- hero: live clocks ---------- */
+  function clock() {
+    const f = tz => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz });
+    const nzH = +new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'Pacific/Auckland' });
+    const mood = nzH >= 5 && nzH < 8 ? 'first light' : nzH < 12 ? 'morning lectures' : nzH < 18 ? 'afternoon on campus' : 'evening under the stars';
+    $('#clock-home').textContent = f(plan.tz) + ' ' + plan.fromCity;
+    $('#clock-nz').innerHTML = '<b>' + f('Pacific/Auckland') + ' Auckland</b><span class="mood"> · ' + mood + '</span>';
+  }
+  clock(); setInterval(clock, 30000);
+  $('#b-from').addEventListener('change', e => { const [c, n, tz] = e.target.value.split('|'); Object.assign(plan, { from: c, fromCity: n, tz }); clock(); paintPass(); });
+  $('#b-name').addEventListener('input', e => { plan.name = e.target.value.trim().split(' ')[0]; paintPass(); });
+  $$('#study .pick').forEach(b => b.addEventListener('click', () => {
+    $$('#study .pick').forEach(x => x.setAttribute('aria-pressed', x === b));
+    plan.study = b.dataset.v; b.dataset.used || (b.dataset.used = 1);
+  }));
+  $('#start').addEventListener('click', () => {
+    const picked = $('#study .pick[aria-pressed="true"]');
+    if (picked) { Object.keys(score).forEach(k => score[k] = 0); addW(picked.dataset.w); warm(); stamp(plan.study); qi = 0; hist.length = 0; renderQ(); }
+    $('#chip').classList.add('is-on');
+    $('#finder').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  /* ---------- hero: clouds part on scroll, header, progress ring ---------- */
+  const hero = $('#hero'), hdr = $('#hdr'), prog = $('#prog'), mbar = $('#mbar');
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      const y = scrollY, h = hero.offsetHeight;
+      if (!reduce) hero.style.setProperty('--p', Math.min(1, y / (h * .8)).toFixed(3));
+      hdr.classList.toggle('is-solid', y > h - 80);
+      const max = document.documentElement.scrollHeight - innerHeight;
+      prog.style.strokeDashoffset = 1 - y / max;
+      mbar.classList.toggle('is-on', y > h * .6);
+      if (y > h * .6) $('#chip').classList.add('is-on');
+      koru(); flight();
+      ticking = false;
+    });
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+
+  /* ---------- reveal + counters ---------- */
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }), { threshold: .15 });
+  $$('[data-reveal]').forEach(el => io.observe(el));
+  const cio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; cio.unobserve(e.target);
+    const el = e.target, end = +el.dataset.count, suf = el.dataset.suf || '', t0 = performance.now();
+    const step = t => { const k = Math.min(1, (t - t0) / 1600), v = Math.round(end * (1 - Math.pow(1 - k, 3))); el.textContent = v.toLocaleString('en-IN') + suf; if (k < 1) requestAnimationFrame(step); };
+    reduce ? el.textContent = end.toLocaleString('en-IN') + suf : requestAnimationFrame(step);
+  }), { threshold: .6 });
+  $$('[data-count]').forEach(el => cio.observe(el));
+
+  /* ---------- glow-worm canvas (paused off screen) ---------- */
+  (() => {
+    const cv = $('#worms'), cx = cv.getContext('2d'); let W, H, pts = [], run = false;
+    const size = () => { const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = cv.width = r.width * d; H = cv.height = r.height * d;
+      pts = Array.from({ length: 130 }, () => ({ x: Math.random() * W, y: Math.random() * H * .75, r: (Math.random() * 1.6 + .5) * d, p: Math.random() * 6.28, s: Math.random() * .02 + .008, h: Math.random() * 30 * d })); };
+    const draw = t => {
+      cx.clearRect(0, 0, W, H);
+      for (const q of pts) {
+        const a = .35 + .65 * (Math.sin(q.p + t * q.s * .06) * .5 + .5);
+        cx.globalAlpha = a * .9; cx.fillStyle = '#8FF5E4'; cx.shadowColor = '#8FF5E4'; cx.shadowBlur = 10;
+        cx.beginPath(); cx.arc(q.x, q.y, q.r, 0, 6.28); cx.fill();
+        cx.globalAlpha = a * .12; cx.shadowBlur = 0; cx.fillRect(q.x - .3, q.y, .6, q.h); // silk thread
+      }
+      if (run && !reduce) requestAnimationFrame(draw);
+    };
+    size(); addEventListener('resize', size);
+    new IntersectionObserver(([e]) => { run = e.isIntersecting; if (run) requestAnimationFrame(draw); }).observe(cv);
+    $$('.worm').forEach(w => w.addEventListener('click', () => { $$('.worm').forEach(x => x !== w && x.classList.remove('is-on')); w.classList.toggle('is-on'); }));
+  })();
+
+  /* ---------- quiz + map ---------- */
+  const Q = [
+    { q: "What's your budget feeling?", o: [['Keep it lean', 'Lower rent, smaller city', 'i-wallet', 'DUD:2,CHC:1'], ['Balanced', 'Good value, good life', 'i-scale', 'CHC:1,WLG:1'], ['Big city, big plans', 'Worth it for the jobs', 'i-building', 'AKL:2']] },
+    { q: 'Where do you want to live?', o: [['City lights', 'Skyline, harbour, buzz', 'i-building', 'AKL:2,WLG:1'], ['Student town', 'Everyone is studying', 'i-book', 'DUD:2'], ['Near the mountains', 'Alps an hour away', 'i-mountain', 'CHC:2'], ['Creative harbour', 'Cafés, film, culture', 'i-palette', 'WLG:2']] },
+    { q: 'Your perfect weekend?', o: [['Hiking a trail', 'Fjords and glaciers', 'i-mountain', 'CHC:1,DUD:1'], ['At the beach', 'Surf and sunsets', 'i-waves', 'AKL:1,DUD:1'], ['Gigs and food', 'Live music, night markets', 'i-music', 'WLG:2,AKL:1'], ['Watching rugby', 'Stadium with mates', 'i-trophy', 'CHC:1,DUD:1']] }
+  ];
+  let qi = 0; const hist = [];
+  const qbox = $('#qbox');
+  function warm() {
+    const best = Object.entries(score).sort((a, b) => b[1] - a[1]);
+    $$('.pin').forEach(p => { const v = score[p.dataset.city]; p.classList.toggle('is-warm', v > 0); p.classList.toggle('is-lead', v > 0 && p.dataset.city === best[0][0]); });
+    if (best[0][1] > 0) $('#legend').innerHTML = '<b>Leading: ' + CITY[best[0][0]].name + '</b>' + CITY[best[0][0]].nick;
+  }
+  function renderQ() {
+    $$('.dots span').forEach((d, i) => d.classList.toggle('on', i <= qi + 1));
+    const it = Q[qi];
+    qbox.innerHTML = '<div class="q"><span class="q__label">Question ' + (qi + 2) + ' of 4</span><h3>' + it.q + '</h3><div class="opts">' +
+      it.o.map((o, i) => '<button class="opt" type="button" data-i="' + i + '"><svg class="ic"><use href="#' + o[2] + '"/></svg><span>' + o[0] + '<small>' + o[1] + '</small></span></button>').join('') +
+      '</div>' + (qi ? '<button class="back" type="button">← Back</button>' : (plan.study ? '' : '<p class="q__label" style="text-transform:none;letter-spacing:0;font-weight:500">Tip: pick a subject in the pass above for a sharper match.</p>')) + '</div>';
+    $$('.opt', qbox).forEach(b => b.addEventListener('click', () => { const w = it.o[b.dataset.i][3]; hist.push(w); addW(w); warm(); qi++; qi < Q.length ? renderQ() : result(); }));
+    const bk = $('.back', qbox); if (bk) bk.addEventListener('click', () => { const w = hist.pop(); w.split(',').forEach(p => { const [k, v] = p.split(':'); score[k] -= +v; }); warm(); qi--; renderQ(); });
+  }
+  function result() {
+    $$('.dots span').forEach(d => d.classList.add('on'));
+    const k = Object.entries(score).sort((a, b) => b[1] - a[1])[0][0], c = CITY[k];
+    Object.assign(plan, { city: c.code, cityName: c.name }); stamp('Match: ' + c.name); syncCity(k);
+    const unlocked = !!plan.phone;
+    qbox.innerHTML = '<div class="result">' +
+      '<div class="result__photo duo"><img src="' + c.img + '" alt="' + c.name + '"><span class="badge">Your match</span></div>' +
+      '<h3>' + (plan.name ? plan.name + ', you\'re' : "You're") + ' made for ' + c.name + '<small><span class="reo">' + c.reo + '</span> · ' + c.nick + '</small></h3>' +
+      '<div class="locked' + (unlocked ? '' : ' is-locked') + '"><ul>' +
+        '<li><span>Universities</span><b>' + c.unis + '</b></li><li><span>Rent and living</span><b>' + lakh(c.rent * 2.4) + ' a year</b></li><li><span>Jobs</span><b>' + c.jobs + '</b></li></ul>' +
+      (unlocked ? '' : '<div class="gate"><p><svg class="ic"><use href="#i-lock"/></svg>Unlock your full ' + c.name + ' plan on WhatsApp</p>' +
+        '<div class="tel"><select aria-label="Country code"><option>+91</option><option>+971</option></select><input id="g-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="98765 43210" aria-label="WhatsApp number"></div>' +
+        '<label class="consent"><input type="checkbox" id="g-consent"><span>Send my plan and let a counsellor contact me on WhatsApp.</span></label>' +
+        '<button class="btn btn--go btn--block" type="button" id="g-go">Send my plan <svg class="ic"><use href="#i-wa"/></svg></button></div>') +
+      '</div><button class="back" type="button" id="redo">↺ Retake</button></div>';
+    const go = $('#g-go'); if (go) go.addEventListener('click', () => {
+      const v = $('#g-phone').value.replace(/\D/g, '');
+      if (v.length < 8) { $('#g-phone').focus(); toast('Add your WhatsApp number to unlock'); return; }
+      plan.phone = v; $('.locked').classList.remove('is-locked'); $('.gate').remove(); stamp('WhatsApp plan'); toast('Unlocked. Your plan is on its way.');
+    });
+    $('#redo').addEventListener('click', () => { qi = 0; hist.length = 0; Object.keys(score).forEach(x => score[x] = 0); const p = $('#study .pick[aria-pressed="true"]'); if (p) addW(p.dataset.w); warm(); renderQ(); });
+  }
+  renderQ();
+  $$('.pin').forEach(p => p.addEventListener('click', () => { const c = CITY[p.dataset.city]; $('#legend').innerHTML = '<b>' + c.name + '</b>' + c.unis; }));
+
+  /* ---------- afford calculator ---------- */
+  const fee = { dip: 10, ug: 16, pg: 18 }, sel = { course: 'ug', city: 'AKL', life: 'lean' };
+  const COLORS = ['#F4B73D', '#E07A5F', '#8FF5E4', '#C9B6FF'];
+  function seg(id) { $$('#' + id + ' button').forEach(b => b.addEventListener('click', () => { $$('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', x === b)); sel[id] = b.dataset.v; calc(); })); }
+  function syncCity(k) { sel.city = k; $$('#city button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === k)); calc(); }
+  ['course', 'city', 'life'].forEach(seg);
+  function calc() {
+    const c = CITY[sel.city], m = sel.life === 'mid' ? 1.25 : 1;
+    const parts = [['Tuition', fee[sel.course]], ['Rent', c.rent * m], ['Food & bills', 2.6 * m], ['Travel & fun', 1.2 * m]];
+    const total = parts.reduce((s, p) => s + p[1], 0);
+    $('#total').textContent = lakh(total);
+    const R = 66, C = 2 * Math.PI * R; let off = 0;
+    $('#donut').innerHTML = '<circle cx="85" cy="85" r="' + R + '" stroke="rgba(255,255,255,.1)"/>' + parts.map((p, i) => { const len = p[1] / total * C; const s = '<circle cx="85" cy="85" r="' + R + '" stroke="' + COLORS[i] + '" stroke-dasharray="' + (len - 2) + ' ' + (C - len + 2) + '" stroke-dashoffset="' + (-off) + '"/>'; off += len; return s; }).join('');
+    $('#legend-cost').innerHTML = parts.map((p, i) => '<li><i style="background:' + COLORS[i] + '"></i><span>' + p[0] + '</span><b>' + lakh(p[1]) + '</b></li>').join('');
+    const own = +$('#own').value; $('#own').style.setProperty('--pct', own / 40 * 100 + '%');
+    $('#own-out').innerHTML = '<b>' + lakh(own) + '</b>';
+    $('#need').textContent = lakh(total); $('#loan').textContent = lakh(Math.max(0, total - own));
+    $('#sal').textContent = '₹' + c.sal + ' lakh';
+    $('#share').href = 'https://wa.me/?text=' + encodeURIComponent('Studying in ' + c.name + ', New Zealand: about ' + lakh(total) + ' a year. A loan can cover ' + lakh(Math.max(0, total - own)) + '. Plan from Tutee Connect.');
+  }
+  $('#own').addEventListener('input', calc); calc();
+  $('#add-budget').addEventListener('click', () => stamp('Budget ' + $('#total').textContent));
+
+  /* ---------- why NZ: koru unfurls, reasons stamp ---------- */
+  const kEl = $('#koru');
+  // koru: a stem rising into a tightening spiral, with paired leaflets along the stem
+  (() => {
+    const cx = 215, cy = 150, turns = 2.4, R0 = 120, N = 220;
+    let d = 'M180 412 C175 340 120 290 ' + (cx - R0) + ' ' + cy;
+    for (let i = 1; i <= N; i++) {
+      const t = i / N, a = Math.PI + t * turns * 2 * Math.PI, r = R0 * Math.pow(1 - t, 1.35) + 6;
+      d += ' L' + (cx + Math.cos(a) * r).toFixed(1) + ' ' + (cy + Math.sin(a) * r).toFixed(1);
+    }
+    $('#koru-spiral').setAttribute('d', d);
+    let l = '';
+    for (let i = 0; i < 6; i++) { const y = 395 - i * 34, x = 178 - i * 9.5 + (i > 2 ? -(i - 2) * 8 : 0), len = 70 - i * 6;
+      l += 'M' + x + ' ' + y + ' q' + (-len * .5) + ' ' + (-14) + ' ' + (-len) + ' ' + (-34) + ' M' + x + ' ' + y + ' q' + (len * .5) + ' ' + (-10) + ' ' + (len) + ' ' + (-30) + ' '; }
+    $('#koru-leaves').setAttribute('d', l);
+  })();
+  function koru() { if (reduce) return; const r = kEl.getBoundingClientRect(); kEl.style.setProperty('--k', Math.max(0, Math.min(1, (innerHeight - r.top) / (innerHeight + r.height * .4))).toFixed(3)); }
+  $$('.reason').forEach(b => b.addEventListener('click', () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); on ? stamp(b.dataset.v) : unstamp(b.dataset.v); }));
+
+  /* ---------- journey: one bird on a scroll-drawn path ---------- */
+  const fl = $('#flight'), ghost = $('#fghost'), trail = $('#ftrail'), bird = $('#bird'); let flen = 0;
+  function buildPath() {
+    const fr = fl.getBoundingClientRect(), pts = $$('.step', fl).map(s => { const r = s.getBoundingClientRect(); const left = r.left - fr.left, right = r.right - fr.left, odd = left < fr.width / 3;
+      return [innerWidth < 760 ? 10 : (odd ? right + 30 : left - 30), r.top - fr.top + r.height / 2]; });
+    let d = 'M' + pts[0][0] + ' ' + (pts[0][1] - 60);
+    pts.forEach((p, i) => { const prev = i ? pts[i - 1] : [pts[0][0], pts[0][1] - 60]; const my = (prev[1] + p[1]) / 2; d += ' C' + prev[0] + ' ' + my + ' ' + p[0] + ' ' + my + ' ' + p[0] + ' ' + p[1]; });
+    $('.flight__svg').setAttribute('viewBox', '0 0 ' + fr.width + ' ' + fr.height);
+    ghost.setAttribute('d', d); trail.setAttribute('d', d); flen = trail.getTotalLength();
+    trail.style.strokeDasharray = flen; flight();
+  }
+  function flight() {
+    if (!flen) return;
+    const r = fl.getBoundingClientRect(), k = reduce ? 1 : Math.max(0, Math.min(1, (innerHeight * .6 - r.top) / r.height));
+    trail.style.strokeDashoffset = flen * (1 - k);
+    const p = trail.getPointAtLength(flen * k), q = trail.getPointAtLength(Math.min(flen, flen * k + 2));
+    const a = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+    bird.style.transform = 'translate(' + (p.x - 23) + 'px,' + (p.y - 12) + 'px) rotate(' + (a + 90) + 'deg)';
+  }
+  addEventListener('resize', buildPath); addEventListener('load', buildPath); setTimeout(buildPath, 300);
+  $$('#docs input').forEach(i => i.addEventListener('change', () => i.checked ? stamp(i.value) : unstamp(i.value)));
+
+  /* ---------- intake countdown ---------- */
+  function countdown() {
+    const ms = new Date('2027-02-22T09:00:00+13:00') - new Date(); if (ms < 0) return;
+    const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60;
+    $('[data-u="d"]').textContent = d; $('[data-u="h"]').textContent = h; $('[data-u="m"]').textContent = m;
+  }
+  countdown(); setInterval(countdown, 30000);
+
+  /* ---------- pōhutukawa flowers, drawn once ---------- */
+  function flowers(svg, n) {
+    let s = ''; for (let f = 0; f < n; f++) {
+      const cx = 80 + Math.random() * 240, cy = 80 + Math.random() * 240, R = 30 + Math.random() * 30;
+      for (let i = 0; i < 34; i++) { const a = i / 34 * 6.283, r = R * (.7 + Math.random() * .3), x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+        s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="#B01717" stroke-width="1.6"/><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2" fill="#F4B73D"/>'; }
+    } svg.innerHTML = s;
+  }
+  flowers($('#flowers1'), 3); flowers($('#flowers2'), 3);
+
+  /* ---------- the shared modal ---------- */
+  const modal = $('#modal');
+  function openModal(title, intake) {
+    $('#m-title').textContent = title;
+    if (intake) { plan.intake = intake; paintPass(); }
+    const known = !!plan.phone;
+    $('#m-phone-wrap').hidden = known; $('#m-consent-wrap').hidden = known;
+    $('#m-name').value = $('#m-name').value || plan.name;
+    $('#m-sub').textContent = known ? 'We already have your number. Just pick a time.' : 'Pick a time and we\'ll call you. Your plan (' + plan.stamps.length + ' stamps) comes with you.';
+    modal.showModal(); (known ? $('#m-slot') : $('#m-name')).focus();
+  }
+  $$('[data-open]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.open, b.dataset.intake)));
+  new IntersectionObserver(([e]) => $('#chip').classList.toggle('is-away', e.isIntersecting), { threshold: .25 }).observe($('#final'));
+  $('#chip').addEventListener('click',() => $('#final').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }));
+  $('#m-x').addEventListener('click', () => modal.close());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
+  function done(f) { f.innerHTML = '<div style="text-align:center;display:grid;gap:10px;padding:10px 0"><p style="font:400 1.6rem/1.2 var(--display);color:var(--teal)">You\'re booked' + (plan.name ? ', ' + plan.name : '') + '!</p><p style="color:var(--muted)">Preview only: in the live page your boarding pass goes to a counsellor, who calls you at your chosen time.</p></div>'; }
+  $('#m-form').addEventListener('submit', e => { e.preventDefault(); const p = $('#m-phone').value.replace(/\D/g, ''); if (!plan.phone && p.length < 8) { $('#m-phone').focus(); return; } plan.phone = plan.phone || p; stamp('Call booked'); done(e.target); });
+  $('#final-form').addEventListener('submit', e => { e.preventDefault(); const p = $('#f-phone').value.replace(/\D/g, ''); if (!plan.phone && p.length < 8) { $('#f-phone').focus(); toast('Add your WhatsApp number'); return; } plan.phone = plan.phone || p; plan.name = plan.name || $('#f-name').value; stamp('Seat confirmed'); done(e.target); });
+
+  paintPass(); onScroll();
+})();
+</script>
+</body>
+</html>
