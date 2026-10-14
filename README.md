@@ -27,6 +27,11 @@ assets/css/main.css         universities.html only: the compiled Tailwind from t
 assets/js/main.js, *-data.js, supabase-*.js   universities.html only
 netlify/functions/enquiry.mjs   shared lead endpoint (canonical copy lives in _tooling)
 netlify/functions/verify-email.mjs   this site only: GET /api/verify-email?domain= (DNS MX lookup, no deps)
+netlify/functions/news.mjs       this site only: GET /api/news, live NZ education stories (RNZ, NZ Herald, Universities NZ RSS)
+netlify/functions/news-img.mjs   this site only: GET /api/news-img?u=, relays those stories' images (two allowed hosts only)
+scripts/news-snapshot.mjs   saves the current stories to assets/js/news-snapshot.js + assets/img/news/; the page falls back to it
+                            when /api/news isn't reachable (index.html opened from disk, static preview, feed outage).
+                            Re-run `node scripts/news-snapshot.mjs` before each deploy to keep the fallback fresh.
 serve.py                    local preview server
 ```
 
@@ -43,6 +48,7 @@ alone.
 | 2 | Why Tutee Connect | Stats, six services, loan-partner logos |
 | 3 | City gallery (horizontal scroll, 5 cities). Each card opens a full-screen "step inside" view: weekday / weekend photo, a day in your life, live NZ time, climate, rent, universities, the feel of the city; arrows / swipe between cities | "Plan my move to {city}" pre-fills the city into the form; end card → "Talk to a counsellor" |
 | 4 | 10 reasons (photo accordion) | — |
+| 4b | In the news: up to 4 live NZ education stories with their images (hides itself if the feeds are down) | — |
 | 5 | How it works (compass dial, 7 steps) | "Start with step one" |
 | 6 | Postcards home | — |
 | 7 | FAQ | Contact card |
@@ -98,6 +104,9 @@ Stress-tested in headless Edge at 360×640, 390×844 (phones, CPU slowed 4× and
   ScrollTrigger ignores the mobile address-bar resize. The scroll handler never measures layout.
   The hero drift, logo marquee and dial pulse pause while off screen. Phones skip the blend-mode glint
   and the blurred mist. No `backdrop-filter` on elements that move while scrolling.
+- **Start-up timing:** the scroll-reveal setup waits for the web fonts (max 1.5s), because a font swap re-lays-out all
+  text and would otherwise land inside a setup task. The news strip formats dates without `Intl` (its first use
+  costs about 100ms on a phone), and loads its stories only when near or 3s after page load.
 - **Deferred:** the postcards' handwriting font loads only when the section is near. The phone-number
   library (190 KB) loads in idle time near the form, or when a field is focused.
 ## Before launch

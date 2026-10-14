@@ -63,6 +63,34 @@
   // the postcards' handwriting font (73 KB) is only requested once the section is close to the screen
   (() => { const st = $('#stories'); if (!('IntersectionObserver' in window)) { st.classList.add('is-near'); return; } const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { st.classList.add('is-near'); io.disconnect(); } }, { rootMargin: '1500px 0px' }); io.observe(st); })();
 
+  /* ---------- live NZ education news: fetched from /api/news when the section is near; hides itself if unavailable ---------- */
+  (() => {
+    const sec = $('#news'), list = $('#news-list'); if (!sec) return;
+    const ago = d => { const s = (Date.now() - Date.parse(d)) / 1000; if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min ago'; if (s < 86400) return Math.round(s / 3600) + ' h ago'; if (s < 6048e2) { const n = Math.round(s / 86400); return n + (n === 1 ? ' day ago' : ' days ago'); } const t = new Date(d); return t.getDate() + ' ' + 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[t.getMonth()]; };   // no Intl: its first use costs ~100ms on a phone
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const tile = '<svg class="ic" aria-hidden="true"><use href="#i-book"/></svg>';
+    const hide = () => { sec.hidden = true; if (ST) ST.refresh(); };
+    // live from /api/news; the saved snapshot (assets/js/news-snapshot.js) stands in when that isn't reachable,
+    // e.g. index.html opened straight from disk or a static preview
+    const snapshot = () => window.NEWS_SNAPSHOT || [];
+    const load = () => (location.protocol === 'file:' ? Promise.resolve(null) : fetch('/api/news', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).catch(() => null))
+      .then(j => {
+        const live = ((j && j.items) || []);
+        const items = (live.length ? live : snapshot()).filter(i => /^https:\/\//.test(i.url)).slice(0, 4);
+        if (!items.length) { hide(); return; }
+        list.innerHTML = items.map(i => '<li class="nc"><a href="' + esc(i.url) + '" target="_blank" rel="noopener">' +
+          (i.image && (i.image.indexOf('/api/news-img?') === 0 || i.image.indexOf('./assets/img/news/') === 0) ? '<span class="nc__img' + (i.logo ? ' nc__img--logo' : '') + '"><img src="' + esc(i.image) + '" alt="" loading="lazy" decoding="async"></span>' : '<span class="nc__img nc__img--tile">' + tile + '</span>') +
+          '<span class="nc__meta">' + esc(i.source) + ' · ' + ago(i.date) + '</span><span class="nc__t">' + esc(i.title) + '</span></a></li>').join('');
+        list.style.setProperty('--n', items.length);
+        list.removeAttribute('aria-busy');
+        $$('img', list).forEach(im => im.addEventListener('error', () => { const s = im.parentElement; s.classList.add('nc__img--tile'); s.innerHTML = tile; }, { once: true }));
+      })
+      .catch(hide);
+    // load when the section comes near, or a few seconds after the page has loaded (whichever is first), once
+    let started = false; const go = () => { if (!started) { started = true; load(); } };
+    if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); go(); } }, { rootMargin: '1200px 0px' }); io.observe(sec); } else go();
+    addEventListener('load', () => setTimeout(go, 3000));
+  })();
   /* ---------- phones: sections become swipe rails (CSS) with dots that follow the scroll ---------- */
   const phone = matchMedia('(max-width: 700px)');
   function rail(track, onIndex, withDots) {
@@ -686,7 +714,10 @@
     if (tasks.length) schedule(); else ST.refresh();
   };
   const schedule = () => 'requestIdleCallback' in window ? requestIdleCallback(runTasks, { timeout: 500 }) : setTimeout(() => runTasks({ didTimeout: true }), 16);
-  if (location.hash) runTasks(null); else schedule();
+  // start once the web fonts have arrived (their swap re-lays-out every line of text; doing it inside a task stalls it),
+  // with a 1.5s cap so a slow font never holds the animations back
+  if (location.hash) runTasks(null);
+  else { let begun = false; const begin = () => { if (!begun) { begun = true; schedule(); } }; if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(begin)); setTimeout(begin, 1500); }
 
   addEventListener('load', () => { ST.refresh(); const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) { intro.progress(1); const jump = () => { const y = t.getBoundingClientRect().top + scrollY; lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); }; setTimeout(jump, 60); setTimeout(() => { ST.refresh(); jump(); }, 900); } });
   window.__shot = (at, p) => { intro.progress(1); pre.classList.add('is-gone'); const el = $('#' + at), base = el.closest('.pin-spacer') || el; const y = base.getBoundingClientRect().top + scrollY + (p || 0) * Math.max(0, base.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); ST.update(); return Math.round(y); };
