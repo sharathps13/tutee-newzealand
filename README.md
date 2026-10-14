@@ -25,7 +25,10 @@ design-preview/             the design concepts reviewed with the team; aotearoa
 universities.html           the 195-provider directory (generated — see below)
 assets/css/main.css         universities.html only: the compiled Tailwind from the old design
 assets/js/main.js, *-data.js, supabase-*.js   universities.html only
-netlify/functions/enquiry.mjs   shared lead endpoint (canonical copy lives in _tooling)
+netlify/functions/lead.mjs      this site's lead endpoint: POST /api/lead → Google Apps Script (Sheet + email)
+apps-script/                 Code.gs, Email.html, appsscript.json for the Google Sheet; SETUP.md = step-by-step linking guide
+scripts/render-email-preview.mjs   renders apps-script/Email.html with sample data → apps-script/email-preview.html
+netlify/functions/enquiry.mjs   shared lead endpoint (canonical copy lives in _tooling) (no longer used by the form)
 netlify/functions/verify-email.mjs   this site only: GET /api/verify-email?domain= (DNS MX lookup, no deps)
 netlify/functions/news.mjs       this site only: GET /api/news, live NZ education stories (RNZ, NZ Herald, Universities NZ RSS)
 netlify/functions/news-img.mjs   this site only: GET /api/news-img?u=, relays those stories' images (two allowed hosts only)
@@ -52,7 +55,7 @@ alone.
 | 5 | How it works (compass dial, 7 steps) | "Start with step one" |
 | 6 | Postcards home | — |
 | 7 | FAQ | Contact card |
-| 8 | Counselling form (2 steps) | Name, email, WhatsApp (searchable dial codes with flags), state/region; then call time |
+| 8 | Counselling form (2 steps) | Name, email, WhatsApp (searchable dial codes with flags), state/region; then course, shortlisted universities and call time. Saved to Google Sheets + emailed (apps-script/SETUP.md) |
 | 9 | Footer | Offices; the "Kia ora" letters react to the pointer |
 
 Always on: the header "Talk to a counsellor" button and, on phones, a sticky WhatsApp / Call / Free

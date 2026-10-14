@@ -439,7 +439,7 @@
         <div class="hp" aria-hidden="true"><label>Leave this empty <input id="c-bot" name="botcheck" tabindex="-1" autocomplete="off"></label></div>
         <ol class="csteps" id="csteps">
           <li class="now"><span class="bar"><i></i></span><span><b>01</b>Your details</span></li>
-          <li><span class="bar"><i></i></span><span><b>02</b>Call time</span></li>
+          <li><span class="bar"><i></i></span><span><b>02</b>Plans &amp; call time</span></li>
         </ol>
 
         <div class="cpanes">
@@ -464,8 +464,13 @@
           </fieldset>
 
           <fieldset class="cpane" data-step="1">
-            <legend>When should we call?</legend>
-            <p class="hint">Times are in your local time. We'll WhatsApp you first to confirm.</p>
+            <legend>Your plans, and when to call</legend>
+            <p class="hint">Both are optional. Call times are in your local time; we'll WhatsApp you first to confirm.</p>
+            <div class="fgrid">
+              <div class="ff"><select id="c-course"><option value="">Not sure yet</option><option>IT &amp; Computer Science</option><option>Business &amp; Management</option><option>Engineering</option><option>Health &amp; Nursing</option><option>Hospitality &amp; Tourism</option><option>Design &amp; Media</option><option>Other</option></select><label for="c-course">Course</label></div>
+              <div class="ff"><input id="c-unis" list="nz-unis" placeholder=" " autocomplete="off" maxlength="200"><label for="c-unis">Shortlisted universities</label></div>
+              <datalist id="nz-unis"><option value="University of Auckland"><option value="Auckland University of Technology (AUT)"><option value="University of Waikato"><option value="Massey University"><option value="Victoria University of Wellington"><option value="University of Canterbury"><option value="Lincoln University"><option value="University of Otago"><option value="Not decided yet"></datalist>
+            </div>
             <div class="slots" id="slots">
               <button type="button" class="slot" aria-pressed="false"><svg class="ic"><use href="#i-sunrise"/></svg><b>Morning</b><small>10 AM – 12 PM</small></button>
               <button type="button" class="slot" aria-pressed="true"><svg class="ic"><use href="#i-sun"/></svg><b>Afternoon</b><small>2 – 5 PM</small></button>

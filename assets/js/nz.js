@@ -478,13 +478,15 @@
       phone: phoneE164 || ccSel.dial + ' ' + $('#c-phone').value.trim(), destination: 'New Zealand',
       page: location.host + location.pathname, from_name: 'NZ landing page · Counselling form',
       botcheck: $('#c-bot').value, preferredCallTime: slotText + ' (' + ccSel.name + ' time)', consent: 'yes',
-      state: $('#c-state').value.trim(), interest
+      state: $('#c-state').value.trim(), interest,
+      course: $('#c-course').value, universities: $('#c-unis').value.trim(), source: 'New Zealand Landing Page',
+      level: $('#h-level').value, city: $('#h-city').value, country: ccSel.name
     };
     const utm = readUtm() || {}; UTM_KEYS.forEach(k => { if (utm[k]) data[k] = utm[k]; });
     Object.keys(data).forEach(k => { if (data[k] === '' && k !== 'botcheck') delete data[k]; });
     const btn = $('#c-next'), btnHtml = btn.innerHTML;
     btn.disabled = true; btn.textContent = 'Sending…'; $('#c-err').textContent = '';
-    fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
+    fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
       .then(r => r.json().catch(() => ({ success: false })))
       .then(res => {
         if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 73583 64959.'; return; }
@@ -493,7 +495,8 @@
         window.dataLayer.push({ event: 'generate_lead', lead_source: 'Counselling form', country: 'new-zealand' });
         $('#sent-h').textContent = "You're booked, " + data.name.split(' ')[0] + '.';
         const rows = [['Call', slotText], ['WhatsApp', data.phone], ['Email', data.email]];
-        if (interest) rows.push(['Interested in', interest]);
+        if (data.course) rows.push(['Course', data.course]);
+        if (data.universities) rows.push(['Universities', data.universities]);
         $('#sent-card').innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1].replace(/[<>&]/g, '') + '</dd>').join('');
         stepsUI.forEach(s => { s.classList.add('done'); s.classList.remove('now'); });
         $('#sent').classList.add('on');
@@ -502,7 +505,7 @@
       .then(() => { btn.disabled = false; btn.innerHTML = btnHtml; });
   });
   // the hero quick-start bar carries its choices into the lead as hidden fields
-  $('#qform').addEventListener('submit', e => { e.preventDefault(); $('#h-course').value = $('#q-course').value; $('#h-level').value = $('#q-level').value; $('#h-city').value = $('#q-city').value; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
+  $('#qform').addEventListener('submit', e => { e.preventDefault(); $('#h-course').value = $('#q-course').value; if ($('#q-course').value !== 'Not sure yet') $('#c-course').value = $('#q-course').value; $('#h-level').value = $('#q-level').value; $('#h-city').value = $('#q-city').value; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
 
   /* ---------- why NZ: expanding photo accordion ---------- */
     const REASONS = [
