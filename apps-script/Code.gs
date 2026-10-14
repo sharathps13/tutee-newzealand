@@ -2,7 +2,7 @@
  * Tutee Connect · New Zealand landing page → Google Sheet + lead email
  *
  * Receives leads from the site's Netlify function (/api/lead), appends one row per lead to the "Leads" tab
- * of the spreadsheet this script is bound to, and emails business@tuteeconnect.com.
+ * of the spreadsheet in Script Property SPREADSHEET_ID (or the one this script is bound to), and emails business@tuteeconnect.com.
  * The very first lead (or running setup()) creates and formats the table.
  *
  * Script Properties (Project Settings → Script Properties):
@@ -13,7 +13,7 @@
  */
 
 const CONFIG = {
-  SHEET_NAME: 'Leads',
+  SHEET_NAME: 'New Zealand Leads',          // the tab this page writes to (created if missing)
   NOTIFY_TO: 'business@tuteeconnect.com',
   SENDER_NAME: 'Tutee Connect · NZ Landing Page',
   TIMEZONE: 'Asia/Kolkata',
@@ -91,14 +91,21 @@ function normalise_(d) {
 // cell values; text that could be read as a formula (= + - @) is stored as plain text
 function rowFor_(lead, now) {
   const text = v => (/^[=+\-@]/.test(v) ? "'" + v : v);
-  return [now, now, text(lead.name), "'" + lead.phone, text(lead.email), text(lead.state), text(lead.universities), text(lead.course), lead.source, text(lead.callTime)];
+  // date and time are written as India-time text, so they are right whatever timezone the spreadsheet uses
+  return [Utilities.formatDate(now, CONFIG.TIMEZONE, 'dd MMM yyyy'), Utilities.formatDate(now, CONFIG.TIMEZONE, 'hh:mm a'), text(lead.name), "'" + lead.phone, text(lead.email), text(lead.state), text(lead.universities), text(lead.course), lead.source, text(lead.callTime)];
 }
 
 /* ------------------------------------------------------------- the table */
 
+// The spreadsheet: the one in Script Property SPREADSHEET_ID (a standalone script writing into an existing
+// spreadsheet, e.g. the one the Singapore page already uses), or the sheet this script is bound to.
+function book_() {
+  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  return id ? SpreadsheetApp.openById(id.trim()) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function ensureSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (ss.getSpreadsheetTimeZone() !== CONFIG.TIMEZONE) ss.setSpreadsheetTimeZone(CONFIG.TIMEZONE);
+  const ss = book_();   // the spreadsheet's own timezone is left alone: other tabs (Singapore) may rely on it
   let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(CONFIG.SHEET_NAME, 0);
   if (sheet.getLastRow() === 0) buildTable_(sheet);
@@ -116,9 +123,8 @@ function buildTable_(sheet) {
   // tidy the grid down to the table's width
   const extra = sheet.getMaxColumns() - n;
   if (extra > 0) sheet.deleteColumns(n + 1, extra);
-  // column formats: real date/time values (so the sheet sorts and filters correctly), phone as text
-  sheet.getRange('A2:A').setNumberFormat('dd mmm yyyy');
-  sheet.getRange('B2:B').setNumberFormat('hh:mm am/pm');
+  // date, time and phone are kept as plain text
+  sheet.getRange('A2:B').setNumberFormat('@');
   sheet.getRange('D2:D').setNumberFormat('@');
   sheet.getRange(1, 1, sheet.getMaxRows(), n).setFontFamily('Arial').setFontSize(10);
   sheet.getRange(1, 1, 1, n).setFontSize(10);
@@ -130,8 +136,6 @@ function buildTable_(sheet) {
 
 function formatRow_(sheet, row) {
   const n = CONFIG.HEADERS.length;
-  sheet.getRange(row, 1).setNumberFormat('dd mmm yyyy');
-  sheet.getRange(row, 2).setNumberFormat('hh:mm am/pm');
   sheet.getRange(row, 1, 1, n).setVerticalAlignment('top').setWrap(true);
 }
 

@@ -15,6 +15,17 @@ Netlify Forms is not used. The form no longer posts to `/api/enquiry` (Resend / 
 Allow about 15 minutes. You need the Google account that should own the sheet and send the emails
 (ideally a shared business account, not a personal one).
 
+## Using a spreadsheet you already have (e.g. the Singapore one)
+
+The script can write into an existing spreadsheet as a **new tab, "New Zealand Leads"**, without touching the
+other tabs or their scripts. Do this instead of step 1:
+
+1. Open <https://script.google.com> → **New project** (a separate project, not the Singapore one) and paste in
+   `Code.gs`, an HTML file named `Email` and `appsscript.json`, as in step 1.3.
+2. Copy the spreadsheet's ID from its address: `https://docs.google.com/spreadsheets/d/`**`THIS-PART`**`/edit`.
+3. In Script Properties (step 2), add `SPREADSHEET_ID` = that ID, as well as `LEAD_SECRET`.
+4. Continue from step 3. `setup` creates the "New Zealand Leads" tab. The spreadsheet's timezone is not
+   changed; date and time are written in India time.
 ## 1. Create the sheet and the script
 
 1. Go to <https://sheets.new> (signed in to that account) and name it, e.g. **Tutee Connect · NZ leads**.

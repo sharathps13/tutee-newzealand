@@ -1,0 +1,9 @@
+{
+  "name": "tutee-newzealand",
+  "private": true,
+  "type": "module",
+  "description": "Tutee Connect New Zealand landing page. Static site; this file only exists for the Tutee AI function's dependency.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0"
+  }
+}

@@ -14,7 +14,7 @@
   const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
   if (!readUtm()) { const p = new URLSearchParams(location.search), f = {}; UTM_KEYS.forEach(k => { const v = p.get(k); if (v) f[k] = v.slice(0, 150); }); if (Object.keys(f).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: f })); }
   // universities.html and older campaigns link to the previous page's section ids
-  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', intakes: 'consult', visas: 'process', documents: 'process', universities: 'cities', loans: 'trust' };
+  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', intakes: 'consult', visas: 'process', documents: 'process', universities: 'unis', loans: 'trust' };
   const legacyId = LEGACY[location.hash.slice(1)];
   if (legacyId) history.replaceState(null, '', '#' + legacyId);
 
@@ -41,7 +41,7 @@
     { msg: 'Amma, the lake here changes colour every hour. Classes are small and my lecturer already knows my name!', name: 'Karthik', to: ['Amma & Appa', 'Anna Nagar, Chennai', 'Tamil Nadu, India'], place: 'Wānaka', reo: 'Glendhu Bay', img: 'postcard-wanaka', c: '#0F5556', date: '12 MAR 26' },
     { msg: 'Got a part-time job at a café in week three. The loan plan is working out exactly as they said.', name: 'Ananya', to: ['Mr & Mrs Rao', 'Indiranagar, Bengaluru', 'Karnataka, India'], place: 'Auckland', reo: 'Tāmaki Makaurau', img: 'postcard-auckland', c: '#8C0B0B', date: '04 APR 26' },
     { msg: 'Dunedin feels like a whole town of students. Found three Tamil friends in the first week.', name: 'Harini', to: ['Amma', 'RS Puram, Coimbatore', 'Tamil Nadu, India'], place: 'Dunedin', reo: 'Ōtepoti', img: 'postcard-dunedin', c: '#B07510', date: '21 FEB 26' }
-  ];
+  ]; (window.__TC_DATA = window.__TC_DATA || {}).post = POST;   // read by Tutee AI
   $('#cards').innerHTML = POST.map((p, i) => '<article class="pcard" tabindex="0" aria-label="Postcard from ' + p.name + ' in ' + p.place + '"><div class="pcard__in">' +
     '<div class="pcard__face pc-back"><div class="pc-msg"><p>' + p.msg + '</p><b>– ' + p.name + '</b></div>' +
     '<div class="pc-side"><span class="pc-stamp"><svg viewBox="0 0 50 62" aria-hidden="true"><rect width="50" height="62" fill="' + p.c + '"/><path d="M25 54C25 40 24 32 30 25C36 18 34 9 27 9C20 9 17 16 21 21C24 25 29 22 28 18" fill="none" stroke="#F4B73D" stroke-width="2.6" stroke-linecap="round"/><path d="M25 46q-6-2-9-7M25 40q-5-2-7-6M26 46q6-2 9-7M26 40q5-2 7-6" fill="none" stroke="#FBF6EE" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><text x="25" y="59" text-anchor="middle" font-family="DM Mono, monospace" font-size="5.5" fill="#FBF6EE" letter-spacing=".6">AOTEAROA</text></svg></span>' +
@@ -51,13 +51,20 @@
     '</div></article>').join('');
   // a mouse flips the card while it is over it (any device with a mouse, including touchscreen laptops);
   // touch and pen flip on tap; keyboard on Enter / Space
+  // the card only goes 3D while it turns (.is-turning), then settles back to flat, crisp layers
+  const flip = (c, on) => {
+    if (on === c.classList.contains('is-flip')) return;
+    if (!c.classList.contains('is-turning')) { c.classList.add('is-turning'); void c.offsetWidth; c.classList.add('is-anim'); }
+    c.classList.toggle('is-flip', on);
+    clearTimeout(c._turn); c._turn = setTimeout(() => c.classList.remove('is-turning', 'is-anim'), 1050);
+  };
   $$('.pcard').forEach(c => {
     let lastType = '';
-    c.addEventListener('pointerenter', e => { lastType = e.pointerType; if (e.pointerType === 'mouse') c.classList.add('is-flip'); });
-    c.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') c.classList.remove('is-flip'); });
+    c.addEventListener('pointerenter', e => { lastType = e.pointerType; if (e.pointerType === 'mouse') flip(c, true); });
+    c.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') flip(c, false); });
     c.addEventListener('pointerdown', e => { lastType = e.pointerType; });
-    c.addEventListener('click', () => { if (lastType !== 'mouse') c.classList.toggle('is-flip'); });
-    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.classList.toggle('is-flip'); } });
+    c.addEventListener('click', () => { if (lastType !== 'mouse') flip(c, !c.classList.contains('is-flip')); });
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(c, !c.classList.contains('is-flip')); } });
   });
 
   // the postcards' handwriting font (73 KB) is only requested once the section is close to the screen
@@ -80,8 +87,14 @@
         if (!items.length) { hide(); return; }
         list.innerHTML = items.map(i => '<li class="nc"><a href="' + esc(i.url) + '" target="_blank" rel="noopener">' +
           (i.image && (i.image.indexOf('/api/news-img?') === 0 || i.image.indexOf('./assets/img/news/') === 0) ? '<span class="nc__img' + (i.logo ? ' nc__img--logo' : '') + '"><img src="' + esc(i.image) + '" alt="" loading="lazy" decoding="async"></span>' : '<span class="nc__img nc__img--tile">' + tile + '</span>') +
-          '<span class="nc__meta">' + esc(i.source) + ' · ' + ago(i.date) + '</span><span class="nc__t">' + esc(i.title) + '</span></a></li>').join('');
-        list.style.setProperty('--n', items.length);
+          '<span class="nc__body"><span class="nc__meta">' + esc(i.source) + ' · ' + ago(i.date) + '</span><span class="nc__t">' + esc(i.title) + '</span></span></a></li>').join('');
+        // running ticker: repeat the stories until one copy is wider than the screen, then double it so the loop is seamless
+        const one = list.innerHTML; let set = one;
+        list.innerHTML = set; while (list.scrollWidth < innerWidth * 1.1 && set.length < one.length * 8) { set += one; list.innerHTML = set; }
+        const w = list.scrollWidth;
+        list.innerHTML = set + set.replace(/<li class="nc">/g, '<li class="nc" aria-hidden="true">').replace(/<a /g, '<a tabindex="-1" ');
+        list.style.setProperty('--dur', Math.max(25, Math.round(w / 45)) + 's');   // about 45px per second
+        list.classList.add('is-running');
         list.removeAttribute('aria-busy');
         $$('img', list).forEach(im => im.addEventListener('error', () => { const s = im.parentElement; s.classList.add('nc__img--tile'); s.innerHTML = tile; }, { once: true }));
       })
@@ -175,7 +188,7 @@
         end: [['i-mountain', 'Winter', 'Ski or snowboard at The Remarkables or Coronet Peak.'], ['i-landmark', 'Saturday', 'Gold-rush history and cafés in Arrowtown.'], ['i-waves', 'Summer', 'Jet boats, lake swims and hikes.']],
         facts: [['i-sun', 'Climate', '22° / 8°', 'Summer / winter highs, snowy winters'], ['i-home', 'Room rent', 'NZ$300–450', 'Per week; book early'], ['i-users', 'Population', '50,000', 'Queenstown Lakes district'], ['i-briefcase', 'Part-time work', 'Plenty', 'Hotels, ski fields, tourism']],
         unis: ['Queenstown Resort College', 'SIT Queenstown'], known: ['Hospitality', 'Tourism', 'Event management'], vibe: [3, 5, 2, 1] }
-    ];
+    ]; (window.__TC_DATA = window.__TC_DATA || {}).cities = CITIES;   // read by Tutee AI
     const VIBE = ['City buzz', 'Nature on the doorstep', 'Student life', 'Easy on the budget'];
     const n = CITIES.length, imm = $('#imm'), layers = $('#imm-layers'), hero = $('#imm-hero'), modeBtns = $$('.imm__mode button'), pill = $('.imm__pill');
     const srcset = hdSet;
@@ -290,17 +303,22 @@
     ['Is there a pathway to work or residence?', 'Eligible graduates can apply for a post-study work visa of up to three years, and some go on to residence pathways. We assess your profile on the call.'],
     ['Can my family come with me?', 'Partners and children apply for their own visas based on their relationship to you. We plan the right timing in the consultation.'],
     ['Do you help after I land?', 'Yes. Airport pickup, SIM card, accommodation, bank account and part-time work support, and later your post-study work visa.']
-  ];
+  ]; (window.__TC_DATA = window.__TC_DATA || {}).faq = FAQ;   // read by Tutee AI
   $('#acc').innerHTML = FAQ.map((f, i) => '<div class="qa"><button type="button" aria-expanded="false" aria-controls="qa' + i + '"><span class="qa__n">' + String(i + 1).padStart(2, '0') + '</span><span class="qa__q">' + f[0] + '</span><span class="qa__x"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="qa__a" id="qa' + i + '" role="region"><div><p>' + f[1] + '</p></div></div></div>').join('');
   $$('.qa button').forEach(b => b.addEventListener('click', () => { const q = b.parentElement, open = !q.classList.contains('open'); $$('.qa.open').forEach(x => { x.classList.remove('open'); $('button', x).setAttribute('aria-expanded', 'false'); }); if (open) { q.classList.add('open'); b.setAttribute('aria-expanded', 'true'); } setTimeout(() => ST && ST.refresh(), 600); }));
 
   /* ---------- smooth scroll ---------- */
+  // ScrollTrigger and Lenis both measure the page when they start, so they are started further down (startScroll),
+  // once every section has been built: the page is then laid out once before first paint, not twice
   let lenis = null;
-  if (G && ST) G.registerPlugin(ST);
-  // phones keep native scrolling (already smooth, no per-frame JS); the address bar showing / hiding must not re-measure every trigger
-  if (ST) ST.config({ ignoreMobileResize: true });
-  if (!reduce && window.Lenis && G && matchMedia('(hover: hover) and (pointer: fine)').matches) { lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
+  const startScroll = () => {
+    if (G && ST) G.registerPlugin(ST);
+    // phones keep native scrolling (already smooth, no per-frame JS); the address bar showing / hiding must not re-measure every trigger
+    if (ST) ST.config({ ignoreMobileResize: true });
+    if (!reduce && window.Lenis && G && ST && matchMedia('(hover: hover) and (pointer: fine)').matches) { lenis = window.__lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
+  };
   const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; lenis ? lenis.scrollTo(t, { offset: 0, duration: 1.6 }) : t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
+  window.__goTo = goTo; window.__lenis = lenis;   // used by unis.js and ai.js
   $$('[data-scroll]').forEach(a => a.addEventListener('click', e => { const h = a.getAttribute('href'); if (h && h[0] === '#') { e.preventDefault(); goTo(h === '#top' ? '#hero' : h); } }));
   let tt; function toast(m) { const t = $('#toast'); $('span', t).textContent = m; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2400); }
 
@@ -519,17 +537,20 @@
     ['Research that matters', 'Research culture', 'Modern labs and a hands-on research culture, from agritech and climate to earth sciences.', 'reason-08-biology', 'University of Auckland', '50% 50%'],
     ['A clear, online visa process', 'Online application', 'Immigration New Zealand runs a straightforward online application, and we prepare the full file with you.', 'reason-09-beehive', 'Parliament, Wellington', '50% 50%'],
     ['Fjords, lakes and mountains on your doorstep', 'Life beyond campus', 'Some of the world’s most dramatic landscapes are a weekend trip away from every campus.', 'reason-10-milford', 'Milford Sound · Piopiotahi', '45% 50%']
-  ];
+  ]; (window.__TC_DATA = window.__TC_DATA || {}).reasons = REASONS;   // read by Tutee AI
   (() => {
     const box = $('#acc10');
     box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="' + hdSrc(r[3]) + '" srcset="' + hdSet(r[3]) + '" sizes="(max-width: 700px) ' + (i === 0 || i === 9 ? '100vw' : '50vw') + ', (max-width: 899px) 100vw, 60vw" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
     const panels = $$('.ap', box);
     const open = i => { panels.forEach((p, j) => { p.classList.toggle('on', j === i); p.setAttribute('aria-selected', j === i); }); $('#acc10-n').textContent = String(i + 1).padStart(2, '0'); $('#acc10-bar').style.transform = 'scaleX(' + (i + 1) / panels.length + ')'; };
-    const hover = matchMedia('(hover: hover) and (min-width: 900px)').matches;
+    // a mouse opens a panel just by hovering it. Checked per event (not once at load), so it also works on
+    // touchscreen laptops and after the window is resized up to the desktop layout.
+    const wide = matchMedia('(min-width: 900px)');
     let t; panels.forEach((p, i) => {
       p.addEventListener('click', () => open(i));
       p.addEventListener('focus', () => open(i));
-      if (hover) { p.addEventListener('pointerenter', () => { clearTimeout(t); t = setTimeout(() => open(i), 90); }); p.addEventListener('pointerleave', () => clearTimeout(t)); }
+      p.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse' || !wide.matches) return; clearTimeout(t); t = setTimeout(() => open(i), 90); });
+      p.addEventListener('pointerleave', () => clearTimeout(t));
     });
     // phones: a grid of photo tiles; tapping one slides up a sheet with the full reason
     (() => {
@@ -590,7 +611,7 @@
     ['i-cash', 'Loan', 'Education loan', 'Secured and unsecured offers compared across our twelve lending partners, so you choose with confidence.', ['Lender comparison', 'Paperwork support', 'Sanction letter']],
     ['i-passport', 'Visa', 'Visa and statement of purpose', 'The right student visa for your plan, and an SOP that sounds like you.', ['Visa file', 'SOP review', 'Interview prep']],
     ['i-plane', 'Arrive', 'Land and settle in', 'Airport pickup, SIM, accommodation, bank account and part-time work support. Later, your post-study work visa.', ['Pre-departure briefing', 'Arrival support', 'Post-study visa help']]
-  ];
+  ]; (window.__TC_DATA = window.__TC_DATA || {}).steps = STEPS;   // read by Tutee AI
   (() => {
     const stage = $('#dial-stage'), dial = $('#dial'), CX = 500, CY = 510, R = 420, N = STEPS.length;
     // instrument ticks every 5°, longer every 30°
@@ -634,12 +655,54 @@
     letters.forEach((l, i) => l.addEventListener('click', () => { l.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-14%) scale(1.05)', color: '#F4B73D' }, { transform: 'translateY(0)' }], { duration: 700, easing: 'cubic-bezier(.34,1.56,.64,1)' }); }));
   })();
 
+  /* ---------- beyond your degree: four stages, one detail panel ---------- */
+  (() => {
+    const tabs = $$('.stg'); if (!tabs.length) return;
+    const STAGES = [
+      { tag: 'Stage 1 · While you study', h: 'Study, earn and bring your family', p: 'Your degree is the first step. You can work part-time while you study, and your family can come with you.',
+        list: ['<b>Part-time work</b> during term and full-time in scheduled holidays, on most student visas', '<b>Partners</b> of eligible students (for example postgraduate) can apply for a work visa', '<b>Children</b> can join you and attend school in New Zealand'] },
+      { tag: 'Stage 2 · After you graduate', h: 'Up to 3 years of open work rights', p: 'A post-study work visa lets you work for almost any employer, so you can build New Zealand experience in your field.',
+        list: ['<b>Up to 3 years</b>, depending on the level and length of your qualification', '<b>Open work rights:</b> not tied to one employer', '<b>Partners</b> may be eligible for their own work visa'] },
+      { tag: 'Stage 3 · Your career', h: 'A skilled job opens the fastest routes', p: 'Roles on New Zealand\u2019s Green List, in areas like engineering, IT, health and construction, lead straight to residence routes.',
+        list: ['<b>Green List roles</b> across engineering, IT, health, trades and more', '<b>Work to Residence</b> after time in an eligible Green List role', '<b>Skilled Migrant points</b> for other skilled jobs'] },
+      { tag: 'Stage 4 · Your PR', h: 'Residence, for you and your family', p: 'With the right job, residence can come quickly, and it covers your partner and dependent children too.',
+        list: ['<b>Straight to Residence</b> for eligible Green List Tier 1 roles', '<b>Family included:</b> partner and dependent children on your application', '<b>Citizenship</b> becomes possible after living in New Zealand as a resident'] }
+    ]; (window.__TC_DATA = window.__TC_DATA || {}).stages = STAGES;   // read by Tutee AI
+    const panel = $('#stg-panel'); let cur = -1, t = 0;
+    const fill = i => { const s = STAGES[i]; $('#stg-tag').textContent = s.tag; $('#stg-h').textContent = s.h; $('#stg-p').textContent = s.p; $('#stg-list').innerHTML = s.list.map(l => '<li><span>' + l + '</span></li>').join(''); };
+    const show = (i, focus) => {
+      if (i === cur) return; const first = cur < 0; cur = i;
+      tabs.forEach((b, j) => { b.setAttribute('aria-selected', j === i); b.tabIndex = j === i ? 0 : -1; });
+      panel.setAttribute('aria-labelledby', 'stg-' + i);
+      const bar = $('#stg-bar'); if (bar) bar.style.transform = 'scaleX(' + (i + 1) / 4 + ')';
+      if (focus) tabs[i].focus();
+      if (first || reduce) { fill(i); return; }
+      panel.classList.add('is-swap'); clearTimeout(t); t = setTimeout(() => { fill(i); panel.classList.remove('is-swap'); }, 200);
+    };
+    tabs.forEach((b, i) => {
+      b.addEventListener('click', () => show(i));
+      b.addEventListener('keydown', e => { const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]; if (d) { e.preventDefault(); show((i + d + 4) % 4, true); } });
+    });
+    show(0);
+  })();
+  document.addEventListener('click', e => { const b = e.target.closest('[data-uni]'); if (b && window.TCUnis) window.TCUnis.open({ name: b.dataset.uni, type: 'University', assurance: 'AQA audited' }); });
+
+  /* ---------- phone / tablet menu ---------- */
+  (() => {
+    const btn = $('#hdr-menu'), hd = $('#hdr'); if (!btn) return;
+    const set = on => { hd.classList.toggle('is-open', on); btn.setAttribute('aria-expanded', on); btn.setAttribute('aria-label', on ? 'Close menu' : 'Open menu'); };
+    btn.addEventListener('click', () => set(!hd.classList.contains('is-open')));
+    $$('#hdr-nav a').forEach(a => a.addEventListener('click', () => set(false)));
+    document.addEventListener('click', e => { if (!hd.contains(e.target)) set(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
+  })();
   /* ---------- header, progress, mobile bar ---------- */
-  const hdr = $('#hdr'), prog = $('#prog'), mbar = $('#mbar'); let lastY = 0;
-  // the page height is measured on resize / refresh only, never inside the scroll handler (that forced a layout every frame)
-  let maxY = 1, vh = innerHeight, queued = false;
-  const measure = () => { vh = innerHeight; maxY = Math.max(1, document.documentElement.scrollHeight - vh); };
-  function update() { queued = false; const y = scrollY; hdr.classList.toggle('is-solid', y > 60); hdr.classList.toggle('is-hidden', y > lastY && y > vh * 1.2); lastY = y; prog.style.strokeDashoffset = 1 - Math.min(1, y / maxY); mbar.classList.toggle('is-on', y > vh * .7); }
+  const hdr = $('#hdr'); let lastY = 0;
+  // the viewport is measured on the first frame / resize only, never inside the scroll handler and never while the
+  // page is still being built (reading innerHeight here used to force a full extra layout before first paint)
+  let vh = 0, queued = false;
+  const measure = () => { vh = innerHeight; };
+  function update() { queued = false; const y = scrollY; hdr.classList.toggle('is-solid', y > 60); hdr.classList.toggle('is-hidden', y > lastY && y > vh * 1.2); lastY = y; }
   const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
   requestAnimationFrame(() => { measure(); update(); });
   addEventListener('scroll', onScroll, { passive: true });
@@ -653,6 +716,7 @@
     const watch = (el, cb) => el && new IntersectionObserver(([e]) => cb(e.isIntersecting, el)).observe(el);
     watch($('#hero'), (on, el) => { el.classList.toggle('is-off', !on); mistTweens.forEach(t => on ? t.resume() : t.pause()); });
     watch($('.banks'), (on, el) => el.classList.toggle('is-off', !on));
+    watch($('#news'), (on, el) => el.classList.toggle('is-off', !on));
     watch($('#dial'), (on, el) => el.classList.toggle('is-off', !on));
   }
 
@@ -660,13 +724,15 @@
   const pre = $('#pre') || document.createElement('div');
   const counters = () => $$('[data-count]').forEach(el => { const end = +el.dataset.count; if (!G || reduce) { el.textContent = end.toLocaleString('en-IN'); return; } const o = { v: 0 }; G.to(o, { v: end, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' }, onUpdate: () => el.textContent = Math.round(o.v).toLocaleString('en-IN') }); });
   document.documentElement.classList.add('go');   // hero copy is held hidden by CSS until this point, so it never flashes before animating
-  if (!G || !ST || reduce) { pre.classList.add('is-gone'); counters(); return; }
+  startScroll();
+  const shown = h => h.classList.add('is-shown');
+  if (!G || !ST || reduce) { pre.classList.add('is-gone'); counters(); $$('[data-split]').forEach(shown); return; }
 
   const mist = $$('.mist');
   const intro = G.timeline({ defaults: { ease: 'expo.out' } });
   // no loading curtain: the hero photo paints immediately and the copy rises in over it
   intro.from(mist, { opacity: 0, duration: 1.6, ease: 'power1.out' }, 0)
-    .from('#hero-h .w > span', { yPercent: 105, duration: .95, stagger: .035 }, .05)
+    .from('#hero-h .w > span', { yPercent: 125, duration: .95, stagger: .035, onComplete: () => shown($('#hero-h')) }, .05)
     .from('#hero [data-in]', { y: 20, opacity: 0, duration: .85, stagger: .07 }, .2)
     .from('#facts > div', { x: 24, opacity: 0, duration: .85, stagger: .07 }, .3)
     .from('#qform', { y: 30, opacity: 0, duration: .9 }, .35)
@@ -692,7 +758,7 @@
       $$('.city__big').forEach(b => G.fromTo(b, { xPercent: 30 }, { xPercent: -20, ease: 'none', scrollTrigger: { trigger: b.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
     }),
     // headings + reveals, one task per element so no single slice runs long
-    ...$$('[data-split]').filter(h => h.id !== 'hero-h').map(h => () => G.from(h.querySelectorAll('.w > span'), { yPercent: 108, duration: 1.1, stagger: .045, ease: 'expo.out', scrollTrigger: { trigger: h, start: 'top 86%' } })),
+    ...$$('[data-split]').filter(h => h.id !== 'hero-h').map(h => () => G.from(h.querySelectorAll('.w > span'), { yPercent: 125, duration: 1.1, stagger: .045, ease: 'expo.out', onComplete: () => shown(h), scrollTrigger: { trigger: h, start: 'top 86%' } })),
     ...$$('[data-in]').filter(el => !el.closest('#hero')).map(el => T(el, { y: 40, opacity: 0 }, el, 'top 88%')),
     counters,
     T('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08 }, '#services', 'top 82%', { clearProps: 'transform,opacity' }),
@@ -703,6 +769,42 @@
     () => G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     () => G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     // postcards drop in like they've been dealt onto a table
+    // universities: the NZ coastline draws itself as you scroll (pinned on desktop), then pins and the list appear
+    () => G.matchMedia().add({ big: '(min-width: 900px)', small: '(max-width: 899px)' }, ctx => {
+      const nzm = $('#nzm'); if (!nzm) return;
+      const coast = $$('.nzm__coast'), leads = $$('.nzm__lead'), pins = $$('.nzm__pin'), items = $$('.nzm__list li');
+      // dash = each path's real length, so the outline can be revealed from 0 to 100% of itself
+      const L = p => { const l = p.getTotalLength(); p.style.strokeDasharray = l + ' ' + l; return l; };
+      const draw = (els, from) => els.map(p => ({ el: p, len: L(p), from }));
+      if (ctx.conditions.big) {
+        nzm.classList.add('is-pinned');
+        const tl = G.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: nzm, start: 'top 85%', end: 'bottom bottom', scrub: 1, invalidateOnRefresh: true } });   // starts as the map scrolls in; the stage is sticky, so it stays in view while it draws
+        draw(coast).forEach((d, i) => tl.fromTo(d.el, { strokeDashoffset: d.len, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: .8 }, i * .05));
+        tl
+          .fromTo('.nzm__map', { scale: 2.4, svgOrigin: '200 36' }, { scale: 1, svgOrigin: '200 36', duration: 1, ease: 'power2.inOut' }, 0)   // zooms out from the top of Northland, so the big outline only extends downwards
+          .fromTo(coast, { strokeWidth: .55 }, { strokeWidth: 1.3, duration: 1, ease: 'power2.inOut' }, 0)
+          .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .14, stagger: .1, ease: 'back.out(3)' }, 1.02)
+          ;
+        draw(leads).forEach((d, i) => tl.fromTo(d.el, { strokeDashoffset: d.len, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: .2 }, 1.06 + i * .1));
+        tl
+          .fromTo(items, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: .18, stagger: .1 }, 1.14)
+          .fromTo('.nzm__all', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .2 }, 1.95)
+          .to({}, { duration: .3 });
+        return () => nzm.classList.remove('is-pinned');
+      }
+      // phones: crop the map to the islands; touching or focusing a university lights up its pin (one at a time)
+      const svg = $('.nzm__svg', nzm), vb = svg.getAttribute('viewBox');
+      svg.setAttribute('viewBox', '50 30 285 400');
+      const light = e => { const li = e.target.closest && e.target.closest('.nzm__list li'); if (!li) return; const i = items.indexOf(li); items.forEach((el, k) => { el.classList.toggle('is-on', k === i); if (pins[k]) pins[k].classList.toggle('is-on', k === i); }); };
+      nzm.addEventListener('pointerdown', light); nzm.addEventListener('focusin', light);
+      const tm = G.timeline({ scrollTrigger: { trigger: nzm, start: 'top 75%' } });
+      draw(coast).forEach((d, i) => tm.fromTo(d.el, { strokeDashoffset: d.len }, { strokeDashoffset: 0, duration: 1.8, ease: 'power2.inOut' }, i * .1));
+      tm
+        .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .35, stagger: .07, ease: 'back.out(3)' }, '-=.4')
+        .fromTo(items, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .4, stagger: .06, ease: 'expo.out' }, '<');
+      return () => { nzm.removeEventListener('pointerdown', light); nzm.removeEventListener('focusin', light); svg.setAttribute('viewBox', vb); [...items, ...pins].forEach(el => el.classList.remove('is-on')); };
+    }),
+    T('.stg', { y: 30, opacity: 0, stagger: .08 }, '.stages', 'top 88%', { clearProps: 'transform,opacity' }),
     T('.pcard', { y: 80, rotate: i => [-6, 3, -3][i] || 0, opacity: 0, duration: 1.2, stagger: .14 }, '#cards', 'top 82%', { clearProps: 'transform,opacity' }),
     // faq + consult + footer
     T('.qa', { y: 24, opacity: 0, duration: .8, stagger: .06, ease: 'power3.out' }, '#acc', 'top 85%'),
