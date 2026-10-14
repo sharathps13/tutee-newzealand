@@ -1,6 +1,6 @@
 # HD photo credits
 
-All 19 photographs on the landing page are from Wikimedia Commons and released under **CC0** (public domain). Attribution is not legally required; the footer credits the photographers as a courtesy. Each file is used once on the page. `-m.jpg` files are 1200px versions of the same photo served to phones via `srcset`.
+All 25 photographs on the landing page are from Wikimedia Commons and released under **CC0** (public domain). Attribution is not legally required; the footer credits the photographers as a courtesy. Each file is used once on the page. The page serves resized WebP copies of each photo (`<file>-640/1024/1600/2400.webp`) through `srcset`; the `.jpg` files listed below are the masters.
 
 No photo has an identifiable person as its subject.
 
@@ -25,3 +25,9 @@ No photo has an identifiable person as its subject.
 | `postcard-auckland.jpg` | Postcard: Auckland | 1600x977 | Paora | [Auckland skyline PA01.jpg](https://commons.wikimedia.org/wiki/File:Auckland_skyline_PA01.jpg) |
 | `postcard-dunedin.jpg` | Postcard: Dunedin | 1600x1067 | Daderot | [Dunedin Botanic Garden - Dunedin, NZ - DSC04285.jpg](https://commons.wikimedia.org/wiki/File:Dunedin_Botanic_Garden_-_Dunedin,_NZ_-_DSC04285.jpg) |
 | `consult-aoraki.jpg` | Counselling panel | 2000x1214 | Bernard Spragg. NZ from Christchurch, New Zealand | [Aoraki Mount Cook. (36249626443).jpg](https://commons.wikimedia.org/wiki/File:Aoraki_Mount_Cook._(36249626443).jpg) |
+| `city-wellington.jpg` | City explorer: Wellington, everyday | 2400x1600 | lumoplank | [Wellington - Te Whanganui-a-Tara, Part III - Wellington9221.jpg](https://commons.wikimedia.org/wiki/File:Wellington_-_Te_Whanganui-a-Tara,_Part_III_-_Wellington9221.jpg) |
+| `weekend-wellington.jpg` | City explorer: Wellington, weekend | 2400x1350 | Daderot | [Harborside 1 - Wellington, New Zealand.jpg](https://commons.wikimedia.org/wiki/File:Harborside_1_-_Wellington,_New_Zealand.jpg) |
+| `weekend-auckland.jpg` | City explorer: Auckland, weekend | 2400x1714 | Jolaus | [Piha Beach, Zeelanda Berria.jpg](https://commons.wikimedia.org/wiki/File:Piha_Beach,_Zeelanda_Berria.jpg) |
+| `weekend-christchurch.jpg` | City explorer: Christchurch, weekend | 2400x1594 | Staffan Andersson from Uppsala, Sweden | [On the road to Akaroa (38828987041).jpg](https://commons.wikimedia.org/wiki/File:On_the_road_to_Akaroa_(38828987041).jpg) |
+| `weekend-dunedin.jpg` | City explorer: Dunedin, weekend | 2400x1231 | Bernard Spragg. NZ from Christchurch, New Zealand | [Second Beach, St Clair. Dunedin NZ (34418880426).jpg](https://commons.wikimedia.org/wiki/File:Second_Beach,_St_Clair._Dunedin_NZ_(34418880426).jpg) |
+| `weekend-queenstown.jpg` | City explorer: Queenstown, weekend | 2400x1607 | Bernard Spragg. NZ from Christchurch, New Zealand | [The Remarkables. Queenstown NZ (8167990319).jpg](https://commons.wikimedia.org/wiki/File:The_Remarkables._Queenstown_NZ_(8167990319).jpg) |

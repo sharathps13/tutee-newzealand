@@ -1,6 +1,10 @@
 /* Tutee Connect · Study in New Zealand landing page. Leads POST to /api/enquiry. */
 (() => {
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  // responsive WebP photo sets: assets/img/hd/<slot>-<width>.webp
+  const HDW = { 'hero-': [640, 1024, 1600, 1920, 2400, 2880], 'postcard-': [640, 1024, 1600], 'consult-': [640, 1024, 1600] };
+  const hdSet = s => (HDW[Object.keys(HDW).find(k => s.startsWith(k))] || [640, 1024, 1600, 2400]).map(w => './assets/img/hd/' + s + '-' + w + '.webp ' + w + 'w').join(', ');
+  const hdSrc = s => './assets/img/hd/' + s + '-1024.webp';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const G = window.gsap, ST = window.ScrollTrigger;
 
@@ -29,7 +33,7 @@
   $$('[data-split]').forEach(splitWords);
 
   /* ---------- content built from data ---------- */
-  const banks = [['icici.png', 'ICICI Bank'], ['hdfc-credila.jpg', 'HDFC Credila'], ['axis.jpg', 'Axis Bank'], ['avanse.jpg', 'Avanse'], ['auxilo.jpg', 'Auxilo'], ['idfc.jpg', 'IDFC FIRST Bank'], ['incred.jpg', 'InCred'], ['mpower.jpg', 'MPOWER'], ['prodigy.jpg', 'Prodigy Finance'], ['union.jpg', 'Union Bank of India']];
+  const banks = [['icici.png', 'ICICI Bank'], ['hdfc-credila.jpg', 'HDFC Credila'], ['axis.jpg', 'Axis Bank'], ['avanse.jpg', 'Avanse'], ['auxilo.jpg', 'Auxilo'], ['idfc.jpg', 'IDFC FIRST Bank'], ['incred.jpg', 'InCred'], ['mpower.jpg', 'MPOWER'], ['prodigy.jpg', 'Prodigy Finance'], ['union.jpg', 'Union Bank of India'], ['tata-capital.jpg', 'Tata Capital'], ['poonawalla-fincorp.jpg', 'Poonawalla Fincorp']];
   const bl = banks.map(b => '<li><img src="./assets/img/loan-partner/' + b[0] + '" alt="' + b[1] + '" loading="lazy"></li>').join('');
   $('#banks').innerHTML = '<ul>' + bl + '</ul><ul aria-hidden="true">' + bl + '</ul>';
 
@@ -43,15 +47,218 @@
     '<div class="pc-side"><span class="pc-stamp"><svg viewBox="0 0 50 62" aria-hidden="true"><rect width="50" height="62" fill="' + p.c + '"/><path d="M25 54C25 40 24 32 30 25C36 18 34 9 27 9C20 9 17 16 21 21C24 25 29 22 28 18" fill="none" stroke="#F4B73D" stroke-width="2.6" stroke-linecap="round"/><path d="M25 46q-6-2-9-7M25 40q-5-2-7-6M26 46q6-2 9-7M26 40q5-2 7-6" fill="none" stroke="#FBF6EE" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><text x="25" y="59" text-anchor="middle" font-family="DM Mono, monospace" font-size="5.5" fill="#FBF6EE" letter-spacing=".6">AOTEAROA</text></svg></span>' +
     '<svg class="pc-post" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="30"/><circle cx="40" cy="40" r="22"/><defs><path id="pp' + i + '" d="M40 40m-26 0a26 26 0 1 1 52 0a26 26 0 1 1-52 0"/></defs><text><textPath href="#pp' + i + '">' + p.place.toUpperCase() + ' · NEW ZEALAND ·</textPath></text><text x="40" y="43" text-anchor="middle" style="font-size:7px">' + p.date + '</text><path d="M72 30q6 -4 12 0t12 0M72 40q6 -4 12 0t12 0M72 50q6 -4 12 0t12 0"/></svg>' +
     '<div class="pc-addr">' + p.to.map(t => '<span>' + t + '</span>').join('') + '</div><span class="pc-from">Postcard · Aotearoa NZ</span></div></div>' +
-    '<div class="pcard__face pc-front"><img src="./assets/img/hd/' + p.img + '-m.jpg" srcset="./assets/img/hd/' + p.img + '-m.jpg 1200w, ./assets/img/hd/' + p.img + '.jpg 1600w" sizes="(max-width: 1000px) 92vw, 30vw" alt="' + p.place + '" loading="lazy" decoding="async"><small>Greetings from</small><strong>' + p.place + '</strong><span class="reo" style="color:var(--kowhai)">' + p.reo + '</span></div>' +
+    '<div class="pcard__face pc-front"><img src="' + hdSrc(p.img) + '" srcset="' + hdSet(p.img) + '" sizes="(max-width: 1000px) 92vw, 30vw" alt="' + p.place + '" loading="lazy" decoding="async"><small>Greetings from</small><strong>' + p.place + '</strong><span class="reo" style="color:var(--kowhai)">' + p.reo + '</span></div>' +
     '</div></article>').join('');
-  $$('.pcard').forEach(c => { c.addEventListener('click', () => c.classList.toggle('is-flip')); c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.classList.toggle('is-flip'); } }); });
+  // a mouse flips the card while it is over it (any device with a mouse, including touchscreen laptops);
+  // touch and pen flip on tap; keyboard on Enter / Space
+  $$('.pcard').forEach(c => {
+    let lastType = '';
+    c.addEventListener('pointerenter', e => { lastType = e.pointerType; if (e.pointerType === 'mouse') c.classList.add('is-flip'); });
+    c.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') c.classList.remove('is-flip'); });
+    c.addEventListener('pointerdown', e => { lastType = e.pointerType; });
+    c.addEventListener('click', () => { if (lastType !== 'mouse') c.classList.toggle('is-flip'); });
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.classList.toggle('is-flip'); } });
+  });
+
+  // the postcards' handwriting font (73 KB) is only requested once the section is close to the screen
+  (() => { const st = $('#stories'); if (!('IntersectionObserver' in window)) { st.classList.add('is-near'); return; } const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { st.classList.add('is-near'); io.disconnect(); } }, { rootMargin: '1500px 0px' }); io.observe(st); })();
+
+  /* ---------- phones: sections become swipe rails (CSS) with dots that follow the scroll ---------- */
+  const phone = matchMedia('(max-width: 700px)');
+  function rail(track, onIndex, withDots) {
+    const items = [...track.children]; if (items.length < 2) return;
+    let dots = null, cur = -1;
+    if (withDots) {
+      dots = document.createElement('div'); dots.className = 'dots'; dots.setAttribute('aria-hidden', 'true');
+      dots.innerHTML = items.map(() => '<button type="button" tabindex="-1"></button>').join('');
+      track.after(dots);
+      $$('button', dots).forEach((b, i) => b.addEventListener('click', () => track.scrollTo({ left: items[i].offsetLeft - items[0].offsetLeft, behavior: reduce ? 'auto' : 'smooth' })));
+    }
+    const update = () => {
+      if (!phone.matches) return;
+      const step = items[1].offsetLeft - items[0].offsetLeft || 1;
+      let i = Math.round(track.scrollLeft / step);
+      if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 4) i = items.length - 1;
+      i = Math.max(0, Math.min(items.length - 1, i));
+      if (i === cur) return; cur = i;
+      if (dots) $$('button', dots).forEach((b, j) => b.classList.toggle('on', j === i));
+      if (onIndex) onIndex(i);
+    };
+    track.addEventListener('scroll', update, { passive: true });
+    if (dots) dots.firstElementChild.classList.add('on');
+  }
+  // why Tutee Connect, phones: the six services are icon tiles; the chosen one opens in a panel below
+  (() => {
+    const box = $('#services'), tiles = $$('.svc', box);
+    const panel = document.createElement('div');
+    panel.className = 'svc-panel'; panel.id = 'svc-panel'; panel.setAttribute('aria-live', 'polite');
+    box.after(panel);
+    const pick = (i, user) => {
+      tiles.forEach((t, j) => { t.classList.toggle('on', j === i); t.setAttribute('aria-pressed', j === i); });
+      const t = tiles[i];
+      panel.innerHTML = '<span class="svc-panel__n">' + String(i + 1).padStart(2, '0') + ' / 06</span>' + t.querySelector('svg').outerHTML + '<b>' + t.querySelector('h3').innerHTML + '</b><p>' + t.querySelector('p').innerHTML + '</p>';
+      if (user && !reduce) panel.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)' });
+    };
+    tiles.forEach((t, i) => {
+      if (phone.matches) { t.setAttribute('role', 'button'); t.tabIndex = 0; }
+      t.addEventListener('click', () => { if (phone.matches) pick(i, true); });
+      t.addEventListener('keydown', e => { if (phone.matches && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(i, true); } });
+    });
+    pick(0, false);
+  })();
+  // touch screens: say how the postcards work there
+  if (!matchMedia('(hover: hover)').matches) { const h = $('.stories__head > p'); if (h) h.lastChild.textContent = 'Tap a postcard to read the message'; }
+
+  /* ---------- city gallery: each card opens an immersive "step inside" view ---------- */
+  (() => {
+    const CITIES = [
+      { id: 'auckland', code: 'AKL', name: 'Auckland', reo: 'Tāmaki Makaurau', island: 'North', at: [67.3, 21.5], tag: 'The City of Sails: harbours, volcanoes and New Zealand’s biggest job market.',
+        week: { img: 'city-auckland', pic: 'Waitematā Harbour and the city skyline', alt: 'Auckland waterfront and skyline' },
+        weekend: { img: 'weekend-auckland', pic: 'Piha black-sand beach, about 45 minutes west', alt: 'Lion Rock on Piha Beach, west of Auckland' },
+        day: [['i-sunrise', '8:00 am', 'Flat white on the way to a 9 am lecture in the city campus.'], ['i-sun', '1:00 pm', 'Lunch by the Viaduct with your study group.'], ['i-sunset', '6:00 pm', 'A part-time shift in the CBD, or sunset from Maungawhau / Mt Eden.']],
+        end: [['i-waves', 'Saturday', 'Surf or walk the black sand at Piha.'], ['i-mountain', 'Sunday', 'Ferry across the harbour to Waiheke Island.'], ['i-music', 'Festival season', 'Auckland’s Diwali festival and weekend night markets.']],
+        facts: [['i-sun', 'Climate', '24° / 15°', 'Summer / winter highs, mild all year'], ['i-home', 'Room rent', 'NZ$250–380', 'Per week, shared flat'], ['i-users', 'Population', '1.7 million', 'NZ’s largest city'], ['i-briefcase', 'Part-time work', 'Plenty', 'Retail, hospitality, tech']],
+        unis: ['University of Auckland', 'AUT', 'Massey (Albany)'], known: ['Business', 'Engineering', 'IT', 'Health'], vibe: [5, 3, 4, 2] },
+      { id: 'wellington', code: 'WLG', name: 'Wellington', reo: 'Te Whanganui-a-Tara', island: 'North', at: [67.4, 53.3], tag: 'The capital: compact, creative and walkable, with the harbour at the end of every street.',
+        week: { img: 'city-wellington', pic: 'The Wellington Cable Car, up to Kelburn campus', alt: 'The red Wellington Cable Car above the city and harbour' },
+        weekend: { img: 'weekend-wellington', pic: 'Harbourside on the city waterfront', alt: 'Wellington waterfront buildings on a sunny day' },
+        day: [['i-sunrise', '8:00 am', 'Ride the red cable car up the hill to Kelburn campus.'], ['i-sun', '1:00 pm', 'Lunch and vintage shops on Cuba Street.'], ['i-sunset', '6:00 pm', 'A walk along the waterfront, then Te Papa museum (free entry).']],
+        end: [['i-cash', 'Sunday', 'Harbourside Market for cheap fruit, veg and street food.'], ['i-mountain', 'Morning', 'Climb Mt Victoria for the view over the harbour.'], ['i-waves', 'Afternoon', 'Ferry out to Matiu / Somes Island.']],
+        facts: [['i-sun', 'Climate', '20° / 11°', 'Summer / winter highs, famously windy'], ['i-home', 'Room rent', 'NZ$230–330', 'Per week, shared flat'], ['i-users', 'Population', '215,000', 'City; about 440,000 in the region'], ['i-briefcase', 'Part-time work', 'Good', 'Hospitality, government, creative']],
+        unis: ['Victoria University of Wellington', 'Massey (Wellington)'], known: ['Law', 'Public policy', 'Design', 'Film & screen'], vibe: [4, 4, 4, 3] },
+      { id: 'christchurch', code: 'CHC', name: 'Christchurch', reo: 'Ōtautahi', island: 'South', at: [51.3, 69.3], tag: 'The Garden City: flat, green and easy to cycle, with mountains and coast an hour away.',
+        week: { img: 'city-christchurch', pic: 'New Regent Street in the central city', alt: 'Pastel shopfronts and a tram on New Regent Street, Christchurch' },
+        weekend: { img: 'weekend-christchurch', pic: 'The road to Akaroa on Banks Peninsula', alt: 'Hills above Akaroa Harbour on Banks Peninsula' },
+        day: [['i-sunrise', '8:00 am', 'Cycle to class through Hagley Park.'], ['i-sun', '1:00 pm', 'Lunch at Riverside Market in the rebuilt city centre.'], ['i-sunset', '6:00 pm', 'An evening punt or walk along the Ōtākaro / Avon River.']],
+        end: [['i-waves', 'Saturday', 'Drive over the hills to Akaroa on Banks Peninsula.'], ['i-mountain', 'Winter', 'Ski fields such as Mt Hutt, about 90 minutes away.'], ['i-compass', 'Sunday', 'Walk or bike the Port Hills tracks.']],
+        facts: [['i-sun', 'Climate', '23° / 11°', 'Summer / winter highs, four clear seasons'], ['i-home', 'Room rent', 'NZ$190–280', 'Per week, shared flat'], ['i-users', 'Population', '400,000', 'South Island’s largest city'], ['i-briefcase', 'Part-time work', 'Good', 'Construction, agritech, hospitality']],
+        unis: ['University of Canterbury', 'Lincoln University', 'Ara Institute'], known: ['Engineering', 'Agritech', 'Sciences', 'Teaching'], vibe: [3, 4, 4, 4] },
+      { id: 'dunedin', code: 'DUD', name: 'Dunedin', reo: 'Ōtepoti', island: 'South', at: [35.1, 86], tag: 'New Zealand’s student city: Scottish stone, flatting culture and wildlife on the doorstep.',
+        week: { img: 'city-dunedin', pic: 'Dunedin Railway Station', alt: 'The Dunedin Railway Station in stone and tile' },
+        weekend: { img: 'weekend-dunedin', pic: 'Second Beach, St Clair', alt: 'Surf rolling into the coast at St Clair, Dunedin' },
+        day: [['i-sunrise', '8:00 am', 'Walk to lectures past the University of Otago clocktower.'], ['i-sun', '1:00 pm', 'Lunch with friends around the Octagon.'], ['i-sunset', '6:00 pm', 'Flat dinner with your flatmates. Student flats here are a tradition.']],
+        end: [['i-waves', 'Saturday', 'Surf or swim at St Clair beach.'], ['i-compass', 'Sunday', 'Albatross and penguins out on the Otago Peninsula.'], ['i-mountain', 'Any day', 'Climb Baldwin Street, one of the world’s steepest streets.']],
+        facts: [['i-sun', 'Climate', '19° / 10°', 'Summer / winter highs, cool and fresh'], ['i-home', 'Room rent', 'NZ$180–260', 'Per week, shared flat'], ['i-users', 'Population', '135,000', 'About one in five are students'], ['i-briefcase', 'Part-time work', 'Steady', 'Hospitality, retail, campus jobs']],
+        unis: ['University of Otago', 'Otago Polytechnic'], known: ['Health sciences', 'Medicine', 'Dentistry', 'Research'], vibe: [3, 5, 5, 5] },
+      { id: 'queenstown', code: 'ZQN', name: 'Queenstown', reo: 'Tāhuna', island: 'South', at: [21.2, 80], tag: 'The adventure capital: lake, mountains and a year-round hospitality and tourism industry.',
+        week: { img: 'city-queenstown', pic: 'TSS Earnslaw on Lake Wakatipu', alt: 'The steamship TSS Earnslaw on Lake Wakatipu, Queenstown' },
+        weekend: { img: 'weekend-queenstown', pic: 'The Remarkables, above the lake', alt: 'Snow on The Remarkables mountain range, Queenstown' },
+        day: [['i-sunrise', '8:00 am', 'Hospitality classes with a view of Lake Wakatipu.'], ['i-sun', '1:00 pm', 'Lunch on the lakefront between classes.'], ['i-sunset', '6:00 pm', 'A shift at a hotel or restaurant: the town runs on tourism.']],
+        end: [['i-mountain', 'Winter', 'Ski or snowboard at The Remarkables or Coronet Peak.'], ['i-landmark', 'Saturday', 'Gold-rush history and cafés in Arrowtown.'], ['i-waves', 'Summer', 'Jet boats, lake swims and hikes.']],
+        facts: [['i-sun', 'Climate', '22° / 8°', 'Summer / winter highs, snowy winters'], ['i-home', 'Room rent', 'NZ$300–450', 'Per week; book early'], ['i-users', 'Population', '50,000', 'Queenstown Lakes district'], ['i-briefcase', 'Part-time work', 'Plenty', 'Hotels, ski fields, tourism']],
+        unis: ['Queenstown Resort College', 'SIT Queenstown'], known: ['Hospitality', 'Tourism', 'Event management'], vibe: [3, 5, 2, 1] }
+    ];
+    const VIBE = ['City buzz', 'Nature on the doorstep', 'Student life', 'Easy on the budget'];
+    const n = CITIES.length, imm = $('#imm'), layers = $('#imm-layers'), hero = $('#imm-hero'), modeBtns = $$('.imm__mode button'), pill = $('.imm__pill');
+    const srcset = hdSet;
+    let cur = 0, mode = 'week', lastFocus = null, timer = 0, swapT = 0;
+
+    // New Zealand time now, and the gap to India
+    const tz = (zone, d) => { const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short' }).formatToParts(d).map(x => [x.type, x.value])); return { h: +p.hour, m: +p.minute, wd: p.weekday, ms: Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) }; };
+    const nzNow = () => { try { return tz('Pacific/Auckland', new Date()); } catch (e) { return null; } };
+    const nzSlot = () => { const t = nzNow(); if (!t) return { weekend: false, i: -1 }; return { weekend: t.wd === 'Sat' || t.wd === 'Sun', i: t.h >= 6 && t.h < 11 ? 0 : t.h >= 11 && t.h < 16 ? 1 : t.h >= 16 && t.h < 23 ? 2 : -1 }; };
+    function clock() {
+      const t = nzNow(); if (!t) { $('.imm__clock').hidden = true; return; }
+      let gap = ''; try { const d = Math.round((t.ms - tz('Asia/Kolkata', new Date()).ms) / 6e4); gap = ' · ' + Math.floor(d / 60) + 'h' + (d % 60 ? ' ' + d % 60 + 'm' : '') + ' ahead of India'; } catch (e) { /* no tz data */ }
+      $('#imm-clock').textContent = 'It’s ' + (((t.h + 11) % 12) + 1) + ':' + String(t.m).padStart(2, '0') + (t.h < 12 ? ' am' : ' pm') + ' in ' + CITIES[cur].name + gap;
+    }
+
+    function placePill() { const b = modeBtns.find(x => x.dataset.mode === mode); pill.style.width = b.offsetWidth + 'px'; pill.style.transform = 'translateX(' + (b.offsetLeft - 5) + 'px)'; }
+    function showPhoto(instant, poster) {
+      const s = CITIES[cur][mode], el = document.createElement('div');
+      el.className = 'imm__layer' + (instant ? ' is-now is-in' : '');
+      if (poster) el.style.backgroundImage = 'url("' + poster + '")';
+      el.innerHTML = '<img src="' + hdSrc(s.img) + '" srcset="' + srcset(s.img) + '" sizes="100vw" alt="' + s.alt + '" decoding="async">';
+      if (instant) layers.innerHTML = '';
+      layers.appendChild(el);
+      if (!instant) { const go = () => { void el.offsetWidth; el.classList.add('is-in'); }, im = el.querySelector('img'); if (im.complete) go(); else { im.addEventListener('load', go, { once: true }); im.addEventListener('error', go, { once: true }); } }
+      setTimeout(() => { while (layers.children.length > 2) layers.firstElementChild.remove(); }, 1600);
+    }
+    function fill() {
+      const c = CITIES[cur], s = c[mode], now = nzSlot(), items = mode === 'week' ? c.day : c.end;
+      $('#imm-code').textContent = c.code; $('#imm-reo').textContent = c.reo; $('#imm-name').textContent = c.name; $('#imm-tag').textContent = c.tag; $('#imm-pic').textContent = s.pic;
+      $('#imm-day').innerHTML = items.map((d, i) => { const isNow = mode === 'week' ? (!now.weekend && now.i === i) : (now.weekend && i === 0); return '<li' + (isNow ? ' class="is-now"' : '') + '>' + (isNow ? '<span class="imm__nowtag">You’d be here now</span>' : '') + '<svg class="ic" aria-hidden="true"><use href="#' + d[0] + '"/></svg><time>' + d[1] + '</time><p>' + d[2] + '</p></li>'; }).join('');
+      $('#imm-facts').innerHTML = c.facts.map(f => '<div><dt><svg class="ic" aria-hidden="true"><use href="#' + f[0] + '"/></svg>' + f[1] + '</dt><dd>' + f[2] + '<small>' + f[3] + '</small></dd></div>').join('');
+      $('#imm-lists').innerHTML = '<p class="imm__lbl">Study here at</p><ul class="imm__chips imm__chips--uni">' + c.unis.map(u => '<li>' + u + '</li>').join('') + '</ul><p class="imm__lbl">Known for</p><ul class="imm__chips">' + c.known.map(u => '<li>' + u + '</li>').join('') + '</ul>';
+      $('#imm-vibe').innerHTML = VIBE.map((v, i) => '<li><span>' + v + '</span><span>' + c.vibe[i] + ' / 5</span><span class="imm__bar"><i style="transform:scaleX(0)" data-v="' + c.vibe[i] / 5 + '"></i></span></li>').join('');
+      void $('#imm-vibe').offsetWidth; $$('#imm-vibe i').forEach(b => b.style.transform = 'scaleX(' + b.dataset.v + ')');
+      $('#imm-go-t').textContent = 'Plan my move to ' + c.name;
+      $('#imm-prev-t').textContent = CITIES[(cur - 1 + n) % n].name; $('#imm-next-t').textContent = CITIES[(cur + 1) % n].name;
+      $('#imm-count').textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0');
+      clock();
+    }
+    function swap() { if (reduce) { fill(); return; } imm.classList.add('is-swap'); clearTimeout(swapT); swapT = setTimeout(() => { fill(); imm.classList.remove('is-swap'); }, 230); }
+    function setCity(i) { cur = (i + n) % n; showPhoto(); swap(); }
+    function setMode(m) { if (m === mode) return; mode = m; modeBtns.forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m)); placePill(); showPhoto(); swap(); }
+    const rectClip = (r, rad) => 'inset(' + Math.max(0, r.top) + 'px ' + Math.max(0, innerWidth - r.right) + 'px ' + Math.max(0, innerHeight - r.bottom) + 'px ' + Math.max(0, r.left) + 'px round ' + rad + 'px)';
+
+    function openCity(i, card) {
+      cur = i; mode = nzSlot().weekend ? 'weekend' : 'week';
+      modeBtns.forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+      const poster = mode === 'week' ? (card.querySelector('.city__img img') || {}).currentSrc : '';
+      lastFocus = document.activeElement;
+      imm.classList.remove('is-open', 'is-ready'); imm.hidden = false;
+      document.documentElement.classList.add('imm-lock'); if (lenis) lenis.stop();
+      fill(); showPhoto(true, poster); placePill(); timer = setInterval(clock, 30000);
+      if (!reduce && imm.animate) imm.animate([{ clipPath: rectClip(card.getBoundingClientRect(), 30) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }], { duration: 1000, easing: 'cubic-bezier(.7,0,.2,1)' });
+      void imm.offsetWidth; imm.classList.add('is-open'); setTimeout(() => imm.classList.add('is-ready'), 1400);
+      $('#imm-close').focus({ preventScroll: true });
+    }
+    function closeCity(then) {
+      if (imm.hidden) return;
+      const card = $('.city[data-city="' + CITIES[cur].id + '"]'), r = card && card.getBoundingClientRect(), seen = r && r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight;
+      let fin = false; const done = () => { if (fin) return; fin = true; imm.hidden = true; imm.classList.remove('is-open', 'is-ready'); document.documentElement.classList.remove('imm-lock'); if (lenis) lenis.start(); clearInterval(timer); layers.style.transform = ''; if (then) then(); else if (lastFocus) lastFocus.focus({ preventScroll: true }); };
+      imm.classList.remove('is-open', 'is-ready');
+      if (reduce || !imm.animate || then) { done(); return; }
+      imm.animate(seen ? [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: rectClip(r, 30) }] : [{ opacity: 1 }, { opacity: 0 }], { duration: seen ? 800 : 400, easing: 'cubic-bezier(.7,0,.2,1)' }).onfinish = done; setTimeout(done, 900);
+    }
+
+    // cards: tilt towards the pointer, a "step inside" lens follows it, click opens the city
+    // one "step inside" tag, fixed to the viewport so the card's tilt and the scrolling track can't skew it
+    const tag = document.createElement('span');
+    tag.className = 'city-tag'; tag.setAttribute('aria-hidden', 'true');
+    tag.innerHTML = '<svg class="ic"><use href="#i-compass"/></svg>Step inside';
+    document.body.appendChild(tag);
+    addEventListener('scroll', () => tag.classList.remove('is-on'), { passive: true });
+    $$('.city[data-city]').forEach(card => {
+      const i = CITIES.findIndex(c => c.id === card.dataset.city); if (i < 0) return;
+      $('.city__open', card).addEventListener('click', () => openCity(i, card));
+      if (reduce || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      card.addEventListener('pointermove', e => { const r = card.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; tag.style.transform = 'translate(' + (e.clientX + 16) + 'px,' + (e.clientY + 18) + 'px)'; tag.classList.add('is-on'); card.style.setProperty('--rx', ((y / r.height - .5) * -5).toFixed(2) + 'deg'); card.style.setProperty('--ry', ((x / r.width - .5) * 7).toFixed(2) + 'deg'); });
+      card.addEventListener('pointerleave', () => { tag.classList.remove('is-on'); card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); });
+    });
+
+    modeBtns.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+    // fetch the other scene early when someone reaches for the toggle
+    modeBtns.forEach(b => b.addEventListener('pointerenter', () => { const s = CITIES[cur][b.dataset.mode], im = new Image(); im.sizes = '100vw'; im.srcset = srcset(s.img); }));
+    $('#imm-prev').addEventListener('click', () => setCity(cur - 1));
+    $('#imm-next').addEventListener('click', () => setCity(cur + 1));
+    $('#imm-close').addEventListener('click', () => closeCity());
+    addEventListener('resize', () => { if (!imm.hidden) placePill(); });
+    imm.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); closeCity(); return; }
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !e.target.closest('.imm__mode')) { e.preventDefault(); setCity(cur + (e.key === 'ArrowRight' ? 1 : -1)); return; }
+      if (e.key !== 'Tab') return;
+      const f = $$('button, a[href]', imm).filter(x => x.offsetParent !== null), a = f[0], z = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    });
+    // swipe between cities on touch screens
+    let sx = 0, sy = 0;
+    hero.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    hero.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) setCity(cur + (dx < 0 ? 1 : -1)); }, { passive: true });
+    // look around: the photo drifts against the pointer
+    if (!reduce && matchMedia('(hover: hover)').matches) {
+      imm.addEventListener('pointermove', e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; layers.style.transform = 'translate(' + (-x * 36) + 'px,' + (-y * 24) + 'px)'; });
+    }
+    // the CTA carries the city into the counselling form
+    $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-city').value = name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); }); });
+  })();
 
   const FAQ = [
     ['Is the first consultation really free?', 'Yes. Speaking to a counsellor costs nothing and there is no obligation. We call you in the slot you choose.'],
     ['Do I need IELTS, PTE or TOEFL?', 'Most universities ask for an English test score. We coach you and book the test, and tell you the exact score each course needs.'],
     ['Can I work while I study?', 'Most student visas allow part-time work during term and full-time work in scheduled breaks. We confirm the current limits for your visa.'],
-    ['Can I get an education loan?', 'Yes. Our ten lending partners offer secured and unsecured loans covering tuition, flights and living costs. We compare offers for you.'],
+    ['Can I get an education loan?', 'Yes. Our twelve lending partners offer secured and unsecured loans covering tuition, flights and living costs. We compare offers for you.'],
     ['Is there a pathway to work or residence?', 'Eligible graduates can apply for a post-study work visa of up to three years, and some go on to residence pathways. We assess your profile on the call.'],
     ['Can my family come with me?', 'Partners and children apply for their own visas based on their relationship to you. We plan the right timing in the consultation.'],
     ['Do you help after I land?', 'Yes. Airport pickup, SIM card, accommodation, bank account and part-time work support, and later your post-study work visa.']
@@ -62,7 +269,9 @@
   /* ---------- smooth scroll ---------- */
   let lenis = null;
   if (G && ST) G.registerPlugin(ST);
-  if (!reduce && window.Lenis && G) { lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
+  // phones keep native scrolling (already smooth, no per-frame JS); the address bar showing / hiding must not re-measure every trigger
+  if (ST) ST.config({ ignoreMobileResize: true });
+  if (!reduce && window.Lenis && G && matchMedia('(hover: hover) and (pointer: fine)').matches) { lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
   const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; lenis ? lenis.scrollTo(t, { offset: 0, duration: 1.6 }) : t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
   $$('[data-scroll]').forEach(a => a.addEventListener('click', e => { const h = a.getAttribute('href'); if (h && h[0] === '#') { e.preventDefault(); goTo(h === '#top' ? '#hero' : h); } }));
   let tt; function toast(m) { const t = $('#toast'); $('span', t).textContent = m; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2400); }
@@ -88,9 +297,12 @@
     ccPop.hidden = !on; ccEl.classList.toggle('open', on); ccBtn.setAttribute('aria-expanded', on);
     if (on) { ccQ.value = ''; renderCC(''); setTimeout(() => ccQ.focus(), 30); const s = ccList.querySelector('[aria-selected="true"]'); if (s) s.scrollIntoView({ block: 'nearest' }); }
   }
-  function pickCC(iso) {
+  function pickCC(iso, quiet) {
     ccSel = CC.find(c => c.iso === iso); $('#cc-flag').src = flag(iso); $('#cc-code').textContent = ccSel.dial;
-    ccBtn.setAttribute('aria-label', 'Country code: ' + ccSel.name + ' ' + ccSel.dial); openCC(false); ccBtn.focus();
+    ccBtn.setAttribute('aria-label', 'Country code: ' + ccSel.name + ' ' + ccSel.dial); openCC(false);
+    if (quiet) return;
+    ccBtn.focus();
+    if ($('#c-phone').value.trim()) verifyPhone();   // re-check the number against the new country
   }
   ccBtn.addEventListener('click', () => openCC(ccPop.hidden));
   ccQ.addEventListener('input', () => renderCC(ccQ.value));
@@ -112,27 +324,130 @@
     $('#c-next').innerHTML = n === 1 ? 'Request my call <svg class="ic"><use href="#i-arrow"/></svg>' : 'Continue <svg class="ic"><use href="#i-arrow"/></svg>';
     $('#c-err').textContent = '';
   }
-  function check() {
+  /* ---------- email + phone verification ----------
+     Not a code sent to the student: checks that the address and number are real.
+     Email: strict format, typo suggestions (gmial.com → gmail.com), throwaway inboxes and
+     placeholders refused, then /api/verify-email confirms the domain has a mail server.
+     Phone: libphonenumber (mobile metadata, loaded when the form is near) checks the number
+     is a real mobile for the chosen country; obvious fakes (9999999999, 9876543210) are refused. */
+  const emEl = $('#c-email'), phEl = $('#c-phone');
+  function setState(el, state, msg) {
+    const f = el.parentElement, m = $('.ff__msg', f);
+    f.dataset.state = state || ''; f.classList.toggle('bad', state === 'bad');
+    el.setAttribute('aria-invalid', state === 'bad' ? 'true' : 'false');
+    m.textContent = ''; if (!msg) return;
+    if (typeof msg === 'string') m.textContent = msg; else m.append(...msg);
+  }
+  const MAIL_HOSTS = ['gmail.com', 'yahoo.com', 'yahoo.co.in', 'yahoo.in', 'hotmail.com', 'outlook.com', 'outlook.in', 'live.com', 'icloud.com', 'me.com', 'rediffmail.com', 'protonmail.com', 'proton.me', 'aol.com', 'msn.com', 'ymail.com', 'zoho.com', 'zohomail.in', 'gmx.com', 'hotmail.co.uk', 'yahoo.co.uk', 'googlemail.com'];
+  const DISPOSABLE = new Set(('mailinator.com mailinator.net mailinator2.com guerrillamail.com guerrillamail.net guerrillamailblock.com sharklasers.com grr.la pokemail.net spam4.me 10minutemail.com 10minutemail.net temp-mail.org temp-mail.io tempmail.com tempmail.net tempmailo.com tempinbox.com throwawaymail.com yopmail.com yopmail.net getnada.com nada.email dispostable.com maildrop.cc mailnesia.com trashmail.com trashmail.de mintemail.com fakeinbox.com emailondeck.com mohmal.com moakt.com spamgourmet.com mailcatch.com mytemp.email tempr.email discard.email burnermail.io inboxkitten.com mail.tm mail.gw emailfake.com fakemail.net mailpoof.com tmpmail.org tmpmail.net minuteinbox.com 1secmail.com 1secmail.org 1secmail.net spambox.us harakirimail.com linshiyouxiang.net bugmenot.com').split(' '));
+  const PLACEHOLDER = /^(test|testing|tester|abc|abcd|asdf|asdfgh|qwerty|xyz|example|sample|demo|fake|none|na|null|noemail|nomail|no|xxx|aaa|user|email|mail|name)\d*$/;
+  const TLD_FIX = { con: 'com', cmo: 'com', ocm: 'com', vom: 'com', xom: 'com', comm: 'com', cim: 'com', cpm: 'com', cm: 'com', om: 'com', nte: 'net', ent: 'net', ogr: 'org', ocm1: 'com' };
+  const EMAIL_RE = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i;
+  function lev(a, b) { const d = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { let prev = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; } } return d[b.length]; }
+  function emailIssue(v) {
+    if (!v) return { bad: 'Add your email address so we can send your plan.' };
+    if (v.length > 254 || !EMAIL_RE.test(v) || v.split('@')[0].length > 64) return { bad: 'That email address isn’t complete. It should look like name@gmail.com.' };
+    const at = v.lastIndexOf('@'), local = v.slice(0, at), domain = v.slice(at + 1).toLowerCase();
+    if (DISPOSABLE.has(domain) || [...DISPOSABLE].some(d => domain.endsWith('.' + d))) return { bad: 'Temporary inboxes expire before we can send your plan. Use an email you check.' };
+    if (/^(example|test|domain|email)\.(com|org|net|in)$/.test(domain) || (PLACEHOLDER.test(local.toLowerCase()) && PLACEHOLDER.test(domain.split('.')[0]))) return { bad: 'This looks like a placeholder. Use the email you actually check.' };
+    // typo checks: a known mail provider one or two letters off, or a mistyped ending
+    const parts = domain.split('.'), tld = parts.pop(), fixedTld = TLD_FIX[tld];
+    let guess = fixedTld ? parts.concat(fixedTld).join('.') : domain;
+    if (!MAIL_HOSTS.includes(guess)) { let best = null, bd = 3; MAIL_HOSTS.forEach(h => { const dd = lev(guess, h); if (dd < bd && (dd <= 1 || guess.length > 6)) { bd = dd; best = h; } }); if (best && bd <= 2) guess = best; }
+    if (domain === 'gmail.co' || domain === 'gmail.in') guess = 'gmail.com';
+    return guess !== domain ? { suggest: local + '@' + guess, domain } : { domain };
+  }
+  const mxCache = new Map();
+  function mailServer(domain) {
+    if (mxCache.has(domain)) return mxCache.get(domain);
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
+    const p = fetch('/api/verify-email?domain=' + encodeURIComponent(domain), { headers: { Accept: 'application/json' }, signal: ctl.signal })
+      .then(r => r.ok ? r.json() : null).then(j => (j && typeof j.deliverable === 'boolean') ? j.deliverable : null)
+      .catch(() => null).then(v => { clearTimeout(t); if (v === null) mxCache.delete(domain); return v; });   // null = could not tell; never block on it
+    mxCache.set(domain, p); return p;
+  }
+  let emAck = '';                    // a suggestion the student has seen and chosen to ignore
+  async function verifyEmail(final) {
+    const v = emEl.value.trim(); emEl.value = v;
+    const r = emailIssue(v);
+    if (r.bad) { setState(emEl, 'bad', r.bad); return false; }
+    if (r.suggest && emAck !== v) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ff__fix'; b.textContent = r.suggest;
+      b.addEventListener('click', () => { emEl.value = r.suggest; emAck = ''; verifyEmail(false); emEl.focus(); });
+      setState(emEl, 'warn', ['Did you mean ', b, '?']);
+      if (final) { emAck = v; return false; }          // ask once; a second submit keeps what they typed
+      return true;
+    }
+    setState(emEl, 'checking', 'Checking this address can receive email…');
+    const ok = await mailServer(r.domain);
+    if (emEl.value.trim() !== v) return true;          // they kept typing; a newer check will run
+    if (ok === false) { setState(emEl, 'bad', 'We can’t find a mail server for “' + r.domain + '”. Check the spelling after the @.'); return false; }
+    setState(emEl, 'ok', ''); return true;
+  }
+  emEl.addEventListener('blur', () => { if (emEl.value.trim()) verifyEmail(false); });
+  emEl.addEventListener('input', () => { if (emEl.parentElement.dataset.state) setState(emEl, '', ''); });
+
+  // phone: libphonenumber-js (MIT, mobile metadata) is ~190 KB, so it loads only when the form is near
+  let LP = null, lpP = null;
+  const loadLP = () => lpP || (lpP = new Promise(res => { const s = document.createElement('script'); s.src = './assets/vendor/libphonenumber-mobile.js'; s.onload = () => { LP = window.libphonenumber || null; res(LP); }; s.onerror = () => res(null); document.head.appendChild(s); }));
+  // loaded when the form is close AND the main thread is idle (never in the middle of a scroll), or at once when a field is focused
+  const idleLP = () => ('requestIdleCallback' in window ? requestIdleCallback(() => loadLP()) : setTimeout(loadLP, 200));
+  if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { idleLP(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe($('#consult')); } else loadLP();
+  $('#cform').addEventListener('focusin', loadLP, { once: true });
+  const looksFake = d => { const n = d.replace(/^0+/, ''); return n.length >= 6 && (/^(\d)\1+$/.test(n) || '01234567890123456789'.includes(n) || '98765432109876543210'.includes(n) || /^(\d{2,3})\1{2,}$/.test(n)); };
+  function parsePhone() {
+    const raw = phEl.value.trim(), digits = raw.replace(/\D/g, '');
+    if (!digits) return { bad: 'Add a WhatsApp number we can reach you on.' };
+    if (LP) {
+      // a number pasted with its own country code (+971…, 0091…) switches the flag to match
+      if (/^(\+|00)/.test(raw)) { const p = LP.parsePhoneNumberFromString(raw.replace(/^00/, '+')); if (p && p.country) { const c = CC.find(x => x.iso === p.country.toLowerCase()); if (c && c.dial !== ccSel.dial) pickCC(c.iso, true); } }
+      const iso = ccSel.iso.toUpperCase(), nat = digits.replace(/^0+/, '');
+      const tries = [() => LP.parsePhoneNumberFromString(raw.replace(/^00/, '+'), iso), () => LP.parsePhoneNumberFromString(ccSel.dial + nat), () => LP.parsePhoneNumberFromString('+' + digits)];
+      for (const t of tries) { let p = null; try { p = t(); } catch (e) { /* unparsable */ } if (p && p.isValid() && '+' + p.countryCallingCode === ccSel.dial) { if (looksFake(p.nationalNumber)) return { bad: 'This doesn’t look like a real number. Add the WhatsApp number you use.' }; return { ok: p }; } }
+      return { bad: ccSel.iso === 'in' ? 'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.' : 'This isn’t a valid ' + ccSel.name + ' mobile number. Check the country code and digits.' };
+    }
+    // library not available: fall back to sane length and pattern checks
+    if (looksFake(digits)) return { bad: 'This doesn’t look like a real number. Add the WhatsApp number you use.' };
+    if (ccSel.iso === 'in' && !/^[6-9]\d{9}$/.test(digits.replace(/^(91|0)(?=\d{10}$)/, ''))) return { bad: 'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.' };
+    if (digits.length < 6 || digits.length > 15) return { bad: 'Check the number: it looks too ' + (digits.length < 6 ? 'short.' : 'long.') };
+    return { ok: null };
+  }
+  let phoneE164 = '';
+  async function verifyPhone() {
+    if (!LP) await Promise.race([loadLP(), new Promise(r => setTimeout(r, 2500))]);
+    const r = parsePhone(); phoneE164 = '';
+    if (r.bad) { setState(phEl, 'bad', r.bad); return false; }
+    if (r.ok) { phEl.value = r.ok.formatInternational().replace(/^\+\d+\s*/, ''); phoneE164 = r.ok.formatInternational(); }
+    setState(phEl, 'ok', ''); return true;
+  }
+  phEl.addEventListener('blur', () => { if (phEl.value.trim()) verifyPhone(); });
+  phEl.addEventListener('input', () => { if (phEl.parentElement.dataset.state) setState(phEl, '', ''); });
+
+  async function check() {
     $$('#cform .ff').forEach(f => f.classList.remove('bad'));
     if (step !== 0) return '';
-    const n = $('#c-name'), em = $('#c-email'), p = $('#c-phone');
-    const bad = (el, msg) => { el.parentElement.classList.add('bad'); el.focus(); return msg; };
-    if (n.value.trim().length < 2) return bad(n, 'Add your full name.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em.value.trim())) return bad(em, 'Add a valid email address so we can send your plan.');
-    if (p.value.replace(/\D/g, '').length < 6) return bad(p, 'Add a WhatsApp number we can reach you on.');
+    const n = $('#c-name');
+    if (n.value.trim().length < 2) { n.parentElement.classList.add('bad'); n.focus(); return 'Add your full name.'; }
+    const [emOk, phOk] = await Promise.all([verifyEmail(true), verifyPhone()]);
+    if (!emOk) { emEl.focus(); return emEl.parentElement.dataset.state === 'warn' ? 'Check your email address above, then continue.' : 'Check your email address above.'; }
+    if (!phOk) { phEl.focus(); return 'Check your WhatsApp number above.'; }
     return '';
   }
   $('#c-back').addEventListener('click', () => go(step - 1));
-  $('#cform').addEventListener('submit', e => {
+  let checking = false;
+  $('#cform').addEventListener('submit', async e => {
     e.preventDefault();
-    const err = check(); if (err) { $('#c-err').textContent = err; return; }
+    if (checking) return;
+    checking = true; const nb = $('#c-next'); nb.disabled = true;
+    let err = ''; try { err = await check(); } finally { checking = false; nb.disabled = false; }
+    if (err) { $('#c-err').textContent = err; return; }
     if (step < 1) { go(step + 1); return; }
     const slot = $('#slots [aria-pressed="true"]');
     const slotText = slot.querySelector('b').textContent + ', ' + slot.querySelector('small').textContent;
     const interest = [$('#h-course').value, $('#h-level').value, $('#h-city').value].filter(Boolean).join(' · ');
     const data = {
       name: $('#c-name').value.trim(), email: $('#c-email').value.trim(),
-      phone: ccSel.dial + ' ' + $('#c-phone').value.trim(), destination: 'New Zealand',
+      phone: phoneE164 || ccSel.dial + ' ' + $('#c-phone').value.trim(), destination: 'New Zealand',
       page: location.host + location.pathname, from_name: 'NZ landing page · Counselling form',
       botcheck: $('#c-bot').value, preferredCallTime: slotText + ' (' + ccSel.name + ' time)', consent: 'yes',
       state: $('#c-state').value.trim(), interest
@@ -144,7 +459,7 @@
     fetch('/api/enquiry', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
       .then(r => r.json().catch(() => ({ success: false })))
       .then(res => {
-        if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 70109 02329.'; return; }
+        if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 73583 64959.'; return; }
         store.set('tc_lead', '1');
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'generate_lead', lead_source: 'Counselling form', country: 'new-zealand' });
@@ -155,7 +470,7 @@
         stepsUI.forEach(s => { s.classList.add('done'); s.classList.remove('now'); });
         $('#sent').classList.add('on');
       })
-      .catch(() => { $('#c-err').textContent = 'Network error. Check your connection and try again, or WhatsApp us on +91 70109 02329.'; })
+      .catch(() => { $('#c-err').textContent = 'Network error. Check your connection and try again, or WhatsApp us on +91 73583 64959.'; })
       .then(() => { btn.disabled = false; btn.innerHTML = btnHtml; });
   });
   // the hero quick-start bar carries its choices into the lead as hidden fields
@@ -176,7 +491,7 @@
   ];
   (() => {
     const box = $('#acc10');
-    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="./assets/img/hd/' + r[3] + '-m.jpg" srcset="./assets/img/hd/' + r[3] + '-m.jpg ' + 1200 + 'w, ./assets/img/hd/' + r[3] + '.jpg ' + 2400 + 'w" sizes="(max-width: 899px) 100vw, 70vw" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
+    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="' + hdSrc(r[3]) + '" srcset="' + hdSet(r[3]) + '" sizes="(max-width: 700px) ' + (i === 0 || i === 9 ? '100vw' : '50vw') + ', (max-width: 899px) 100vw, 60vw" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
     const panels = $$('.ap', box);
     const open = i => { panels.forEach((p, j) => { p.classList.toggle('on', j === i); p.setAttribute('aria-selected', j === i); }); $('#acc10-n').textContent = String(i + 1).padStart(2, '0'); $('#acc10-bar').style.transform = 'scaleX(' + (i + 1) / panels.length + ')'; };
     const hover = matchMedia('(hover: hover) and (min-width: 900px)').matches;
@@ -185,6 +500,53 @@
       p.addEventListener('focus', () => open(i));
       if (hover) { p.addEventListener('pointerenter', () => { clearTimeout(t); t = setTimeout(() => open(i), 90); }); p.addEventListener('pointerleave', () => clearTimeout(t)); }
     });
+    // phones: a grid of photo tiles; tapping one slides up a sheet with the full reason
+    (() => {
+      const sheet = document.createElement('div');
+      sheet.className = 'rs'; sheet.hidden = true;
+      sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); sheet.setAttribute('aria-labelledby', 'rs-h');
+      sheet.innerHTML = '<div class="rs__back" data-close></div><div class="rs__panel" id="rs-panel"><span class="rs__grip" aria-hidden="true"></span><button type="button" class="rs__close" data-close aria-label="Close"><svg class="ic"><use href="#i-plus"/></svg></button><div class="rs__img"><img id="rs-img" alt=""><span class="rs__n" id="rs-n"></span></div><div class="rs__body"><span class="ap__tag" id="rs-tag"></span><h3 id="rs-h"></h3><p id="rs-p"></p><span class="rs__place" id="rs-place"></span><div class="rs__nav"><button type="button" class="rs__prev" id="rs-prev"><svg class="ic"><use href="#i-arrow"/></svg>Previous</button><button type="button" class="rs__next" id="rs-next">Next reason<svg class="ic"><use href="#i-arrow"/></svg></button></div></div></div>';
+      document.body.appendChild(sheet);
+      const panel = $('#rs-panel', sheet); let at = 0, lastFocus = null;
+      const fill = i => {
+        at = (i + REASONS.length) % REASONS.length; const r = REASONS[at];
+        const img = $('#rs-img'); img.srcset = hdSet(r[3]); img.sizes = '100vw'; img.src = hdSrc(r[3]); img.style.objectPosition = r[5];
+        $('#rs-n').textContent = String(at + 1).padStart(2, '0') + ' / 10'; $('#rs-tag').textContent = r[1]; $('#rs-h').innerHTML = r[0]; $('#rs-p').textContent = r[2]; $('#rs-place').textContent = r[4];
+        $('#rs-next').lastChild.previousSibling.textContent = at === REASONS.length - 1 ? 'Back to the first' : 'Next reason';
+        open(at);
+      };
+      const show = i => {
+        lastFocus = document.activeElement; fill(i); sheet.hidden = false;
+        document.documentElement.classList.add('imm-lock'); if (lenis) lenis.stop();
+        void sheet.offsetWidth; sheet.classList.add('on'); $('.rs__close', sheet).focus({ preventScroll: true });
+      };
+      const hide = () => {
+        if (sheet.hidden) return; sheet.classList.remove('on'); panel.style.transform = '';
+        let done = false; const fin = () => { if (done) return; done = true; sheet.hidden = true; document.documentElement.classList.remove('imm-lock'); if (lenis) lenis.start(); if (lastFocus) lastFocus.focus({ preventScroll: true }); };
+        panel.addEventListener('transitionend', fin, { once: true }); setTimeout(fin, 450);
+      };
+      const swap = d => { if (reduce) { fill(at + d); return; } panel.classList.add('is-swap'); setTimeout(() => { fill(at + d); panel.classList.remove('is-swap'); }, 180); };
+      panels.forEach((p, i) => p.addEventListener('click', e => { if (!phone.matches) return; e.preventDefault(); show(i); }));
+      $$('[data-close]', sheet).forEach(b => b.addEventListener('click', hide));
+      $('#rs-prev').addEventListener('click', () => swap(-1)); $('#rs-next').addEventListener('click', () => swap(1));
+      sheet.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); hide(); return; }
+        if (e.key !== 'Tab') return;
+        const f = $$('button', sheet).filter(x => x.offsetParent !== null), a = f[0], z = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+      });
+      // drag the sheet down to close; swipe the photo sideways for the next reason
+      let sy = 0, sx = 0, dy = 0, dragging = false;
+      panel.addEventListener('touchstart', e => { sy = e.touches[0].clientY; sx = e.touches[0].clientX; dy = 0; dragging = panel.scrollTop <= 0; }, { passive: true });
+      panel.addEventListener('touchmove', e => { if (!dragging) return; dy = e.touches[0].clientY - sy; if (dy > 0) { panel.style.transition = 'none'; panel.style.transform = 'translateY(' + dy + 'px)'; } }, { passive: true });
+      panel.addEventListener('touchend', e => {
+        panel.style.transition = ''; const dx = e.changedTouches[0].clientX - sx;
+        if (dragging && dy > 90) { hide(); return; }
+        panel.style.transform = '';
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && e.target.closest('.rs__img')) swap(dx < 0 ? 1 : -1);
+      }, { passive: true });
+      if (phone.matches) { const hp = $('.why__head > p'); if (hp) hp.textContent = hp.textContent.replace('Open each reason to see it.', 'Tap any reason to read it.'); }
+    })();
     box.addEventListener('keydown', e => { const i = panels.findIndex(p => p.classList.contains('on')); if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); panels[Math.min(9, i + 1)].focus(); } if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); panels[Math.max(0, i - 1)].focus(); } });
   })();
 
@@ -194,7 +556,7 @@
     ['i-lang', 'English test', 'English test preparation', 'IELTS, PTE or TOEFL coaching and test booking, so your score is ready before applications open.', ['Coaching classes', 'Mock tests', 'Test booking']],
     ['i-compass', 'Apply', 'Shortlist and apply', 'A university shortlist that fits your marks and budget. We prepare and submit every application.', ['University shortlist', 'Application packs', 'Offer tracking']],
     ['i-file', 'Documents', 'Documents and offer letter', 'Transcripts, financials and references assembled and checked before they go out.', ['Document checklist', 'Verification', 'Offer of place']],
-    ['i-cash', 'Loan', 'Education loan', 'Secured and unsecured offers compared across our ten lending partners, so you choose with confidence.', ['Lender comparison', 'Paperwork support', 'Sanction letter']],
+    ['i-cash', 'Loan', 'Education loan', 'Secured and unsecured offers compared across our twelve lending partners, so you choose with confidence.', ['Lender comparison', 'Paperwork support', 'Sanction letter']],
     ['i-passport', 'Visa', 'Visa and statement of purpose', 'The right student visa for your plan, and an SOP that sounds like you.', ['Visa file', 'SOP review', 'Interview prep']],
     ['i-plane', 'Arrive', 'Land and settle in', 'Airport pickup, SIM, accommodation, bank account and part-time work support. Later, your post-study work visa.', ['Pre-departure briefing', 'Arrival support', 'Post-study visa help']]
   ];
@@ -243,65 +605,88 @@
 
   /* ---------- header, progress, mobile bar ---------- */
   const hdr = $('#hdr'), prog = $('#prog'), mbar = $('#mbar'); let lastY = 0;
-  function onScroll() { const y = scrollY, h = innerHeight, max = document.documentElement.scrollHeight - h; hdr.classList.toggle('is-solid', y > 60); hdr.classList.toggle('is-hidden', y > lastY && y > h * 1.2); lastY = y; prog.style.strokeDashoffset = 1 - y / max; mbar.classList.toggle('is-on', y > h * .7); }
-  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  // the page height is measured on resize / refresh only, never inside the scroll handler (that forced a layout every frame)
+  let maxY = 1, vh = innerHeight, queued = false;
+  const measure = () => { vh = innerHeight; maxY = Math.max(1, document.documentElement.scrollHeight - vh); };
+  function update() { queued = false; const y = scrollY; hdr.classList.toggle('is-solid', y > 60); hdr.classList.toggle('is-hidden', y > lastY && y > vh * 1.2); lastY = y; prog.style.strokeDashoffset = 1 - Math.min(1, y / maxY); mbar.classList.toggle('is-on', y > vh * .7); }
+  const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+  requestAnimationFrame(() => { measure(); update(); });
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', () => { measure(); onScroll(); }, { passive: true });
+  addEventListener('load', measure);
+  if (ST) ST.addEventListener('refresh', measure);
+
+  // decorative loops pause while off screen, so they stop costing compositor work on every frame
+  const mistTweens = [];
+  if ('IntersectionObserver' in window) {
+    const watch = (el, cb) => el && new IntersectionObserver(([e]) => cb(e.isIntersecting, el)).observe(el);
+    watch($('#hero'), (on, el) => { el.classList.toggle('is-off', !on); mistTweens.forEach(t => on ? t.resume() : t.pause()); });
+    watch($('.banks'), (on, el) => el.classList.toggle('is-off', !on));
+    watch($('#dial'), (on, el) => el.classList.toggle('is-off', !on));
+  }
 
   /* ---------- GSAP choreography ---------- */
-  const pre = $('#pre');
+  const pre = $('#pre') || document.createElement('div');
   const counters = () => $$('[data-count]').forEach(el => { const end = +el.dataset.count; if (!G || reduce) { el.textContent = end.toLocaleString('en-IN'); return; } const o = { v: 0 }; G.to(o, { v: end, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' }, onUpdate: () => el.textContent = Math.round(o.v).toLocaleString('en-IN') }); });
+  document.documentElement.classList.add('go');   // hero copy is held hidden by CSS until this point, so it never flashes before animating
   if (!G || !ST || reduce) { pre.classList.add('is-gone'); counters(); return; }
 
   const mist = $$('.mist');
   const intro = G.timeline({ defaults: { ease: 'expo.out' } });
-  intro.to('#pre-line', { scaleX: 1, duration: .7, ease: 'power2.inOut' }, 0)
-    .to('.pre__inner', { opacity: 0, duration: .3, ease: 'power1.in' }, .75)
-    .to('#pre', { yPercent: -100, duration: 1, ease: 'expo.inOut' }, .9)
-    .add(() => pre.classList.add('is-gone'), 1.9)
-    .from(mist, { opacity: 0, duration: 2, ease: 'power1.out' }, 1.2)
-    .from('#hero-h .w > span', { yPercent: 105, duration: 1.1, stagger: .045 }, 1.25)
-    .from('#hero [data-in]', { y: 24, opacity: 0, duration: 1, stagger: .1 }, 1.45)
-    .from('#facts > div', { x: 30, opacity: 0, duration: 1, stagger: .1 }, 1.6)
-    .from('#qform', { y: 40, opacity: 0, duration: 1.1 }, 1.75)
-    .from('.hdr__bar', { y: -30, opacity: 0, duration: .9 }, 1.5);
-  setTimeout(() => { pre.classList.add('is-gone'); if (intro.progress() < 1) intro.progress(1); }, 3500);
-  mist.forEach((m, i) => G.to(m, { x: (i % 2 ? -1 : 1) * (40 + i * 20), duration: 14 + i * 4, yoyo: true, repeat: -1, ease: 'sine.inOut' }));
+  // no loading curtain: the hero photo paints immediately and the copy rises in over it
+  intro.from(mist, { opacity: 0, duration: 1.6, ease: 'power1.out' }, 0)
+    .from('#hero-h .w > span', { yPercent: 105, duration: .95, stagger: .035 }, .05)
+    .from('#hero [data-in]', { y: 20, opacity: 0, duration: .85, stagger: .07 }, .2)
+    .from('#facts > div', { x: 24, opacity: 0, duration: .85, stagger: .07 }, .3)
+    .from('#qform', { y: 30, opacity: 0, duration: .9 }, .35)
+    .from('.hdr__bar', { y: -24, opacity: 0, duration: .7 }, .15);
+  setTimeout(() => { if (intro.progress() < 1) intro.progress(1); }, 2500);
+  mist.forEach((m, i) => mistTweens.push(G.to(m, { x: (i % 2 ? -1 : 1) * (40 + i * 20), duration: 14 + i * 4, yoyo: true, repeat: -1, ease: 'sine.inOut' })));
 
-  const mm = G.matchMedia();
-  mm.add('(min-width: 1000px)', () => {
-    // hero: gentle parallax as it scrolls away (no pin, so no empty gap)
-    G.timeline({ scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } })
-      .to('#slides', { yPercent: 18, ease: 'none' }, 0)
-      .to(mist[0], { xPercent: -30, ease: 'none' }, 0).to(mist[1], { xPercent: 30, ease: 'none' }, 0)
-      .fromTo('#hero-copy', { y: 0 }, { y: -90, ease: 'none' }, 0)
-      .fromTo('#facts', { y: 0 }, { y: -140, ease: 'none' }, 0);
-
-    // cities: horizontal scroll (unchanged)
-    const track = $('#track'), dist = () => track.scrollWidth - innerWidth + 60;
-    const tween = G.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: '#cities-pin', start: 'top top', end: () => '+=' + dist(), scrub: 1, pin: true, invalidateOnRefresh: true, onUpdate: s => G.set('#cities-bar', { scaleX: s.progress }) } });
-    $$('.city__img').forEach(img => G.fromTo(img, { xPercent: -8 }, { xPercent: 8, ease: 'none', scrollTrigger: { trigger: img.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
-    $$('.city__big').forEach(b => G.fromTo(b, { xPercent: 30 }, { xPercent: -20, ease: 'none', scrollTrigger: { trigger: b.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
-  });
-
-  // headings + reveals
-  $$('[data-split]').forEach(h => { if (h.id === 'hero-h') return; G.from(h.querySelectorAll('.w > span'), { yPercent: 108, duration: 1.1, stagger: .045, ease: 'expo.out', scrollTrigger: { trigger: h, start: 'top 86%' } }); });
-  $$('[data-in]').forEach(el => { if (el.closest('#hero')) return; G.from(el, { y: 40, opacity: 0, duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } }); });
-  counters();
-  G.from('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: '#services', start: 'top 82%' } });
-  G.from('.stat', { y: 30, opacity: 0, duration: 1, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.stats', start: 'top 85%' } });
-
-  // reasons + process reveals
-  G.from('.ap', { y: 60, opacity: 0, duration: 1.1, stagger: .05, ease: 'expo.out', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#acc10', start: 'top 85%' } });
-  G.from('#dial-prog', { strokeDashoffset: 1, duration: 1.4, ease: 'power2.out', scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
-  G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
-  G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } });
-
-  // postcards drop in like they've been dealt onto a table
-  G.from('.pcard', { y: 80, rotate: (i) => [-6, 3, -3][i] || 0, opacity: 0, duration: 1.2, stagger: .14, ease: 'expo.out', scrollTrigger: { trigger: '#cards', start: 'top 82%' } });
-  // faq + consult
-  G.from('.qa', { y: 24, opacity: 0, duration: .8, stagger: .06, ease: 'power3.out', scrollTrigger: { trigger: '#acc', start: 'top 85%' } });
-  G.from('#cbox', { y: 80, opacity: 0, duration: 1.3, ease: 'expo.out', scrollTrigger: { trigger: '#cbox', start: 'top 85%' } });
-  G.from('.cnext li', { x: -24, opacity: 0, duration: 1, stagger: .12, ease: 'expo.out', scrollTrigger: { trigger: '.cnext', start: 'top 88%' } });
-  G.from('.gl', { yPercent: 35, opacity: 0, duration: 1.1, stagger: .06, ease: 'expo.out', clearProps: 'transform,opacity', scrollTrigger: { trigger: '.foot', start: 'top 85%' } });
+  // scroll-driven work (pins, parallax, ~40 reveal tweens) is set up just after first paint, not before it:
+  // it reads computed styles for every element it animates, which forces layout on the critical path
+  const T = (sel, from, trig, start, extra) => () => G.from(sel, Object.assign({ duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: trig, start } }, from, extra));
+  const tasks = [
+    () => G.matchMedia().add('(min-width: 1000px)', () => {
+      // hero: gentle parallax as it scrolls away (no pin, so no empty gap)
+      G.timeline({ scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true } })
+        .to('#slides', { yPercent: 18, ease: 'none' }, 0)
+        .to(mist[0], { xPercent: -30, ease: 'none' }, 0).to(mist[1], { xPercent: 30, ease: 'none' }, 0)
+        .fromTo('#hero-copy', { y: 0 }, { y: -90, ease: 'none' }, 0)
+        .fromTo('#facts', { y: 0 }, { y: -140, ease: 'none' }, 0);
+      // cities: horizontal scroll
+      const track = $('#track'), dist = () => track.scrollWidth - innerWidth + 60;
+      const tween = G.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: '#cities-pin', start: 'top top', end: () => '+=' + dist(), scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true, onUpdate: s => G.set('#cities-bar', { scaleX: s.progress }) } });
+      $$('.city__img').forEach(img => G.fromTo(img, { xPercent: -8 }, { xPercent: 8, ease: 'none', scrollTrigger: { trigger: img.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
+      $$('.city__big').forEach(b => G.fromTo(b, { xPercent: 30 }, { xPercent: -20, ease: 'none', scrollTrigger: { trigger: b.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
+    }),
+    // headings + reveals, one task per element so no single slice runs long
+    ...$$('[data-split]').filter(h => h.id !== 'hero-h').map(h => () => G.from(h.querySelectorAll('.w > span'), { yPercent: 108, duration: 1.1, stagger: .045, ease: 'expo.out', scrollTrigger: { trigger: h, start: 'top 86%' } })),
+    ...$$('[data-in]').filter(el => !el.closest('#hero')).map(el => T(el, { y: 40, opacity: 0 }, el, 'top 88%')),
+    counters,
+    T('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08 }, '#services', 'top 82%', { clearProps: 'transform,opacity' }),
+    T('.stat', { y: 30, opacity: 0, duration: 1, stagger: .1 }, '.stats', 'top 85%'),
+    // reasons + process
+    T('.ap', { y: 60, opacity: 0, stagger: .05 }, '#acc10', 'top 85%', { clearProps: 'transform,opacity' }),
+    () => G.from('#dial-prog', { strokeDashoffset: 1, duration: 1.4, ease: 'power2.out', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
+    () => G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
+    () => G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
+    // postcards drop in like they've been dealt onto a table
+    T('.pcard', { y: 80, rotate: i => [-6, 3, -3][i] || 0, opacity: 0, duration: 1.2, stagger: .14 }, '#cards', 'top 82%', { clearProps: 'transform,opacity' }),
+    // faq + consult + footer
+    T('.qa', { y: 24, opacity: 0, duration: .8, stagger: .06, ease: 'power3.out' }, '#acc', 'top 85%'),
+    T('#cbox', { y: 80, opacity: 0, duration: 1.3 }, '#cbox', 'top 85%'),
+    T('.cnext li', { x: -24, opacity: 0, duration: 1, stagger: .12 }, '.cnext', 'top 88%'),
+    T('.gl', { yPercent: 35, opacity: 0, stagger: .06 }, '.foot', 'top 85%', { clearProps: 'transform,opacity' })
+  ];
+  // run the tasks in the browser's idle gaps (a few per frame), then one refresh so every trigger is measured once
+  const runTasks = deadline => {
+    const t0 = performance.now(), budget = () => !deadline || (deadline.didTimeout ? performance.now() - t0 < 24 : deadline.timeRemaining() > 6);
+    do tasks.shift()(); while (tasks.length && budget());
+    if (tasks.length) schedule(); else ST.refresh();
+  };
+  const schedule = () => 'requestIdleCallback' in window ? requestIdleCallback(runTasks, { timeout: 500 }) : setTimeout(() => runTasks({ didTimeout: true }), 16);
+  if (location.hash) runTasks(null); else schedule();
 
   addEventListener('load', () => { ST.refresh(); const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) { intro.progress(1); const jump = () => { const y = t.getBoundingClientRect().top + scrollY; lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); }; setTimeout(jump, 60); setTimeout(() => { ST.refresh(); jump(); }, 900); } });
   window.__shot = (at, p) => { intro.progress(1); pre.classList.add('is-gone'); const el = $('#' + at), base = el.closest('.pin-spacer') || el; const y = base.getBoundingClientRect().top + scrollY + (p || 0) * Math.max(0, base.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); ST.update(); return Math.round(y); };

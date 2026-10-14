@@ -207,5 +207,71 @@
   "license": "CC0",
   "source": "https://commons.wikimedia.org/wiki/File:Aoraki_Mount_Cook._(36249626443).jpg",
   "original": "5472x3322"
+ },
+ {
+  "file": "city-wellington.jpg",
+  "purpose": "City explorer: Wellington, everyday",
+  "size": "2400x1600",
+  "kb": 886,
+  "title": "Wellington - Te Whanganui-a-Tara, Part III - Wellington9221.jpg",
+  "author": "lumoplank",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Wellington_-_Te_Whanganui-a-Tara,_Part_III_-_Wellington9221.jpg",
+  "original": "5303x3535"
+ },
+ {
+  "file": "weekend-wellington.jpg",
+  "purpose": "City explorer: Wellington, weekend",
+  "size": "2400x1350",
+  "kb": 504,
+  "title": "Harborside 1 - Wellington, New Zealand.jpg",
+  "author": "Daderot",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Harborside_1_-_Wellington,_New_Zealand.jpg",
+  "original": "4032x2268"
+ },
+ {
+  "file": "weekend-auckland.jpg",
+  "purpose": "City explorer: Auckland, weekend",
+  "size": "2400x1714",
+  "kb": 506,
+  "title": "Piha Beach, Zeelanda Berria.jpg",
+  "author": "Jolaus",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Piha_Beach,_Zeelanda_Berria.jpg",
+  "original": "3978x2841"
+ },
+ {
+  "file": "weekend-christchurch.jpg",
+  "purpose": "City explorer: Christchurch, weekend",
+  "size": "2400x1594",
+  "kb": 600,
+  "title": "On the road to Akaroa (38828987041).jpg",
+  "author": "Staffan Andersson from Uppsala, Sweden",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:On_the_road_to_Akaroa_(38828987041).jpg",
+  "original": "4288x2848"
+ },
+ {
+  "file": "weekend-dunedin.jpg",
+  "purpose": "City explorer: Dunedin, weekend",
+  "size": "2400x1231",
+  "kb": 600,
+  "title": "Second Beach, St Clair. Dunedin NZ (34418880426).jpg",
+  "author": "Bernard Spragg. NZ from Christchurch, New Zealand",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:Second_Beach,_St_Clair._Dunedin_NZ_(34418880426).jpg",
+  "original": "4257x2184"
+ },
+ {
+  "file": "weekend-queenstown.jpg",
+  "purpose": "City explorer: Queenstown, weekend",
+  "size": "2400x1607",
+  "kb": 691,
+  "title": "The Remarkables. Queenstown NZ (8167990319).jpg",
+  "author": "Bernard Spragg. NZ from Christchurch, New Zealand",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:The_Remarkables._Queenstown_NZ_(8167990319).jpg",
+  "original": "3872x2592"
  }
 ]
