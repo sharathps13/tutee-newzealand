@@ -265,8 +265,8 @@
       const i = CITIES.findIndex(c => c.id === card.dataset.city); if (i < 0) return;
       $('.city__open', card).addEventListener('click', () => openCity(i, card));
       if (reduce || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-      card.addEventListener('pointermove', e => { const r = card.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; tag.style.transform = 'translate(' + (e.clientX + 16) + 'px,' + (e.clientY + 18) + 'px)'; tag.classList.add('is-on'); card.style.setProperty('--rx', ((y / r.height - .5) * -5).toFixed(2) + 'deg'); card.style.setProperty('--ry', ((x / r.width - .5) * 7).toFixed(2) + 'deg'); });
-      card.addEventListener('pointerleave', () => { tag.classList.remove('is-on'); card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); });
+      card.addEventListener('pointermove', e => { tag.style.transform = 'translate(' + (e.clientX + 16) + 'px,' + (e.clientY + 18) + 'px)'; tag.classList.add('is-on'); });
+      card.addEventListener('pointerleave', () => tag.classList.remove('is-on'));
     });
 
     modeBtns.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
@@ -293,6 +293,68 @@
     }
     // the CTA carries the city into the counselling form
     $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-city').value = name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); }); });
+  })();
+
+  /* ---------- city route: a flight itinerary (AKL → WLG → CHC → DUD → ZQN) plus arrows on every card ----------
+     A plane flies along the route as you move through the cities; each stop jumps to its city; the ends of the route
+     leave the section (back to the previous one, or skip on). Desktop (pinned): it moves the page scroll that drives
+     the horizontal track. Smaller screens: it scrolls the swipe rail. */
+  let citiesPin = null;   // { st, dist } while the desktop pinned layout is active
+  const cityNav = (() => {
+    const box = $('#cjour'); if (!box) return null;
+    const track = $('#track'), cards = $$('.city', track), list = $('#cjour-stops'), plane = $('#cjour-plane'), fill = $('#cjour-fill');
+    const names = cards.map(c => c.dataset.city ? $('h3', c).textContent.trim() : 'Not sure?'), last = cards.length - 1, nCities = cards.filter(c => c.dataset.city).length;
+    const codes = cards.map(c => c.dataset.city ? $('.city__big', c).textContent.trim() : '?');
+    list.innerHTML = codes.map((c, i) => '<li style="--at:' + (i / last * 100).toFixed(3) + '%"><button type="button" data-i="' + i + '" aria-label="' + (i < nCities ? 'Go to ' + names[i] : 'Not sure? Get help choosing a city') + '"><span>' + c + '</span></button></li>').join('');
+    const stopsEls = $$('li', list);
+    // arrows on each card's sides (above the card's own "step inside" button)
+    cards.forEach((c, i) => {
+      const mk = (dir, label) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'city__nav city__nav--' + dir; b.setAttribute('aria-label', label); b.innerHTML = '<svg class="ic"><use href="#i-arrow"/></svg>'; b.addEventListener('click', e => { e.stopPropagation(); go(i + (dir === 'next' ? 1 : -1)); }); c.appendChild(b); };
+      if (!c.dataset.city) return;   // the "Can't decide?" card has no arrows
+      if (i > 0) mk('prev', 'Previous city: ' + names[i - 1]);
+      if (i < last) mk('next', i + 1 < nCities ? 'Next city: ' + names[i + 1] : 'Next: not sure which city?');
+    });
+    let queued = false, lastV = 0;
+    // where each card sits, in the active mode's units: pinned = scroll progress 0..1, rail = scrollLeft in px
+    const stops = () => cards.map(c => {
+      const centre = c.offsetLeft - track.offsetLeft + c.offsetWidth / 2;
+      if (citiesPin) return Math.min(1, Math.max(0, (centre - innerWidth / 2) / citiesPin.dist()));
+      return Math.min(track.scrollWidth - track.clientWidth, Math.max(0, centre - track.clientWidth / 2));
+    });
+    const now = () => citiesPin ? citiesPin.st.progress : track.scrollLeft;
+    const set = s => {
+      if (citiesPin) { const st = citiesPin.st, y = st.start + s * (st.end - st.start); if (lenis) lenis.scrollTo(y, { duration: 1.1 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
+      else track.scrollTo({ left: s, behavior: reduce ? 'auto' : 'smooth' });
+    };
+    const toValue = s => { const P = stops(); if (s <= P[0]) return 0; for (let i = 0; i < last; i++) if (s <= P[i + 1]) return i + (P[i + 1] > P[i] ? (s - P[i]) / (P[i + 1] - P[i]) : 1); return last; };
+    const ui = v => {
+      const i = Math.round(v), f = v / last;
+      box.style.setProperty('--pf', f.toFixed(4)); fill.parentElement.style.setProperty('--p', (f * 100).toFixed(2) + '%');
+      if (Math.abs(v - lastV) > .01) plane.style.setProperty('--rot', v < lastV ? '225deg' : '45deg'); lastV = v;   // the plane faces the way you're travelling
+      stopsEls.forEach((s, k) => { s.classList.toggle('is-on', k === i); s.classList.toggle('is-past', k < i); });
+      $('#cjour-n').textContent = String(Math.min(i, nCities - 1) + 1).padStart(2, '0'); $('#cjour-name').textContent = i < nCities ? names[i] : 'Not sure? We’ll help you choose';
+    };
+    const sync = () => { queued = false; ui(toValue(now())); };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(sync); } };
+    function go(i) { i = Math.max(0, Math.min(last, i)); set(stops()[i]); }
+    list.addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(+b.dataset.i); });
+    list.addEventListener('keydown', e => { const k = e.key; if (k !== 'ArrowRight' && k !== 'ArrowLeft') return; e.preventDefault(); const i = Math.round(toValue(now())) + (k === 'ArrowRight' ? 1 : -1); go(i); const b = $$('button', list)[Math.max(0, Math.min(last, i))]; if (b) b.focus({ preventScroll: true }); });
+    // leave the section either way, without scrolling through every city
+    // jump straight there (no smooth scroll), so the cities' horizontal scroll animation doesn't play on the way
+    // …behind a quick cream wipe: it sweeps over the screen in the direction of travel, the page jumps underneath,
+    // then the wipe lifts off the new section
+    const veil = document.createElement('div'); veil.className = 'jumpveil'; veil.setAttribute('aria-hidden', 'true'); document.body.appendChild(veil);
+    const jump = t => { const y = t.getBoundingClientRect().top + scrollY; if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else scrollTo({ top: y, behavior: 'auto' }); };
+    $$('[data-jump]', box).forEach(b => b.addEventListener('click', () => {
+      const t = $(b.dataset.jump); if (!t) return;
+      if (reduce) { jump(t); return; }
+      veil.dataset.dir = b.classList.contains('cjour__skip--back') ? 'up' : 'down';
+      veil.classList.remove('is-out'); veil.classList.add('is-in');
+      setTimeout(() => { jump(t); requestAnimationFrame(() => { veil.classList.remove('is-in'); veil.classList.add('is-out'); setTimeout(() => veil.classList.remove('is-out'), 520); }); }, 380);
+    }));
+    addEventListener('scroll', onScroll, { passive: true }); track.addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll, { passive: true });
+    ui(0);
+    return { sync: onScroll };
   })();
 
   const FAQ = [
@@ -753,9 +815,12 @@
         .fromTo('#facts', { y: 0 }, { y: -140, ease: 'none' }, 0);
       // cities: horizontal scroll
       const track = $('#track'), dist = () => track.scrollWidth - innerWidth + 60;
-      const tween = G.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: '#cities-pin', start: 'top top', end: () => '+=' + dist(), scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true, onUpdate: s => G.set('#cities-bar', { scaleX: s.progress }) } });
+      // 1.6px of page scroll per px of sideways travel: calmer than 1:1, which felt too sensitive to stop on a city
+      const tween = G.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: '#cities-pin', start: 'top top', end: () => '+=' + dist() * 1.6, scrub: 1, pin: true, anticipatePin: 1, invalidateOnRefresh: true, onRefresh: () => cityNav && cityNav.sync() } });
+      citiesPin = { st: tween.scrollTrigger, dist };
       $$('.city__img').forEach(img => G.fromTo(img, { xPercent: -8 }, { xPercent: 8, ease: 'none', scrollTrigger: { trigger: img.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
       $$('.city__big').forEach(b => G.fromTo(b, { xPercent: 30 }, { xPercent: -20, ease: 'none', scrollTrigger: { trigger: b.parentElement, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true } }));
+      return () => { citiesPin = null; if (cityNav) cityNav.sync(); };
     }),
     // headings + reveals, one task per element so no single slice runs long
     ...$$('[data-split]').filter(h => h.id !== 'hero-h').map(h => () => G.from(h.querySelectorAll('.w > span'), { yPercent: 125, duration: 1.1, stagger: .045, ease: 'expo.out', onComplete: () => shown(h), scrollTrigger: { trigger: h, start: 'top 86%' } })),
@@ -781,8 +846,11 @@
         const tl = G.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: nzm, start: 'top 85%', end: 'bottom bottom', scrub: 1, invalidateOnRefresh: true } });   // starts as the map scrolls in; the stage is sticky, so it stays in view while it draws
         draw(coast).forEach((d, i) => tl.fromTo(d.el, { strokeDashoffset: d.len, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: .8 }, i * .05));
         tl
-          .fromTo('.nzm__map', { scale: 2.4, svgOrigin: '200 36' }, { scale: 1, svgOrigin: '200 36', duration: 1, ease: 'power2.inOut' }, 0)   // zooms out from the top of Northland, so the big outline only extends downwards
+          .fromTo('.nzm__map', { scale: 2.4, svgOrigin: '206 33' }, { scale: 1, svgOrigin: '206 33', duration: 1, ease: 'power2.inOut' }, 0)   // zooms out from the top of Northland, so the big outline only extends downwards
           .fromTo(coast, { strokeWidth: .55 }, { strokeWidth: 1.3, duration: 1, ease: 'power2.inOut' }, 0)
+          .fromTo('.nzm__stage', { '--lit': 0 }, { '--lit': 1, duration: .3 }, .95)   // the 3D tilt + sheen switch on with the satellite view
+          .fromTo(['.nzm__ocean', '.nzm__sat', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .3, stagger: .05 }, .95)   // the satellite view washes in once the outline is complete and the zoom has settled
+          .fromTo(coast, { stroke: '#0A3B3C' }, { stroke: 'rgba(226,246,242,.32)', duration: .25 }, .98)                                 // …and the drawn line becomes a fine surf line
           .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .14, stagger: .1, ease: 'back.out(3)' }, 1.02)
           ;
         draw(leads).forEach((d, i) => tl.fromTo(d.el, { strokeDashoffset: d.len, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: .2 }, 1.06 + i * .1));
@@ -790,16 +858,25 @@
           .fromTo(items, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: .18, stagger: .1 }, 1.14)
           .fromTo('.nzm__all', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .2 }, 1.95)
           .to({}, { duration: .3 });
-        return () => nzm.classList.remove('is-pinned');
+        // 3D tilt toward the pointer (mouse only; the CSS keeps it off for reduced motion)
+        const stage = $('.nzm__stage', nzm); let raf = 0, ev = null;
+        const tilt = () => { raf = 0; if (!ev) return; const r = stage.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+          stage.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); stage.style.setProperty('--my', (y * 100).toFixed(1) + '%'); };
+        const move = e => { if (e.pointerType !== 'mouse') return; ev = e; stage.classList.add('is-hover'); if (!raf) raf = requestAnimationFrame(tilt); };
+        const leave = () => { ev = null; stage.classList.remove('is-hover'); stage.style.setProperty('--tx', 0); stage.style.setProperty('--ty', 0); };
+        stage.addEventListener('pointermove', move); stage.addEventListener('pointerleave', leave);
+        return () => { nzm.classList.remove('is-pinned'); stage.removeEventListener('pointermove', move); stage.removeEventListener('pointerleave', leave); leave(); };
       }
       // phones: crop the map to the islands; touching or focusing a university lights up its pin (one at a time)
       const svg = $('.nzm__svg', nzm), vb = svg.getAttribute('viewBox');
-      svg.setAttribute('viewBox', '50 30 285 400');
+      svg.setAttribute('viewBox', '47 23 294 373');
       const light = e => { const li = e.target.closest && e.target.closest('.nzm__list li'); if (!li) return; const i = items.indexOf(li); items.forEach((el, k) => { el.classList.toggle('is-on', k === i); if (pins[k]) pins[k].classList.toggle('is-on', k === i); }); };
       nzm.addEventListener('pointerdown', light); nzm.addEventListener('focusin', light);
       const tm = G.timeline({ scrollTrigger: { trigger: nzm, start: 'top 75%' } });
       draw(coast).forEach((d, i) => tm.fromTo(d.el, { strokeDashoffset: d.len }, { strokeDashoffset: 0, duration: 1.8, ease: 'power2.inOut' }, i * .1));
       tm
+        .fromTo(['.nzm__sat', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .8, stagger: .1 }, 1.2)
+        .to(coast, { stroke: 'rgba(226,246,242,.32)', strokeWidth: .8, duration: .6 }, 1.4)
         .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .35, stagger: .07, ease: 'back.out(3)' }, '-=.4')
         .fromTo(items, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .4, stagger: .06, ease: 'expo.out' }, '<');
       return () => { nzm.removeEventListener('pointerdown', light); nzm.removeEventListener('focusin', light); svg.setAttribute('viewBox', vb); [...items, ...pins].forEach(el => el.classList.remove('is-on')); };

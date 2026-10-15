@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#04191A">
 <title>All universities and institutions in New Zealand | Tutee Connect</title>
 <meta name="description" content="All 195 New Zealand institutions that can enrol international students: universities, institutes of technology and private training establishments. Shortlist and get free counselling.">
-<link rel="icon" type="image/png" sizes="64x64" href="./assets/img/brand/mark-64.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/img/brand/favicon-32.png"><link rel="icon" type="image/png" sizes="64x64" href="./assets/img/brand/favicon-64.png"><link rel="icon" type="image/png" sizes="192x192" href="./assets/img/brand/favicon-192.png"><link rel="apple-touch-icon" href="./assets/img/brand/favicon-180.png">
 <link rel="stylesheet" href="./assets/css/nz-fonts.css">
 <link rel="stylesheet" href="./assets/css/nz.css">
 </head>
@@ -57,7 +57,7 @@
 </svg>
 
 <header class="dir-hdr"><div class="wrap dir-hdr__bar">
-  <a class="logo" href="index.html" aria-label="Tutee Connect home"><img src="./assets/img/brand/logo-nz-hdr@1x.png" srcset="./assets/img/brand/logo-nz-hdr@1x.png 1x, ./assets/img/brand/logo-nz-hdr@2x.png 2x, ./assets/img/brand/logo-nz-hdr@3x.png 3x" alt="Tutee Connect · Study in New Zealand" width="146" height="64"></a>
+  <a class="logo" href="index.html" aria-label="Tutee Connect home"><picture><source media="(max-width: 560px)" srcset="./assets/img/brand/logo-nz-hdr-m@1x.png 1x, ./assets/img/brand/logo-nz-hdr-m@2x.png 2x, ./assets/img/brand/logo-nz-hdr-m@3x.png 3x, ./assets/img/brand/logo-nz-hdr-m@4x.png 4x"><img src="./assets/img/brand/logo-nz-hdr@1x.png" srcset="./assets/img/brand/logo-nz-hdr@1x.png 1x, ./assets/img/brand/logo-nz-hdr@2x.png 2x, ./assets/img/brand/logo-nz-hdr@3x.png 3x, ./assets/img/brand/logo-nz-hdr@4x.png 4x" alt="Tutee Connect · Study in New Zealand" width="146" height="64" fetchpriority="high"></picture></a>
   <a class="btn btn--go btn--sm" href="index.html#consult">Free counselling</a>
 </div></header>
 
@@ -70,11 +70,11 @@
 
     <div class="dir__tools">
       <label class="dir__search"><svg class="ic"><use href="#i-search"/></svg><input id="dir-q" type="search" placeholder="Search by name, city or subject" autocomplete="off" aria-label="Search institutions"></label>
-      <div class="dir__chips" role="group" aria-label="Filter by type">
-        <button type="button" data-f="all" aria-pressed="true">All</button>
-        <button type="button" data-f="University" aria-pressed="false">Universities</button>
-        <button type="button" data-f="ITP" aria-pressed="false">Institutes &amp; w&#257;nanga</button>
-        <button type="button" data-f="Private Training Establishment" aria-pressed="false">Private training</button>
+      <div class="dir__filters" role="group" aria-label="Filter institutions">
+        <label class="dir__sel"><span>Course</span><select id="dir-course"><option value="">All courses</option></select></label>
+        <label class="dir__sel"><span>Area</span><select id="dir-area"><option value="">All of New Zealand</option></select></label>
+        <label class="dir__sel"><span>Type</span><select id="dir-type"><option value="">All types</option><option value="University">Universities</option><option value="ITP">Institutes &amp; w&#257;nanga</option><option value="Private Training Establishment">Private training</option></select></label>
+        <button type="button" class="dir__reset" id="dir-reset" hidden>Clear filters</button>
       </div>
     </div>
     <p class="dir__count" id="dir-count" aria-live="polite"></p>
