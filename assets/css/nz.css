@@ -743,10 +743,12 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 @media (max-width: 560px) { .ff--tel { grid-template-columns: 118px 1fr; } .ff--tel .ff__msg { margin-left: -122px; } }
 
 /* footer: interactive Kia ora */
-.giant { font: 800 clamp(5rem, 22vw, 22rem)/.8 var(--display); letter-spacing: -.06em; white-space: nowrap; margin: 0; cursor: default; user-select: none; display: flex; }
-.gl { display: inline-block; color: transparent; -webkit-text-stroke: 1.5px rgba(245,239,228,.28); font-weight: 300; transition: color .45s var(--ease), -webkit-text-stroke-color .45s, font-weight .45s var(--ease), transform .6s var(--spring); }
+.giant { font: 800 clamp(5rem, 22vw, 22rem)/.8 var(--display); letter-spacing: -.015em; white-space: nowrap; margin: 0; cursor: default; user-select: none; display: flex; }
+.gl { display: inline-block; padding-bottom: .06em; color: transparent; background: linear-gradient(180deg, rgba(245,239,228,.92) 0%, rgba(245,239,228,.5) 55%, rgba(245,239,228,.12) 100%); -webkit-background-clip: text; background-clip: text; transition: transform .22s var(--ease), filter .22s; will-change: transform; }
+.gl::after { content: attr(data-ch); position: absolute; inset: 0; color: transparent; background: linear-gradient(180deg, #FFD27A 0%, #F4B73D 60%, #B07510 100%); -webkit-background-clip: text; background-clip: text; opacity: var(--t, 0); transition: opacity .18s; }
+.gl { position: relative; }
 .gsp { display: inline-block; width: .22em; }
-.giant.is-live .gl { transition-duration: .25s, .25s, .25s, .45s; }
+.giant.is-live .gl { transition-duration: .12s, .12s; }
 
 /* ================= footer ================= */
 .foot { position: relative; background: #020A0B; color: var(--on-2); padding-block: 70px calc(110px + env(safe-area-inset-bottom, 0px)); overflow: clip; }
@@ -1311,3 +1313,50 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
 }
 
 
+
+/* cities on desktop: a free-scrolling rail instead of the pinned scroll lock (snaps card to card, edges fade) */
+@media (min-width: 1000px) {
+  .cities__pin { min-height: 0; padding-block: clamp(80px, 9vw, 120px) clamp(60px, 7vw, 100px); }
+  .track { overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gut); width: auto; padding: 6px var(--gut) 24px; scrollbar-width: none; will-change: auto; cursor: grab; }
+  .track::-webkit-scrollbar { display: none; }
+  .track.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .track.is-dragging .city { pointer-events: none; }
+  .city { scroll-snap-align: center; }
+  .cities .city { height: min(560px, 62vh); }
+}
+
+/* cities: the route bar is removed, and the row drags freely (no snapping onto each city) at every width */
+.cjour { display: none !important; }
+.cities .track { scroll-snap-type: none !important; }
+
+/* desktop: the heading and the map stick together as one block while the outline draws (.nzm__lock);
+   the map is sized to fit the space left under the heading, keeping its proportions */
+@media (min-width: 900px) {
+  .nzm.is-pinned .nzm__lock { position: sticky; top: 84px; }
+  .nzm.is-pinned .nzm__stage { position: relative; top: auto; max-height: none; width: min(1120px, 100%, (100svh - 84px - var(--headh, 170px) - 70px) * 800 / 460); }
+  .nzm.is-pinned { height: calc(230vh + var(--headh, 170px)); }
+}
+/* universities heading drawn like the map outline: --draw traces the outline left to right, --fill floods the colour in */
+.tdraw { --draw: 1; --fill: 1; color: transparent !important; -webkit-text-stroke: calc((1 - var(--fill)) * .035em + .01px) var(--ink);
+  background: linear-gradient(90deg, var(--ink) calc(var(--fill) * 100%), transparent calc(var(--fill) * 100%)); -webkit-background-clip: text; background-clip: text;
+  clip-path: inset(-.2em calc(100% - var(--draw) * 100%) -.25em -.1em); }
+.unis__head .kick.tdraw::before { background: var(--ink); }
+
+/* Kia ora: letters slide up from behind the baseline (the line clips them), no fade */
+.giant { overflow: hidden; padding-bottom: .04em; }
+
+/* phones: a more compact postcards section (shorter cards, tighter spacing), still stacked */
+@media (max-width: 600px) {
+  .stories.sec { padding-block: 64px 56px; }
+  .stories__head { margin-bottom: 22px; gap: 10px; }
+  .cards { gap: 14px; }
+  .stories .pcard { aspect-ratio: 16 / 8.8; }
+  .pc-front { padding: 16px; }
+  .pc-front::before { inset: 7px; }
+  .pc-front strong { font-size: 1.5rem; }
+  .pc-front small { font-size: .66rem; }
+  .pc-back { padding: 10px; }
+  .pc-msg p { font-size: .9rem; line-height: 1.15; }
+  .pc-stamp { width: 38px; height: 46px; } .pc-post { width: 50px; height: 50px; right: 26px; top: 6px; }
+  .pc-addr span { font-size: .76rem; min-height: 1.35em; }
+}
