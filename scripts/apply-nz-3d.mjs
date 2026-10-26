@@ -30,7 +30,7 @@ const ring = (p, tol) => { let far = 1; p.forEach((q, i) => { if (Math.hypot(q[0
 const rings = pj.rings.map(r => r.map(G)).map(p => ({ p, a: area(p) })).sort((a, b) => b.a - a.a).slice(0, 4);
 // North Island first (it draws first and the zoom starts from its northern tip)
 rings.sort((a, b) => Math.min(...a.p.map(q => q[1])) - Math.min(...b.p.map(q => q[1])));
-const coast = rings.map(r => 'M' + ring(r.p, .12).map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join('L') + 'Z');
+const coast = rings.map(r => 'M' + ring(r.p, .22).map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join('L') + 'Z');
 const all = rings.flatMap(r => r.p), xs = all.map(q => q[0]), ys = all.map(q => q[1]);
 const north = rings[0].p.reduce((m, q) => q[1] < m[1] ? q : m);
 const pins = pj.pins.map(G);
@@ -52,11 +52,8 @@ console.log('nz-3d.webp', Math.round(webp.length / 1024) + ' KB');
 
 /* ---------- index.html ---------- */
 const file = join(root, 'index.html'); let html = readFileSync(file, 'utf8');
-// imagery: the open-ocean tile underneath, the 3D render on top, then the fade toward the list
-html = html.replace(/<g class="nzm__sat"[\s\S]*?<\/g>/, m => {
-  const east = (m.match(/<image href="\.\/assets\/img\/nz\/nz-sat-east\.webp"[^>]*\/>/) || [''])[0];
-  return `<g class="nzm__sat" clip-path="url(#nzm-frame)" aria-hidden="true">${east}<image href="./assets/img/nz/nz-3d.webp" x="${F.x}" y="${F.y}" width="${F.w}" height="${F.h}" preserveAspectRatio="none"/><rect width="800" height="460" fill="url(#nzm-fade)"/></g>`;
-});
+// imagery: the render is an <img> layer under the SVG (.nzm__photo), placed in SVG viewBox units via CSS variables
+html = html.replace(/<img class="nzm__3d"[^>]*>/, `<img class="nzm__3d" data-src="./assets/img/nz/nz-3d.webp" alt="" decoding="async" style="--x:${F.x};--y:${F.y};--w:${F.w};--h:${F.h}">`);
 // coastline in page units (no offset transform any more)
 html = html.replace(/<g class="nzm__map" transform="translate\(40 20\)">[\s\S]*?(<\/g><g class="nzm__lbl")/, `<g class="nzm__map">${coast.map((d, i) => `<path class="nzm__coast" id="nzc${i + 1}" d="${d}"/>`).join('')}$1`)
            .replace(/<g class="nzm__map">[\s\S]*?(<\/g><g class="nzm__lbl")/, `<g class="nzm__map">${coast.map((d, i) => `<path class="nzm__coast" id="nzc${i + 1}" d="${d}"/>`).join('')}$1`);

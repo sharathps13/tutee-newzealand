@@ -73,6 +73,17 @@
     c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(c, !c.classList.contains('is-flip')); } });
   });
 
+  // the map's satellite render isn't fetched with the hero: it loads as the universities section approaches
+  // (it only shows after the outline has drawn, so there is plenty of time)
+  (() => { const imgs = $$('#nzm img[data-src]'); const go = () => imgs.forEach(i => { i.src = i.dataset.src; i.removeAttribute('data-src'); if (i.decode) i.decode().catch(() => {}); });   // decoded before it's attached, so the fade-in frame doesn't stall
+    if (!('IntersectionObserver' in window)) { go(); return; }
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { go(); io.disconnect(); } }, { rootMargin: '1500px 0px' }); io.observe($('#nzm')); })();
+  // photos are decoded ahead of time, a screen or so before they scroll into view, so the first frame that shows
+  // them doesn't stall while the browser decodes a large image
+  (() => { if (!('IntersectionObserver' in window) || !HTMLImageElement.prototype.decode) return;
+    const io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; io.unobserve(e.target); e.target.decode().catch(() => {}); }), { rootMargin: '1400px 0px' });
+    const watch = () => $$('img[loading="lazy"]').forEach(i => { if (!i.dataset.pre) { i.dataset.pre = 1; io.observe(i); } });
+    watch(); addEventListener('load', watch); })();
   // the postcards' handwriting font (73 KB) is only requested once the section is close to the screen
   (() => { const st = $('#stories'); if (!('IntersectionObserver' in window)) { st.classList.add('is-near'); return; } const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { st.classList.add('is-near'); io.disconnect(); } }, { rootMargin: '1500px 0px' }); io.observe(st); })();
 
@@ -245,7 +256,7 @@
       const poster = mode === 'week' ? (card.querySelector('.city__img img') || {}).currentSrc : '';
       lastFocus = document.activeElement;
       imm.classList.remove('is-open', 'is-ready'); imm.hidden = false;
-      document.documentElement.classList.add('imm-lock'); if (lenis) lenis.stop();
+      document.documentElement.classList.add('imm-lock');
       fill(); showPhoto(true, poster); placePill(); timer = setInterval(clock, 30000);
       if (!reduce && imm.animate) imm.animate([{ clipPath: rectClip(card.getBoundingClientRect(), 30) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }], { duration: 1000, easing: 'cubic-bezier(.7,0,.2,1)' });
       void imm.offsetWidth; imm.classList.add('is-open'); setTimeout(() => imm.classList.add('is-ready'), 1400);
@@ -254,7 +265,7 @@
     function closeCity(then) {
       if (imm.hidden) return;
       const card = $('.city[data-city="' + CITIES[cur].id + '"]'), r = card && card.getBoundingClientRect(), seen = r && r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight;
-      let fin = false; const done = () => { if (fin) return; fin = true; imm.hidden = true; imm.classList.remove('is-open', 'is-ready'); document.documentElement.classList.remove('imm-lock'); if (lenis) lenis.start(); clearInterval(timer); layers.style.transform = ''; if (then) then(); else if (lastFocus) lastFocus.focus({ preventScroll: true }); };
+      let fin = false; const done = () => { if (fin) return; fin = true; imm.hidden = true; imm.classList.remove('is-open', 'is-ready'); document.documentElement.classList.remove('imm-lock'); clearInterval(timer); layers.style.transform = ''; if (then) then(); else if (lastFocus) lastFocus.focus({ preventScroll: true }); };
       imm.classList.remove('is-open', 'is-ready');
       if (reduce || !imm.animate || then) { done(); return; }
       imm.animate(seen ? [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: rectClip(r, 30) }] : [{ opacity: 1 }, { opacity: 0 }], { duration: seen ? 800 : 400, easing: 'cubic-bezier(.7,0,.2,1)' }).onfinish = done; setTimeout(done, 900);
@@ -329,7 +340,7 @@
     });
     const now = () => citiesPin ? citiesPin.st.progress : track.scrollLeft;
     const set = s => {
-      if (citiesPin) { const st = citiesPin.st, y = st.start + s * (st.end - st.start); if (lenis) lenis.scrollTo(y, { duration: 1.1 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
+      if (citiesPin) { const st = citiesPin.st, y = st.start + s * (st.end - st.start); scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
       else track.scrollTo({ left: s, behavior: reduce ? 'auto' : 'smooth' });
     };
     const toValue = s => { const P = stops(); if (s <= P[0]) return 0; for (let i = 0; i < last; i++) if (s <= P[i + 1]) return i + (P[i + 1] > P[i] ? (s - P[i]) / (P[i + 1] - P[i]) : 1); return last; };
@@ -350,7 +361,7 @@
     // …behind a quick cream wipe: it sweeps over the screen in the direction of travel, the page jumps underneath,
     // then the wipe lifts off the new section
     const veil = document.createElement('div'); veil.className = 'jumpveil'; veil.setAttribute('aria-hidden', 'true'); document.body.appendChild(veil);
-    const jump = t => { const y = t.getBoundingClientRect().top + scrollY; if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else scrollTo({ top: y, behavior: 'auto' }); };
+    const jump = t => { const y = t.getBoundingClientRect().top + scrollY; scrollTo({ top: y, behavior: 'auto' }); };
     $$('[data-jump]', box).forEach(b => b.addEventListener('click', () => {
       const t = $(b.dataset.jump); if (!t) return;
       if (reduce) { jump(t); return; }
@@ -376,17 +387,17 @@
   $$('.qa button').forEach(b => b.addEventListener('click', () => { const q = b.parentElement, open = !q.classList.contains('open'); $$('.qa.open').forEach(x => { x.classList.remove('open'); $('button', x).setAttribute('aria-expanded', 'false'); }); if (open) { q.classList.add('open'); b.setAttribute('aria-expanded', 'true'); } setTimeout(() => ST && ST.refresh(), 600); }));
 
   /* ---------- smooth scroll ---------- */
-  // ScrollTrigger and Lenis both measure the page when they start, so they are started further down (startScroll),
-  // once every section has been built: the page is then laid out once before first paint, not twice
-  let lenis = null;
+  // ScrollTrigger measures the page when it starts, so it is started further down (startScroll), once every section
+  // has been built: the page is then laid out once before first paint, not twice.
+  // Scrolling is the browser's own (no smooth-scroll library): it runs on the compositor thread, so it stays smooth
+  // even while the page is busy painting a new section. A script-driven smooth scroll stalls whenever painting does.
   const startScroll = () => {
     if (G && ST) G.registerPlugin(ST);
-    // phones keep native scrolling (already smooth, no per-frame JS); the address bar showing / hiding must not re-measure every trigger
+    // the phone address bar showing / hiding must not re-measure every trigger
     if (ST) ST.config({ ignoreMobileResize: true });
-    if (!reduce && window.Lenis && G && ST && matchMedia('(hover: hover) and (pointer: fine)').matches) { lenis = window.__lenis = new Lenis({ lerp: .09 }); lenis.on('scroll', ST.update); G.ticker.add(t => lenis.raf(t * 1000)); G.ticker.lagSmoothing(0); }
   };
-  const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; lenis ? lenis.scrollTo(t, { offset: 0, duration: 1.6 }) : t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
-  window.__goTo = goTo; window.__lenis = lenis;   // used by unis.js and ai.js
+  const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
+  window.__goTo = goTo;   // used by unis.js and ai.js
   $$('[data-scroll]').forEach(a => a.addEventListener('click', e => { const h = a.getAttribute('href'); if (h && h[0] === '#') { e.preventDefault(); goTo(h === '#top' ? '#hero' : h); } }));
   let tt; function toast(m) { const t = $('#toast'); $('span', t).textContent = m; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2400); }
 
@@ -608,7 +619,7 @@
   ]; (window.__TC_DATA = window.__TC_DATA || {}).reasons = REASONS;   // read by Tutee AI
   (() => {
     const box = $('#acc10');
-    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="' + hdSrc(r[3]) + '" srcset="' + hdSet(r[3]) + '" sizes="(max-width: 700px) ' + (i === 0 || i === 9 ? '100vw' : '50vw') + ', (max-width: 899px) 100vw, 60vw" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
+    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="' + hdSrc(r[3]) + '" srcset="' + hdSet(r[3]) + '" sizes="(max-width: 700px) ' + (i === 0 || i === 9 ? '100vw' : '50vw') + ', (max-width: 899px) 100vw, min(36vw, 520px)" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
     const panels = $$('.ap', box);
     const open = i => { panels.forEach((p, j) => { p.classList.toggle('on', j === i); p.setAttribute('aria-selected', j === i); }); $('#acc10-n').textContent = String(i + 1).padStart(2, '0'); $('#acc10-bar').style.transform = 'scaleX(' + (i + 1) / panels.length + ')'; };
     // a mouse opens a panel just by hovering it. Checked per event (not once at load), so it also works on
@@ -637,12 +648,12 @@
       };
       const show = i => {
         lastFocus = document.activeElement; fill(i); sheet.hidden = false;
-        document.documentElement.classList.add('imm-lock'); if (lenis) lenis.stop();
+        document.documentElement.classList.add('imm-lock');
         void sheet.offsetWidth; sheet.classList.add('on'); $('.rs__close', sheet).focus({ preventScroll: true });
       };
       const hide = () => {
         if (sheet.hidden) return; sheet.classList.remove('on'); panel.style.transform = '';
-        let done = false; const fin = () => { if (done) return; done = true; sheet.hidden = true; document.documentElement.classList.remove('imm-lock'); if (lenis) lenis.start(); if (lastFocus) lastFocus.focus({ preventScroll: true }); };
+        let done = false; const fin = () => { if (done) return; done = true; sheet.hidden = true; document.documentElement.classList.remove('imm-lock'); if (lastFocus) lastFocus.focus({ preventScroll: true }); };
         panel.addEventListener('transitionend', fin, { once: true }); setTimeout(fin, 450);
       };
       const swap = d => { if (reduce) { fill(at + d); return; } panel.classList.add('is-swap'); setTimeout(() => { fill(at + d); panel.classList.remove('is-swap'); }, 180); };
@@ -868,7 +879,7 @@
     T('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08 }, '#services', 'top 82%', { clearProps: 'transform,opacity' }),
     T('.stat', { y: 30, opacity: 0, duration: 1, stagger: .1 }, '.stats', 'top 85%'),
     // reasons + process
-    T('.ap', { y: 60, opacity: 0, stagger: .05 }, '#acc10', 'top 85%', { clearProps: 'transform,opacity' }),
+    T('#acc10', { y: 60, opacity: 0 }, '#acc10', 'top 85%', { clearProps: 'transform,opacity' }),   // the row of 10 photo panels rises as one piece: one layer to draw instead of ten
     () => G.from('#dial-prog', { strokeDashoffset: 1, duration: 1.4, ease: 'power2.out', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     () => G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     () => G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
@@ -905,7 +916,7 @@
           .fromTo('.nzm__map', { scale: 2.4, svgOrigin: '206 33' }, { scale: 1, svgOrigin: '206 33', duration: 1, ease: 'power2.inOut' }, 0)   // zooms out from the top of Northland, so the big outline only extends downwards
           .fromTo(coast, { strokeWidth: .55 }, { strokeWidth: 1.3, duration: 1, ease: 'power2.inOut' }, 0)
           .fromTo('.nzm__stage', { '--lit': 0 }, { '--lit': 1, duration: .3 }, .95)   // the 3D tilt + sheen switch on with the satellite view
-          .fromTo(['.nzm__ocean', '.nzm__sat', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .3, stagger: .05 }, .95)   // the satellite view washes in once the outline is complete and the zoom has settled
+          .fromTo(['.nzm__ocean', '.nzm__photo', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .3, stagger: .05 }, .95)   // the satellite view washes in once the outline is complete and the zoom has settled
           .fromTo(coast, { stroke: '#0A3B3C' }, { stroke: 'rgba(226,246,242,.32)', duration: .25 }, .98)                                 // …and the drawn line becomes a fine surf line
           .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .14, stagger: .1, ease: 'back.out(3)' }, 1.02)
           ;
@@ -915,12 +926,24 @@
           .fromTo('.nzm__all', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .2 }, 1.95)
           .to({}, { duration: .3 });
         // once scrolled past: finish the drawing for good and drop the tall scroll space it needed, keeping the view still
-        function finish() {
-          const before = nzm.offsetHeight; if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.progress(1);
+        // once scrolled past: lock the drawing in its finished state straight away (cheap), then remove the tall scroll
+        // space it needed the moment scrolling pauses, keeping the view still. Doing that collapse mid-scroll would make
+        // the browser repaint the whole screen in the middle of a scroll, which shows as a hitch.
+        let pending = false;
+        const collapse = () => {
+          if (!pending) return; pending = false; removeEventListener('scroll', onScrollIdle);
+          // keep the section after the map exactly where it is on screen (measured, so it also holds when the browser's
+          // own scroll anchoring has already compensated part of the change)
+          const ref = nzm.parentElement.closest('section').nextElementSibling || document.body, before = ref.getBoundingClientRect().top;
           nzm.classList.remove('is-pinned');
-          const diff = before - nzm.offsetHeight, y = scrollY - diff;
-          if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else scrollTo(0, y);
-          ST.refresh();
+          const y = scrollY + (ref.getBoundingClientRect().top - before);
+          scrollTo({ top: y, behavior: 'instant' });
+          (window.requestIdleCallback || setTimeout)(() => ST.refresh(), { timeout: 400 });   // re-measure the triggers below once idle
+        };
+        let idleT; const onScrollIdle = () => { clearTimeout(idleT); idleT = setTimeout(collapse, 180); };
+        function finish() {
+          if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.progress(1);
+          pending = true; addEventListener('scroll', onScrollIdle, { passive: true }); onScrollIdle();
         }
         if (seen) tl.progress(1);
         // 3D tilt toward the pointer (mouse only; the CSS keeps it off for reduced motion)
@@ -941,7 +964,7 @@
       headIn(tm, 1.6);
       draw(coast).forEach((d, i) => tm.fromTo(d.el, { strokeDashoffset: d.len }, { strokeDashoffset: 0, duration: 1.8, ease: 'power2.inOut' }, i * .1));
       tm
-        .fromTo(['.nzm__sat', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .8, stagger: .1 }, 1.2)
+        .fromTo(['.nzm__photo', '.nzm__lbl'], { opacity: 0 }, { opacity: 1, duration: .8, stagger: .1 }, 1.2)
         .to(coast, { stroke: 'rgba(226,246,242,.32)', strokeWidth: .8, duration: .6 }, 1.4)
         .fromTo(pins, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .35, stagger: .07, ease: 'back.out(3)' }, '-=.4')
         .fromTo(items, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .4, stagger: .06, ease: 'expo.out' }, '<');
@@ -967,6 +990,6 @@
   if (location.hash) runTasks(null);
   else { let begun = false; const begin = () => { if (!begun) { begun = true; schedule(); } }; if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(begin)); setTimeout(begin, 1500); }
 
-  addEventListener('load', () => { ST.refresh(); const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) { intro.progress(1); const jump = () => { const y = t.getBoundingClientRect().top + scrollY; lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); }; setTimeout(jump, 60); setTimeout(() => { ST.refresh(); jump(); }, 900); } });
-  window.__shot = (at, p) => { intro.progress(1); pre.classList.add('is-gone'); const el = $('#' + at), base = el.closest('.pin-spacer') || el; const y = base.getBoundingClientRect().top + scrollY + (p || 0) * Math.max(0, base.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y); ST.update(); return Math.round(y); };
+  addEventListener('load', () => { ST.refresh(); const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) { intro.progress(1); const jump = () => { const y = t.getBoundingClientRect().top + scrollY; scrollTo({ top: y, behavior: 'instant' }); }; setTimeout(jump, 60); setTimeout(() => { ST.refresh(); jump(); }, 900); } });
+  window.__shot = (at, p) => { intro.progress(1); pre.classList.add('is-gone'); const el = $('#' + at), base = el.closest('.pin-spacer') || el; const y = base.getBoundingClientRect().top + scrollY + (p || 0) * Math.max(0, base.offsetHeight - innerHeight); scrollTo({ top: y, behavior: 'instant' }); ST.update(); return Math.round(y); };
 })();

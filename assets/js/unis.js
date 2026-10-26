@@ -61,12 +61,12 @@
   }
   function open(u) {
     current = u; lastFocus = document.activeElement; render(u); modal.hidden = false;
-    document.documentElement.classList.add('imm-lock'); if (window.__lenis) window.__lenis.stop();
+    document.documentElement.classList.add('imm-lock');
     void modal.offsetWidth; modal.classList.add('on'); $('.um__x', modal).focus({ preventScroll: true });
   }
   function close() {
     if (modal.hidden) return; modal.classList.remove('on');
-    setTimeout(() => { modal.hidden = true; document.documentElement.classList.remove('imm-lock'); if (window.__lenis) window.__lenis.start(); if (lastFocus) lastFocus.focus({ preventScroll: true }); }, 220);
+    setTimeout(() => { modal.hidden = true; document.documentElement.classList.remove('imm-lock'); if (lastFocus) lastFocus.focus({ preventScroll: true }); }, 220);
   }
   $$('[data-um-close]', modal).forEach(b => b.addEventListener('click', close));
   modal.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
@@ -119,4 +119,20 @@
   }
 
   window.TCUnis = { open, TOP, esc, initials, Shortlist };
+})();
+
+/* click burst: thin lines spark out from wherever you click or tap, in the colours of the New Zealand flag
+   (red, royal blue, white). Pure CSS animation, removed when done; off for reduced motion. */
+(() => {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const COLORS = Array.from({ length: 16 }, (_, i) => ['#C8102E', '#1F4FBF', '#FFFFFF'][i % 3]);
+  addEventListener('pointerdown', e => {
+    if (e.button > 0) return;
+    const b = document.createElement('span'); b.className = 'cburst'; b.setAttribute('aria-hidden', 'true');
+    b.style.left = e.clientX + 'px'; b.style.top = e.clientY + 'px';
+    const off = Math.random() * 22.5;
+    b.innerHTML = COLORS.map((c, i) => '<i style="--a:' + (off + i * 22.5) + 'deg;--c:' + c + ';--l:' + (7 + (i % 2) * 3) + 'px"></i>').join('');
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 650);
+  }, { passive: true });
 })();

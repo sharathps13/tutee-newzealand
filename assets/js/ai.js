@@ -14,7 +14,7 @@
     '<section class="tai__panel" id="tai-panel" role="dialog" aria-label="Tutee AI chat" hidden>' +
       '<header class="tai__head"><img src="./assets/img/brand/mark-64.png" alt="" width="40" height="40"><div><b>Tutee AI</b><small><i></i>Answers about studying in New Zealand</small></div>' +
       '<button type="button" class="tai__reset" title="New chat" aria-label="Start a new chat"><svg class="ic"><use href="#i-rotate"/></svg></button><button type="button" class="tai__close" aria-label="Close chat"><svg class="ic"><use href="#i-plus"/></svg></button></header>' +
-      '<div class="tai__msgs" id="tai-msgs" aria-live="polite" data-lenis-prevent></div>' +
+      '<div class="tai__msgs" id="tai-msgs" aria-live="polite"></div>' +
       '<div class="tai__chips" id="tai-chips"></div>' +
       '<form class="tai__form" id="tai-form"><textarea id="tai-in" rows="1" maxlength="1000" placeholder="Ask about universities, costs, visas…" aria-label="Your question"></textarea><button type="submit" class="tai__send" aria-label="Send"><svg class="ic"><use href="#i-arrow"/></svg></button></form>' +
       '<p class="tai__note">Tutee AI can make mistakes. Check important details with a counsellor.</p>' +
