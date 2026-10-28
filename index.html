@@ -485,11 +485,15 @@
       </aside>
 
       <form class="cform" id="cform" novalidate>
-        <input type="hidden" id="h-course"><input type="hidden" id="h-level"><input type="hidden" id="h-city">
+        <!-- hidden fields, as on the Finland page: what the student is interested in, which form this is, the honeypot -->
+        <input type="hidden" name="destination" id="h-dest" value="General New Zealand Inquiry">
+        <input type="hidden" name="subject" value="New Lead from Tutee Connect Landing Page!">
+        <input type="hidden" name="form_location" value="Counselling form">
+        <input type="hidden" name="from_name" value="Tutee Connect Website">
         <div class="hp" aria-hidden="true"><label>Leave this empty <input id="c-bot" name="botcheck" tabindex="-1" autocomplete="off"></label></div>
         <ol class="csteps" id="csteps">
           <li class="now"><span class="bar"><i></i></span><span><b>01</b>Your details</span></li>
-          <li><span class="bar"><i></i></span><span><b>02</b>Plans &amp; call time</span></li>
+          <li><span class="bar"><i></i></span><span><b>02</b>Your plans</span></li>
         </ol>
 
         <div class="cpanes">
@@ -497,8 +501,8 @@
             <legend>Let's start with you</legend>
             <p class="hint">So your counsellor knows who they're calling.</p>
             <div class="fgrid">
-              <div class="ff"><input id="c-name" placeholder=" " autocomplete="name" required><label for="c-name">Full name</label></div>
-              <div class="ff"><input id="c-email" type="email" placeholder=" " autocomplete="email" autocapitalize="off" spellcheck="false" required aria-describedby="c-email-msg"><label for="c-email">Email address</label><p class="ff__msg" id="c-email-msg" aria-live="polite"></p></div>
+              <div class="ff"><input id="c-name" name="name" placeholder=" " autocomplete="name" required aria-describedby="c-name-msg"><label for="c-name">Full name</label><p class="ff__msg" id="c-name-msg" aria-live="polite"></p></div>
+              <div class="ff"><input id="c-email" name="email" type="email" placeholder=" " autocomplete="email" autocapitalize="off" spellcheck="false" required aria-describedby="c-email-msg"><label for="c-email">Email address</label><p class="ff__msg" id="c-email-msg" aria-live="polite"></p></div>
             </div>
             <div class="ff--tel">
               <div class="cc" id="cc">
@@ -508,25 +512,35 @@
                   <ul class="cc__list" id="cc-list" role="listbox" aria-label="Countries"></ul>
                 </div>
               </div>
-              <div class="ff"><input id="c-phone" type="tel" inputmode="tel" placeholder=" " autocomplete="tel-national" required aria-describedby="c-phone-msg"><label for="c-phone">WhatsApp number</label><p class="ff__msg" id="c-phone-msg" aria-live="polite"></p></div>
+              <div class="ff"><input id="c-phone" type="tel" inputmode="tel" placeholder=" " autocomplete="tel-national" required aria-describedby="c-phone-msg"><label for="c-phone">Phone number</label><p class="ff__msg" id="c-phone-msg" aria-live="polite"></p></div>
             </div>
-            <div class="ff"><input id="c-state" placeholder=" " autocomplete="address-level1"><label for="c-state">State / region</label></div>
+            <div class="fgrid">
+              <div class="ff"><select id="c-state" name="state" required aria-describedby="c-state-msg"><option value="" selected disabled>Select your state</option><option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option><option>Bihar</option><option>Chhattisgarh</option><option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option><option>West Bengal</option><option>Andaman and Nicobar Islands</option><option>Chandigarh</option><option>Dadra and Nagar Haveli and Daman and Diu</option><option>Delhi</option><option>Jammu and Kashmir</option><option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option><option>Outside India</option></select><label for="c-state">State</label><p class="ff__msg" id="c-state-msg" aria-live="polite"></p></div>
+              <div class="ff"><select id="c-time" name="call_time"><option value="" selected disabled>Choose a time</option><option>Morning (9 am – 12 pm)</option><option>Afternoon (12 – 4 pm)</option><option>Evening (4 – 8 pm)</option><option>Anytime</option></select><label for="c-time">Preferred call time</label></div>
+            </div>
+            <div class="ff"><input id="c-course" name="course" list="nz-courses" placeholder=" " autocomplete="off" maxlength="120"><label for="c-course">Subject (e.g. Data Science)</label></div>
+            <datalist id="nz-courses"><option value="IT &amp; Computer Science"><option value="Data Science"><option value="Business &amp; Management"><option value="Engineering"><option value="Health &amp; Nursing"><option value="Hospitality &amp; Tourism"><option value="Design &amp; Media"><option value="Agriculture &amp; Environment"><option value="Education &amp; Teaching"></datalist>
           </fieldset>
 
           <fieldset class="cpane" data-step="1">
-            <legend>Your plans, and when to call</legend>
-            <p class="hint">Both are optional. Call times are in your local time; we'll WhatsApp you first to confirm.</p>
-            <div class="fgrid">
-              <div class="ff"><select id="c-course"><option value="">Not sure yet</option><option>IT &amp; Computer Science</option><option>Business &amp; Management</option><option>Engineering</option><option>Health &amp; Nursing</option><option>Hospitality &amp; Tourism</option><option>Design &amp; Media</option><option>Other</option></select><label for="c-course">Course</label></div>
-              <div class="ff"><input id="c-unis" list="nz-unis" placeholder=" " autocomplete="off" maxlength="200"><label for="c-unis">Shortlisted universities</label></div>
-              <datalist id="nz-unis"><option value="University of Auckland"><option value="Auckland University of Technology (AUT)"><option value="University of Waikato"><option value="Massey University"><option value="Victoria University of Wellington"><option value="University of Canterbury"><option value="Lincoln University"><option value="University of Otago"><option value="Not decided yet"></datalist>
+            <legend>What are you aiming for?</legend>
+            <p class="hint">Pick one so your counsellor can prepare the right options before the call.</p>
+            <div class="lvls" id="lvls" role="radiogroup" aria-label="Study level" aria-describedby="c-level-msg">
+              <label class="lvl"><input type="radio" name="study_level" value="Bachelor's"><svg class="ic"><use href="#i-book"/></svg><b>Bachelor's</b><small>First degree</small></label>
+              <label class="lvl"><input type="radio" name="study_level" value="Master's"><svg class="ic"><use href="#i-trophy"/></svg><b>Master's</b><small>Postgraduate</small></label>
+              <label class="lvl"><input type="radio" name="study_level" value="Diploma"><svg class="ic"><use href="#i-file"/></svg><b>Diploma</b><small>Graduate or PG diploma</small></label>
+              <label class="lvl"><input type="radio" name="study_level" value="PhD"><svg class="ic"><use href="#i-flask"/></svg><b>PhD</b><small>Doctoral research</small></label>
+              <label class="lvl lvl--wide"><input type="radio" name="study_level" value="Not sure"><svg class="ic"><use href="#i-compass"/></svg><b>Not sure yet</b><small>Help me decide</small></label>
             </div>
-            <div class="slots" id="slots">
-              <button type="button" class="slot" aria-pressed="false"><svg class="ic"><use href="#i-sunrise"/></svg><b>Morning</b><small>10 AM – 12 PM</small></button>
-              <button type="button" class="slot" aria-pressed="true"><svg class="ic"><use href="#i-sun"/></svg><b>Afternoon</b><small>2 – 5 PM</small></button>
-              <button type="button" class="slot" aria-pressed="false"><svg class="ic"><use href="#i-sunset"/></svg><b>Evening</b><small>6 – 8 PM</small></button>
-              <button type="button" class="slot" aria-pressed="false"><svg class="ic"><use href="#i-cal"/></svg><b>Weekend</b><small>Sat · 10 AM – 4 PM</small></button>
+            <p class="ff__msg lvls__msg" id="c-level-msg" aria-live="polite"></p>
+            <span class="csub">When would you like to start?</span>
+            <div class="pills" role="radiogroup" aria-label="Intake">
+              <label class="pill"><input type="radio" name="intake" value="Next intake" checked><span>Next available intake</span></label>
+              <label class="pill"><input type="radio" name="intake" value="Within 12 months"><span>Within 12 months</span></label>
+              <label class="pill"><input type="radio" name="intake" value="Later"><span>Later / exploring</span></label>
             </div>
+            <div class="ff"><input id="c-unis" name="shortlist" list="nz-unis" placeholder=" " autocomplete="off" maxlength="1500"><label for="c-unis">Shortlisted universities (optional)</label></div>
+            <datalist id="nz-unis"><option value="University of Auckland"><option value="Auckland University of Technology (AUT)"><option value="University of Waikato"><option value="Massey University"><option value="Victoria University of Wellington"><option value="University of Canterbury"><option value="Lincoln University"><option value="University of Otago"><option value="Not decided yet"></datalist>
           </fieldset>
         </div>
 
@@ -537,16 +551,23 @@
           <button type="submit" class="btn btn--go" id="c-next">Continue <svg class="ic"><use href="#i-arrow"/></svg></button>
         </div>
         <p class="cfine">By requesting a call you agree to be contacted by Tutee Connect by phone or WhatsApp. We never share your details.</p>
-
-        <div class="sent" id="sent" aria-live="polite">
-          <div>
-            <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M30 52 44 65 70 37"/></svg>
-            <h3 id="sent-h">You're booked.</h3>
-            <p>Your request is with our counselling team. We'll WhatsApp you first to confirm the time.</p>
-            <dl class="sent__card" id="sent-card"></dl>
-          </div>
-        </div>
       </form>
+
+      <!-- shown instead of the form once it has been sent (remembered for 30 days in this browser) -->
+      <div class="sent" id="sent" role="status" tabindex="-1" hidden>
+        <div>
+          <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M30 52 44 65 70 37"/></svg>
+          <span class="sent__kick">Form completed</span>
+          <h3 id="sent-h">Thank you!</h3>
+          <p id="sent-p">Your New Zealand enquiry is with our counselling team. A counsellor will call you within one working day.</p>
+          <ul class="sent__next">
+            <li><svg class="ic"><use href="#i-phone"/></svg>Keep your phone handy for our call</li>
+            <li><svg class="ic"><use href="#i-mail"/></svg>Check your inbox for a follow-up email</li>
+          </ul>
+          <a class="btn btn--go" href="https://wa.me/917358364959" target="_blank" rel="noopener"><svg class="ic"><use href="#i-wa"/></svg>Chat with us on WhatsApp</a>
+          <button type="button" class="sent__again" id="sent-again">+ Submit another enquiry</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>

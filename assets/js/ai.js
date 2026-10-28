@@ -5,7 +5,7 @@
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const KEY = 'tc_ai_chat';
   const WELCOME = 'Kia ora! I’m **Tutee AI**. Ask me anything about studying in New Zealand: universities, cities, costs, work rights, visas or the route to residence.';
-  const CHIPS = ['Which university is best for IT?', 'Can I work while I study?', 'How can I get PR in New Zealand?', 'What does it cost to live in Auckland?', 'Can my family come with me?'];
+  const CHIPS = ['Request a callback', 'Which university is best for IT?', 'Can I work while I study?', 'How can I get PR in New Zealand?', 'What does it cost to live in Auckland?', 'Can my family come with me?'];
 
   const root = document.createElement('div');
   root.className = 'tai';
@@ -149,9 +149,8 @@
     [/^(hi|hello|hey|hii+|kia ora|namaste|vanakkam|good (morning|afternoon|evening)|yo)\b[\s!.]*$/, () => 'Kia ora! Ask me about universities, cities, costs, work rights, loans, visas or the route to residence.'],
     [/\b(thanks|thank you|thx|cheers|great|awesome|perfect|helpful)\b/, () => 'You’re welcome! Anything else about New Zealand? When you’re ready, [book a free counselling call](#consult).'],
     [/^(bye|goodbye|see you|that'?s all)\b/, () => 'Ka kite anō, see you soon! ' + CONTACT],
-    [/\b(who|what) are you\b|\bare you (a )?(bot|human|ai|real)\b|\bwhat can you do\b/, () => 'I’m **Tutee AI**, built from this page. I know its universities, cities, costs, steps, FAQ and the route to residence, and I answer instantly without sending your questions anywhere. For advice on your own profile, [talk to a counsellor](#consult).'],
+    [/\b(who|what) are you\b|\bare you (a )?(bot|human|ai|real)\b|\bwhat can you do\b/, () => 'I’m **Tutee AI**, built from this page. I know its universities, cities, costs, steps, FAQ and the route to residence, and I answer instantly without sending your questions anywhere. For advice on your own profile, say **talk to a counsellor** and I’ll take your details for a callback.'],
     [/\b(phone|number|contact|email|e-mail|whatsapp|reach you|call you|address)\b/, () => 'You can reach Tutee Connect any of these ways:\n- **WhatsApp / call:** +91 73583 64959\n- **Email:** info@tuteeconnect.com\n- **Offices:** Chennai and Dubai\n[Book a free counselling call](#consult) and we’ll call you at the time you pick.'],
-    [/\b(talk|speak) to (a |an )?(human|person|counsellor|counselor|someone|agent)\b|\bcall me\b|\bcallback\b/, () => 'Happy to set that up. [Book a free counselling call](#consult) and pick a time, or WhatsApp us on **+91 73583 64959**.']
   ];
   const sugg = list => list.length ? '\nYou could also ask:\n' + list.map(s => '[[' + s + ']]').join('\n') : '';
   let ctx = { city: null, uni: null, facet: null };   // what the conversation is about, for follow-ups
@@ -207,6 +206,55 @@
   }
 
   /* ---------- ask ---------- */
+  /* ---------- lead capture in the chat (as on the Finland page) ----------
+     "Talk to a counsellor", "call me", "book a call"… asks for name, phone and email, then sends them to this
+     site's /api/enquiry, which adds them to the New Zealand Leads sheet and emails the team. Nothing is sent
+     unless the student types their details; "cancel" stops it at any point. */
+  const LEAD_RE = /^(request a (call ?back|callback)|evaluate my profile|talk to a counsell?or|book a (free )?(consultation|call|counselling call)|call me( back)?|i want to (talk|speak) to (a|someone|someone from your team|a counsell?or))\b|\b(talk|speak) to (a |an )?(human|person|counsell?or|someone|agent)\b|\bcall ?back\b/i;
+  const LEAD_EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[A-Za-z]{2,}$/;
+  let stage = 'idle', lead = { name: '', phone: '', email: '' };
+  function submitLead() {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+    return fetch('/api/enquiry', {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        subject: 'New Lead from Chatbot!', from_name: 'Tutee AI Counsellor',
+        name: lead.name, phone: lead.phone, email: lead.email,
+        destination: 'Chatbot General Inquiry', form_location: 'Tutee AI chat', page: location.host + location.pathname
+      })
+    }).then(r => r.json().catch(() => ({ success: false }))).finally(() => clearTimeout(t));
+  }
+  // returns the reply (or a promise of it) while the details flow is running, otherwise null
+  function leadStep(q) {
+    if (stage !== 'idle' && /^(cancel|stop|no thanks|never ?mind|skip)\b/i.test(q)) { stage = 'idle'; return 'No problem, I’ve stopped. What else would you like to know?'; }
+    if (stage !== 'idle' && /\?$/.test(q)) stage = 'idle';             // a question mid-flow: answer it instead
+    if (stage === 'name') {
+      if (q.replace(/[^A-Za-z\u00C0-\u024F]/g, '').length < 2) return 'Could you type your **full name**? (Or type *cancel*.)';
+      lead.name = q.slice(0, 120); stage = 'phone';
+      return 'Thanks ' + q.split(/\s+/)[0] + '! What’s the best **phone number** to reach you on? Please include the country code, e.g. +91 98765 43210.';
+    }
+    if (stage === 'phone') {
+      const d = q.replace(/\D/g, '');
+      if (d.length < 7 || d.length > 15) return 'That doesn’t look like a valid phone number. Please enter it with the country code, e.g. +91 98765 43210, or type *cancel*.';
+      lead.phone = q.slice(0, 40); stage = 'email';
+      return 'Got it. Lastly, what’s your **email address**?';
+    }
+    if (stage === 'email') {
+      if (!LEAD_EMAIL_RE.test(q)) return 'That doesn’t look like a valid email address. Could you check it, or type *cancel*?';
+      lead.email = q.slice(0, 200); stage = 'idle';
+      return submitLead().then(res => res && res.success
+        ? '✅ **Done!** A counsellor will contact you within one working day.\n\nAnything else I can help with in the meantime?'
+        : 'Sorry, that didn’t go through. Please use the [counselling form](#consult) or WhatsApp us on **+91 73583 64959**.')
+        .catch(() => 'Network error while sending. Please use the [counselling form](#consult) or WhatsApp us on **+91 73583 64959**.');
+    }
+    if (LEAD_RE.test(q.trim())) {
+      stage = 'name'; lead = { name: '', phone: '', email: '' };
+      return 'Happy to set that up. A counsellor reviews your profile personally and replies within **one working day**.\n\nWhat’s your **full name**? (Type *cancel* any time to stop.)';
+    }
+    return null;
+  }
+
   let busy = false;
   async function ask(q) {
     q = q.trim(); if (!q || busy) return;
@@ -214,7 +262,7 @@
     history.push({ role: 'user', content: q }); persist(); bubble('user', q);
     const typing = bubble('bot', ''); typing.classList.add('is-typing'); typing.innerHTML = '<span></span><span></span><span></span>';
     await new Promise(r => setTimeout(r, 450 + Math.random() * 350));   // a short "typing" beat so replies don't feel abrupt
-    let reply; try { reply = answer(q); } catch (e) { reply = 'Sorry, I tripped over that one. ' + CONTACT; }
+    let reply; try { reply = leadStep(q); if (reply === null) reply = answer(q); else reply = await reply; } catch (e) { reply = 'Sorry, I tripped over that one. ' + CONTACT; }
     typing.remove();
     history.push({ role: 'assistant', content: reply }); persist(); bubble('bot', reply);
     busy = false; input.focus({ preventScroll: true });
@@ -228,7 +276,7 @@
   };
   launch.addEventListener('click', () => setOpen(panel.hidden));
   $('.tai__close', root).addEventListener('click', () => setOpen(false));
-  $('.tai__reset', root).addEventListener('click', () => { history = []; persist(); paint(); input.focus(); });
+  $('.tai__reset', root).addEventListener('click', () => { history = []; stage = 'idle'; persist(); paint(); input.focus(); });
   chips.addEventListener('click', e => { const b = e.target.closest('button'); if (b) ask(b.textContent); });
   form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
   const autosize = () => { input.style.height = 'auto'; input.style.height = Math.min(120, input.scrollHeight) + 'px'; };

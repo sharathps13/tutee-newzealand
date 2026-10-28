@@ -1,197 +1,243 @@
 /**
- * Tutee Connect · New Zealand landing page → Google Sheet + lead email
+ * Tutee Connect — website leads → Google Sheets + email.
  *
- * Receives leads from the site's Netlify function (/api/lead), appends one row per lead to the "Leads" tab
- * of the spreadsheet in Script Property SPREADSHEET_ID (or the one this script is bound to), and emails business@tuteeconnect.com.
- * The very first lead (or running setup()) creates and formats the table.
+ * Paste this into its own standalone Apps Script project (script.google.com),
+ * linked to the "Website Leads" spreadsheet with setSheetId(). Setup steps
+ * are in apps-script/README.md next to this file.
  *
- * Script Properties (Project Settings → Script Properties):
- *   LEAD_SECRET   the same long random string as LEAD_SECRET in Netlify. Requests without it are refused.
+ * The landing page never calls this script directly. The form posts to the
+ * site's own /api/enquiry function, which forwards the lead here with a token,
+ * so the web-app URL and token stay out of the browser.
  *
- * Deploy: Deploy → New deployment → Web app · Execute as: Me · Who has access: Anyone. Copy the /exec URL
- * into Netlify as APPS_SCRIPT_URL. Full steps: apps-script/SETUP.md
+ * Tokens: each country site can have its own token, saved in Script Properties
+ * as LEADS_TOKEN_<COUNTRY> (e.g. LEADS_TOKEN_NEW_ZEALAND). Once a country has
+ * its own token, only that token is accepted for that country's leads, and it
+ * cannot be used to write into another country's tab. A country without its own
+ * token (Finland today) keeps using the shared LEADS_TOKEN, exactly as before.
+ *
+ * Each lead becomes one row in the "Finland Leads" tab, with the same columns
+ * as the sheet: Date, Time, Full Name, Phone Number, Email, State, Shortlisted
+ * Universities, Course, Lead Source, Preferred Call Time. It is also emailed,
+ * neatly formatted, to business@tuteeconnect.com with Reply-To set to the student.
  */
 
-const CONFIG = {
-  SHEET_NAME: 'New Zealand Leads',          // the tab this page writes to (created if missing)
-  NOTIFY_TO: 'business@tuteeconnect.com',
-  SENDER_NAME: 'Tutee Connect · NZ Landing Page',
-  TIMEZONE: 'Asia/Kolkata',
-  SOURCE: 'New Zealand Landing Page',
-  // Columns, in this order. The first nine are the agreed layout; "Preferred Call Time" is extra (delete it
-  // here and in rowFor_() if you don't want it).
-  HEADERS: ['Date', 'Time', 'Full Name', 'Phone Number', 'Email', 'State', 'Shortlisted Universities', 'Course', 'Lead Source', 'Preferred Call Time'],
-  WIDTHS: [110, 90, 190, 160, 240, 130, 260, 190, 200, 210],
-  COLOURS: { header: '#0A3B3C', headerText: '#FFFFFF', band: '#FBF6EE', line: '#E6D9C4' },
-  DUPLICATE_WINDOW_SECONDS: 600,
-};
+var MAIL_TO = 'business@tuteeconnect.com';
+var TIME_ZONE = 'Asia/Kolkata';
+var DEFAULT_TAB = 'Finland Leads';
+var HEADERS = ['Date', 'Time', 'Full Name', 'Phone Number', 'Email', 'State',
+  'Shortlisted Universities', 'Course', 'Lead Source', 'Preferred Call Time'];
+var WIDTHS = [100, 90, 180, 150, 230, 150, 320, 240, 260, 190];
+var HEADER_BG = '#0b3d3a';
 
-/* ------------------------------------------------------------------ web app */
+/** Run once from the editor: creates and formats the Finland Leads tab. */
+function setupFinlandLeads() {
+  var sheet = getLeadsSheet_(DEFAULT_TAB);
+  try { getSpreadsheet_().setActiveSheet(sheet); } catch (e) { /* standalone project */ }
+  return 'Ready: ' + sheet.getName();
+}
 
+/** Run once from the editor to store the shared token (paste your own value). */
+function setToken() {
+  var token = 'PASTE-A-LONG-RANDOM-TOKEN-HERE';
+  if (/PASTE/.test(token)) throw new Error('Replace the placeholder with your own token first.');
+  PropertiesService.getScriptProperties().setProperty('LEADS_TOKEN', token);
+  return 'Token saved.';
+}
+
+/** Run once from the editor to give the New Zealand site its own token. Paste a
+ *  new long random value (30+ letters and numbers), run this, then delete the
+ *  value from the code again. The same value goes in the New Zealand site's
+ *  APPS_SCRIPT_TOKEN on Netlify. */
+function setNewZealandToken() {
+  var token = 'PASTE-A-NEW-LONG-RANDOM-TOKEN-HERE';
+  if (/PASTE/.test(token)) throw new Error('Replace the placeholder with your own token first.');
+  if (token === PropertiesService.getScriptProperties().getProperty('LEADS_TOKEN')) throw new Error('Use a different token from the shared LEADS_TOKEN.');
+  PropertiesService.getScriptProperties().setProperty(tokenKey_('New Zealand'), token);
+  return 'Saved as ' + tokenKey_('New Zealand') + '.';
+}
+
+/** Run from the editor after changing tokens: shows which countries have their
+ *  own token and which use the shared one (values are never printed). */
+function checkTokens() {
+  var props = PropertiesService.getScriptProperties();
+  var out = ['Shared LEADS_TOKEN: ' + (props.getProperty('LEADS_TOKEN') ? 'set' : 'MISSING')];
+  ['Finland', 'New Zealand'].forEach(function (c) {
+    out.push(c + ': ' + (props.getProperty(tokenKey_(c)) ? 'own token (' + tokenKey_(c) + ')' : 'uses the shared LEADS_TOKEN'));
+  });
+  console.log(out.join(' | '));
+  return out.join(' | ');
+}
+
+/** "New Zealand" → "LEADS_TOKEN_NEW_ZEALAND". */
+function tokenKey_(country) {
+  return 'LEADS_TOKEN_' + String(country || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+/** The token a lead for this country must carry: the country's own token if it
+ *  has one, otherwise the shared LEADS_TOKEN. */
+function expectedToken_(country) {
+  var props = PropertiesService.getScriptProperties();
+  return (country && props.getProperty(tokenKey_(country))) || props.getProperty('LEADS_TOKEN');
+}
+
+/** Web-app entry point: the site's /api/enquiry function POSTs JSON here. */
 function doPost(e) {
+  var body = {};
+  try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return reply_(false, 'Bad JSON'); }
+
+  var lead = normalise_(body);
+  var token = expectedToken_(lead.country);
+  if (!token || body.token !== token) return reply_(false, 'Unauthorised');
+
+  if (!lead.name || !lead.email) return reply_(false, 'Missing name or email');
+
+  var now = new Date();
+  var row = [
+    Utilities.formatDate(now, TIME_ZONE, 'dd/MM/yyyy'),
+    Utilities.formatDate(now, TIME_ZONE, 'hh:mm a'),
+    lead.name, lead.phone, lead.email, lead.state, lead.shortlist,
+    lead.course, lead.source, lead.callTime
+  ].map(safeCell_);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
   try {
-    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    const secret = PropertiesService.getScriptProperties().getProperty('LEAD_SECRET');
-    if (!secret || body.secret !== secret) return reply_({ success: false, error: 'unauthorised' });
-    const result = saveLead_(body.lead || {});
-    return reply_(result);
-  } catch (err) {
-    console.error(err && err.stack || err);
-    return reply_({ success: false, error: String(err && err.message || err) });
-  }
-}
-
-// GET on the /exec URL: a quick "is it alive" check that reveals nothing about the leads
-function doGet() {
-  return reply_({ success: true, service: 'tutee-nz-leads' });
-}
-
-/* --------------------------------------------------------------- core logic */
-
-function saveLead_(raw) {
-  const lead = normalise_(raw);
-  if (!lead.name || !lead.email || !lead.phone) return { success: false, error: 'missing name, email or phone' };
-
-  // the same person submitting twice within 10 minutes (double click, retry) is stored and emailed once
-  const cache = CacheService.getScriptCache();
-  const key = 'lead_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, (lead.email + '|' + lead.phone).toLowerCase()));
-  if (cache.get(key)) return { success: true, duplicate: true };
-
-  const now = new Date();
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);                                   // two leads at the same moment never collide
-  let sheet, row;
-  try {
-    sheet = ensureSheet_();
-    sheet.appendRow(rowFor_(lead, now));
-    row = sheet.getLastRow();
-    formatRow_(sheet, row);
-    SpreadsheetApp.flush();
+    getLeadsSheet_(lead.tab).appendRow(row);
   } finally {
     lock.releaseLock();
   }
-  cache.put(key, '1', CONFIG.DUPLICATE_WINDOW_SECONDS);
 
-  sendEmail_(lead, now, sheet, row);
-  return { success: true, row: row };
+  var mailed = true, mailError = '';
+  try { sendLeadEmail_(lead, row); } catch (err) { mailed = false; mailError = String(err); console.error('mail failed: ' + err); }
+  return reply_(true, 'Saved', { mailed: mailed, mail_error: mailError });
 }
 
-function normalise_(d) {
-  const s = (v, n) => String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-  return {
-    name: s(d.name, 120), email: s(d.email, 200).toLowerCase(), phone: s(d.phone, 40), state: s(d.state, 80),
-    universities: s(d.universities, 200), course: s(d.course, 80), callTime: s(d.preferredCallTime, 120),
-    interest: s(d.interest, 200), page: s(d.page, 200), source: CONFIG.SOURCE,
-    level: s(d.level, 80), city: s(d.city, 80), country: s(d.country, 80),
-    utms: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].filter(k => d[k]).map(k => [k.replace('utm_', ''), s(d[k], 150)]),
-    utm: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].filter(k => d[k]).map(k => k.replace('utm_', '') + ': ' + s(d[k], 150)).join(' · '),
-  };
+/** Run from the editor to check email on its own: sends a sample lead to
+ *  business@tuteeconnect.com. Any problem (permission, quota) shows in the
+ *  Execution log straight away. */
+function testEmail() {
+  var lead = normalise_({ name: 'Test Lead', phone: '+91 9876543210', email: MAIL_TO, state: 'Tamil Nadu',
+    course: "Master's – Data Science (Next intake)", lead_source: 'Finland Landing Page – test from the editor', call_time: 'Anytime' });
+  var now = new Date();
+  var row = [Utilities.formatDate(now, TIME_ZONE, 'dd/MM/yyyy'), Utilities.formatDate(now, TIME_ZONE, 'hh:mm a'),
+    lead.name, lead.phone, lead.email, lead.state, lead.shortlist, lead.course, lead.source, lead.callTime];
+  sendLeadEmail_(lead, row);
+  return 'Sent. Emails left today: ' + MailApp.getRemainingDailyQuota();
 }
 
-// cell values; text that could be read as a formula (= + - @) is stored as plain text
-function rowFor_(lead, now) {
-  const text = v => (/^[=+\-@]/.test(v) ? "'" + v : v);
-  // date and time are written as India-time text, so they are right whatever timezone the spreadsheet uses
-  return [Utilities.formatDate(now, CONFIG.TIMEZONE, 'dd MMM yyyy'), Utilities.formatDate(now, CONFIG.TIMEZONE, 'hh:mm a'), text(lead.name), "'" + lead.phone, text(lead.email), text(lead.state), text(lead.universities), text(lead.course), lead.source, text(lead.callTime)];
-}
-
-/* ------------------------------------------------------------- the table */
-
-// The spreadsheet: the one in Script Property SPREADSHEET_ID (a standalone script writing into an existing
-// spreadsheet, e.g. the one the Singapore page already uses), or the sheet this script is bound to.
-function book_() {
-  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-  return id ? SpreadsheetApp.openById(id.trim()) : SpreadsheetApp.getActiveSpreadsheet();
-}
-
-function ensureSheet_() {
-  const ss = book_();   // the spreadsheet's own timezone is left alone: other tabs (Singapore) may rely on it
-  let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(CONFIG.SHEET_NAME, 0);
-  if (sheet.getLastRow() === 0) buildTable_(sheet);
-  return sheet;
-}
-
-function buildTable_(sheet) {
-  const n = CONFIG.HEADERS.length, c = CONFIG.COLOURS;
-  sheet.getRange(1, 1, 1, n).setValues([CONFIG.HEADERS])
-    .setFontWeight('bold').setFontColor(c.headerText).setBackground(c.header)
-    .setVerticalAlignment('middle').setHorizontalAlignment('left').setWrap(true);
-  sheet.setRowHeight(1, 36);
-  sheet.setFrozenRows(1);
-  CONFIG.WIDTHS.forEach((w, i) => sheet.setColumnWidth(i + 1, w));
-  // tidy the grid down to the table's width
-  const extra = sheet.getMaxColumns() - n;
-  if (extra > 0) sheet.deleteColumns(n + 1, extra);
-  // date, time and phone are kept as plain text
-  sheet.getRange('A2:B').setNumberFormat('@');
-  sheet.getRange('D2:D').setNumberFormat('@');
-  sheet.getRange(1, 1, sheet.getMaxRows(), n).setFontFamily('Arial').setFontSize(10);
-  sheet.getRange(1, 1, 1, n).setFontSize(10);
-  // filter buttons on the header row, and alternating row colours
-  sheet.getRange(1, 1, sheet.getMaxRows(), n).createFilter();
-  sheet.getRange(1, 1, sheet.getMaxRows(), n).applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, true, false)
-    .setHeaderRowColor(c.header).setFirstRowColor('#FFFFFF').setSecondRowColor(c.band);
-}
-
-function formatRow_(sheet, row) {
-  const n = CONFIG.HEADERS.length;
-  sheet.getRange(row, 1, 1, n).setVerticalAlignment('top').setWrap(true);
-}
-
-/* ------------------------------------------------------------------ email */
-
-function sendEmail_(lead, now, sheet, row) {
-  const ss = sheet.getParent();
-  const t = HtmlService.createTemplateFromFile('Email');
-  t.lead = lead;
-  t.date = Utilities.formatDate(now, CONFIG.TIMEZONE, 'EEE, d MMM yyyy');
-  t.time = Utilities.formatDate(now, CONFIG.TIMEZONE, 'h:mm a') + ' IST';
-  t.digits = lead.phone.replace(/\D/g, '');
-  t.sheetUrl = ss.getUrl() + '#gid=' + sheet.getSheetId() + '&range=A' + row;
-  t.row = row;
-  const html = t.evaluate().getContent();
-
-  const plain = [
-    'New lead from the ' + CONFIG.SOURCE,
-    '',
-    'Date: ' + t.date, 'Time: ' + t.time, 'Name: ' + lead.name, 'Phone: ' + lead.phone, 'Email: ' + lead.email,
-    'State: ' + (lead.state || '-'), 'Shortlisted universities: ' + (lead.universities || '-'), 'Course: ' + (lead.course || '-'),
-    'Level: ' + (lead.level || '-'), 'Preferred city: ' + (lead.city || '-'), 'Phone country: ' + (lead.country || '-'),
-    'Preferred call time: ' + (lead.callTime || '-'), 'Lead source: ' + lead.source, 'Page: ' + (lead.page || '-'),
-    '', 'Sheet: ' + t.sheetUrl,
-  ].filter(l => l !== null).join('\n');
-
-  MailApp.sendEmail({
-    to: CONFIG.NOTIFY_TO,
-    subject: 'New NZ lead: ' + lead.name + (lead.course ? ' · ' + lead.course : ''),
-    htmlBody: html,
-    body: plain,
-    replyTo: lead.email,                                  // "Reply" answers the student directly
-    name: CONFIG.SENDER_NAME,
-  });
+/** Health check, so the setup can be tested from a browser. */
+function doGet() {
+  return reply_(true, 'Tutee Connect leads endpoint is running.');
 }
 
 /* ------------------------------------------------------------- helpers */
 
-function reply_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+function normalise_(b) {
+  var s = function (v, n) { return String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n || 300); };
+  var country = s(b.country, 40);
+  return {
+    tab: country ? country + ' Leads' : DEFAULT_TAB,
+    country: country,
+    name: s(b.name, 120),
+    phone: s(b.phone, 40),
+    email: s(b.email, 200),
+    state: s(b.state, 80) || '—',
+    shortlist: s(b.shortlist, 1500) || '—',
+    course: s(b.course, 300) || '—',
+    source: s(b.lead_source, 300) || 'Website',
+    callTime: s(b.call_time, 80) || 'Not specified',
+    interest: s(b.destination, 600),
+    page: s(b.page, 200)
+  };
 }
 
-/* ---------------------------------------------------- run these by hand */
-
-// Run once from the editor: asks for permissions and creates the formatted "Leads" table.
-function setup() {
-  const sheet = ensureSheet_();
-  console.log('Ready: "' + sheet.getName() + '" in ' + sheet.getParent().getUrl());
+/** Text that starts with = + - @ would be read as a formula (a "+91 …" phone
+ *  number included), so it is stored as plain text. */
+function safeCell_(v) {
+  var t = String(v == null ? '' : v);
+  return /^[=+\-@]/.test(t) ? "'" + t : t;
 }
 
-// Run from the editor to see a real row and the real email, without the website.
-function sendTestLead() {
-  const r = saveLead_({
-    name: 'Test Lead (delete me)', email: 'test.lead@example.com', phone: '+91 98401 23456', state: 'Tamil Nadu',
-    universities: 'University of Auckland, University of Otago', course: 'IT & Computer Science',
-    preferredCallTime: 'Afternoon, 2 – 5 PM (India time)', utm_source: 'test',
+/** The leads tab, created and formatted on first use. */
+function getLeadsSheet_(name) {
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName(name);
+  if (sheet) return sheet;
+
+  sheet = ss.insertSheet(name);
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS])
+    .setBackground(HEADER_BG).setFontColor('#ffffff').setFontWeight('bold')
+    .setVerticalAlignment('middle');
+  sheet.setRowHeight(1, 32);
+  sheet.setFrozenRows(1);
+  WIDTHS.forEach(function (w, i) { sheet.setColumnWidth(i + 1, w); });
+  sheet.getRange(2, 1, sheet.getMaxRows() - 1, HEADERS.length).setNumberFormat('@').setVerticalAlignment('top').setWrap(true);
+  sheet.getRange(1, 1, sheet.getMaxRows(), HEADERS.length).createFilter();
+  var extra = sheet.getMaxColumns() - HEADERS.length;
+  if (extra > 0) sheet.deleteColumns(HEADERS.length + 1, extra);
+  return sheet;
+}
+
+function sendLeadEmail_(lead, row) {
+  var rows = HEADERS.map(function (h, i) { return [h, String(row[i]).replace(/^'/, '')]; });
+  if (lead.interest) rows.push(['Interested In', lead.interest]);
+  if (lead.page) rows.push(['Submitted From', lead.page]);
+
+  var cells = rows.map(function (r, i) {
+    return '<tr>' +
+      '<td style="padding:10px 14px;border-bottom:1px solid #e6ece9;background:' + (i % 2 ? '#ffffff' : '#f6f9f8') + ';font-weight:600;color:#0b3d3a;white-space:nowrap;vertical-align:top;width:190px">' + esc_(r[0]) + '</td>' +
+      '<td style="padding:10px 14px;border-bottom:1px solid #e6ece9;background:' + (i % 2 ? '#ffffff' : '#f6f9f8') + ';color:#1f2937;vertical-align:top">' + esc_(r[1]) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  var title = (lead.country || 'Finland') + ' Landing Page';
+  var html =
+    '<div style="font-family:Segoe UI,Arial,sans-serif;max-width:640px;margin:0 auto;color:#1f2937">' +
+      '<div style="background:' + HEADER_BG + ';color:#ffffff;padding:18px 22px;border-radius:12px 12px 0 0">' +
+        '<div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8">New lead · ' + esc_(title) + '</div>' +
+        '<div style="font-size:20px;font-weight:700;margin-top:4px">' + esc_(lead.name) + '</div>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:14px;border:1px solid #e6ece9;border-top:0">' + cells + '</table>' +
+      '<p style="font-size:12px;color:#6b7280;margin:14px 2px">Reply to this email to answer ' + esc_(lead.name) + ' directly. ' +
+        'This lead is also saved in the "' + esc_(lead.tab) + '" tab of Website Leads.</p>' +
+    '</div>';
+
+  var text = ['New lead · ' + title, ''].concat(rows.map(function (r) { return r[0] + ': ' + r[1]; })).join('\n');
+
+  MailApp.sendEmail({
+    to: MAIL_TO,
+    replyTo: lead.email,
+    name: 'Tutee Connect Website',
+    subject: 'New ' + (lead.country || 'Finland') + ' Lead – ' + lead.name,
+    htmlBody: html,
+    body: text
   });
-  console.log(JSON.stringify(r));
+}
+
+function esc_(t) {
+  return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function reply_(ok, message, extra) {
+  var out = { success: ok, message: message };
+  if (extra) Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** The Website Leads spreadsheet. A standalone project (script.google.com)
+ *  opens it by the ID saved in SHEET_ID; a project made from the sheet's
+ *  own Extensions menu uses that sheet directly. */
+function getSpreadsheet_() {
+  var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+/** Run once in a standalone project: paste the Website Leads ID (the long
+ *  part of its URL between /d/ and /edit). */
+function setSheetId() {
+  var id = 'PASTE-THE-SPREADSHEET-ID-HERE';
+  if (/PASTE/.test(id)) throw new Error('Replace the placeholder with the Website Leads spreadsheet ID first.');
+  SpreadsheetApp.openById(id);
+  PropertiesService.getScriptProperties().setProperty('SHEET_ID', id);
+  return 'Sheet linked.';
 }

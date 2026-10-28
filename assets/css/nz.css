@@ -680,15 +680,15 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .chip[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #fff; }
 .chip[aria-pressed="true"] .ic { display: block; color: var(--kowhai); }
 /* call slots */
-.slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.slot { display: grid; grid-template-columns: 42px 1fr; gap: 2px 12px; align-items: center; text-align: left; padding: 14px 16px; border-radius: 18px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; transition: border-color .25s, background .25s, transform .3s var(--ease); }
-.slot .ic { grid-row: span 2; width: 42px; height: 42px; padding: 10px; border-radius: 12px; background: var(--paper); color: var(--fjord); }
-.slot b { font: 700 1rem/1.2 var(--sans); color: var(--teal); }
-.slot small { font-size: .82rem; color: var(--muted); }
-.slot:hover { border-color: var(--teal); transform: translateY(-2px); }
-.slot[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); }
-.slot[aria-pressed="true"] b { color: #fff; } .slot[aria-pressed="true"] small { color: var(--kowhai); }
-.slot[aria-pressed="true"] .ic { background: rgba(244,183,61,.16); color: var(--kowhai); }
+.lvls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.lvl { display: grid; grid-template-columns: 42px 1fr; gap: 2px 12px; align-items: center; text-align: left; padding: 14px 16px; border-radius: 18px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; transition: border-color .25s, background .25s, transform .3s var(--ease); }
+.lvl .ic { grid-row: span 2; width: 42px; height: 42px; padding: 10px; border-radius: 12px; background: var(--paper); color: var(--fjord); }
+.lvl b { font: 700 1rem/1.2 var(--sans); color: var(--teal); }
+.lvl small { font-size: .82rem; color: var(--muted); }
+.lvl:hover { border-color: var(--teal); transform: translateY(-2px); }
+.lvl:has(input:checked) { background: var(--teal); border-color: var(--teal); }
+.lvl:has(input:checked) b { color: #fff; } .lvl:has(input:checked) small { color: var(--kowhai); }
+.lvl:has(input:checked) .ic { background: rgba(244,183,61,.16); color: var(--kowhai); }
 .consent { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: .84rem; line-height: 1.45; color: var(--muted); }
 .consent input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--pohu); }
 .cnav { display: flex; align-items: center; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); padding-top: 22px; }
@@ -972,9 +972,9 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
   .ff input:focus + label, .ff input:not(:placeholder-shown) + label, .ff select + label { transform: translateY(-10px); }
   .ff[data-state]:not([data-state=""])::after { top: 17px; }
   .slots { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .slot { grid-template-columns: 1fr; gap: 4px; padding: 12px; }
-  .slot .ic { grid-row: auto; width: 34px; height: 34px; padding: 8px; margin-bottom: 4px; }
-  .slot b { font-size: .95rem; } .slot small { font-size: .78rem; }
+  .lvl { grid-template-columns: 1fr; gap: 4px; padding: 12px; }
+  .lvl .ic { grid-row: auto; width: 34px; height: 34px; padding: 8px; margin-bottom: 4px; }
+  .lvl b { font-size: .95rem; } .lvl small { font-size: .78rem; }
   .cnav { padding-top: 16px; }
   .cnav .btn { min-height: 50px; }
   .err { margin-top: -6px; }
@@ -1408,3 +1408,33 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
 @media (min-width: 700px) and (max-width: 899px) { .foot__grid { grid-template-columns: 1fr 1fr; } }
 /* where the contact buttons float (not the phone bottom bar), leave room so they never sit over the credits */
 @media (min-width: 701px) { .foot { padding-bottom: 96px; } }
+
+/* counselling form (Finland-style fields): study-level choices, intake pills, the "Form completed" panel */
+.lvl { position: relative; cursor: pointer; }
+.lvl input { position: absolute; opacity: 0; pointer-events: none; }
+.lvl:has(input:focus-visible) { outline: 2px solid var(--teal); outline-offset: 3px; }
+.lvl--wide { grid-column: 1 / -1; }
+.lvls.bad .lvl { border-color: var(--pohu); }
+.lvls__msg { margin-top: -8px; color: var(--pohu); }
+.csub { font: 700 .72rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -6px; }
+.pill { position: relative; cursor: pointer; }
+.pill input { position: absolute; opacity: 0; pointer-events: none; }
+.pill span { display: inline-flex; align-items: center; height: 42px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; font: 600 .9rem/1 var(--sans); color: var(--teal); transition: background .2s, border-color .2s, color .2s; }
+.pill:hover span { border-color: var(--teal); }
+.pill input:checked + span { background: var(--teal); border-color: var(--teal); color: #fff; }
+.pill input:focus-visible + span { outline: 2px solid var(--teal); outline-offset: 3px; }
+.ff select:invalid, .ff select option[value=""] { color: var(--muted); }
+.ff select option { color: var(--ink); }
+/* the completed panel takes the form's place in the card */
+.sent { position: static; inset: auto; opacity: 1; pointer-events: auto; padding: clamp(28px, 3.6vw, 48px); align-content: center; min-height: 100%; }
+.sent[hidden], .cform[hidden] { display: none; }
+.sent.is-enter { animation: paneIn .6s var(--ease); }
+.sent__kick { display: inline-block; margin-bottom: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(31,143,95,.12); color: #1F8F5F; font: 700 .72rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+.sent__next { list-style: none; margin: 18px auto 22px; padding: 0; display: grid; gap: 10px; justify-items: start; width: fit-content; text-align: left; color: var(--teal); font-weight: 600; font-size: .95rem; }
+.sent__next li { display: flex; align-items: center; gap: 10px; }
+.sent__next .ic { width: 18px; height: 18px; color: var(--kowhai-d); }
+.sent__again { display: block; margin: 14px auto 0; border: 0; background: none; color: var(--teal); font: 700 .92rem/1 var(--sans); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.sent__again:hover { color: var(--pohu); }
+.sent .btn .ic { width: 18px; height: 18px; }
+@media (max-width: 600px) { .lvls { gap: 8px; } .pill span { height: 38px; padding: 0 13px; font-size: .84rem; } }

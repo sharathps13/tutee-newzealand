@@ -15,8 +15,10 @@
   scrollTo(0, 0);
 
   /* ---------- storage, UTM capture (first touch, 30 days), legacy anchors ---------- */
-  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* blocked */ } } };
+  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* blocked */ } }, del: k => { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } } };
   const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+  const ENQUIRY_ENDPOINT = '/api/enquiry';     // this site's own Netlify function; it forwards to Apps Script
+  const LEAD_DONE_KEY = 'tc_nz_lead_done';      // a sent form shows "Form completed" for 30 days
   const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
   if (!readUtm()) { const p = new URLSearchParams(location.search), f = {}; UTM_KEYS.forEach(k => { const v = p.get(k); if (v) f[k] = v.slice(0, 150); }); if (Object.keys(f).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: f })); }
   // universities.html and older campaigns link to the previous page's section ids
@@ -309,7 +311,7 @@
       imm.addEventListener('pointermove', e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; layers.style.transform = 'translate(' + (-x * 36) + 'px,' + (-y * 24) + 'px)'; });
     }
     // the CTA carries the city into the counselling form
-    $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-city').value = name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); }); });
+    $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-dest').value = 'New Zealand – ' + name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); }); });
   })();
 
   /* ---------- city route: a flight itinerary (AKL → WLG → CHC → DUD → ZQN) plus arrows on every card ----------
@@ -440,7 +442,6 @@
   document.addEventListener('click', e => { if (!ccEl.contains(e.target)) openCC(false); });
 
   const panes = $$('#cform .cpane'), stepsUI = $$('#csteps li'); let step = 0;
-  $$('#slots .slot').forEach(s => s.addEventListener('click', () => $$('#slots .slot').forEach(x => x.setAttribute('aria-pressed', x === s))));
   function go(n) {
     const back = n < step; step = n;
     panes.forEach((p, i) => { p.classList.toggle('on', i === n); p.classList.toggle('back-in', i === n && back); });
@@ -510,7 +511,16 @@
     setState(emEl, 'ok', ''); return true;
   }
   emEl.addEventListener('blur', () => { if (emEl.value.trim()) verifyEmail(false); });
-  emEl.addEventListener('input', () => { if (emEl.parentElement.dataset.state) setState(emEl, '', ''); });
+  // as they type: once the field has been checked, the format is re-checked on every key (the mail-server
+  // lookup waits until they pause), so the message updates or clears without leaving the field
+  let emT = 0;
+  emEl.addEventListener('input', () => {
+    clearTimeout(emT);
+    if (!emEl.parentElement.dataset.state) return;
+    const r = emailIssue(emEl.value.trim());
+    if (r.bad) { setState(emEl, 'bad', r.bad); return; }
+    setState(emEl, '', ''); emT = setTimeout(() => verifyEmail(false), 700);
+  });
 
   // phone: libphonenumber-js (MIT, mobile metadata) is ~190 KB, so it loads only when the form is near
   let LP = null, lpP = null;
@@ -546,16 +556,36 @@
     setState(phEl, 'ok', ''); return true;
   }
   phEl.addEventListener('blur', () => { if (phEl.value.trim()) verifyPhone(); });
-  phEl.addEventListener('input', () => { if (phEl.parentElement.dataset.state) setState(phEl, '', ''); });
+  phEl.addEventListener('input', () => {
+    const clean = phEl.value.replace(/[^\d\s+()-]/g, ''); if (clean !== phEl.value) phEl.value = clean;   // digits only, as they type
+    if (!phEl.parentElement.dataset.state) return;
+    const r = parsePhone(); setState(phEl, r.bad ? 'bad' : 'ok', r.bad || '');
+  });
+
+  // name and state: checked when the student leaves the field, then live
+  const nmEl = $('#c-name'), stEl = $('#c-state');
+  const nameIssue = () => nmEl.value.trim().replace(/[^A-Za-z\u00C0-\u024F]/g, '').length >= 2 ? '' : 'Please enter your full name.';
+  const stateIssue = () => stEl.value ? '' : 'Please select your state.';
+  function verifySimple(el, issue) { const m = issue(); setState(el, m ? 'bad' : (el.value.trim() ? 'ok' : ''), m); return !m; }
+  nmEl.addEventListener('blur', () => { if (nmEl.value.trim()) verifySimple(nmEl, nameIssue); });
+  nmEl.addEventListener('input', () => { if (nmEl.parentElement.dataset.state) verifySimple(nmEl, nameIssue); });
+  stEl.addEventListener('change', () => verifySimple(stEl, stateIssue));
 
   async function check() {
     $$('#cform .ff').forEach(f => f.classList.remove('bad'));
-    if (step !== 0) return '';
-    const n = $('#c-name');
-    if (n.value.trim().length < 2) { n.parentElement.classList.add('bad'); n.focus(); return 'Add your full name.'; }
+    if (step === 1) {
+      const ok = !!$('#cform input[name="study_level"]:checked');
+      $('#lvls').classList.toggle('bad', !ok); $('#c-level-msg').textContent = ok ? '' : 'Choose what you’re aiming for to continue.';
+      if (!ok) { $('#lvls input').focus(); return 'Choose what you’re aiming for above.'; }
+      return '';
+    }
+    const nmOk = verifySimple(nmEl, nameIssue);
     const [emOk, phOk] = await Promise.all([verifyEmail(true), verifyPhone()]);
+    const stOk = verifySimple(stEl, stateIssue);
+    if (!nmOk) { nmEl.focus(); return 'Please enter your full name.'; }
     if (!emOk) { emEl.focus(); return emEl.parentElement.dataset.state === 'warn' ? 'Check your email address above, then continue.' : 'Check your email address above.'; }
-    if (!phOk) { phEl.focus(); return 'Check your WhatsApp number above.'; }
+    if (!phOk) { phEl.focus(); return 'Check your phone number above.'; }
+    if (!stOk) { stEl.focus(); return 'Please select your state.'; }
     return '';
   }
   $('#c-back').addEventListener('click', () => go(step - 1));
@@ -567,42 +597,63 @@
     let err = ''; try { err = await check(); } finally { checking = false; nb.disabled = false; }
     if (err) { $('#c-err').textContent = err; return; }
     if (step < 1) { go(step + 1); return; }
-    const slot = $('#slots [aria-pressed="true"]');
-    const slotText = slot.querySelector('b').textContent + ', ' + slot.querySelector('small').textContent;
-    const interest = [$('#h-course').value, $('#h-level').value, $('#h-city').value].filter(Boolean).join(' · ');
-    const data = {
-      name: $('#c-name').value.trim(), email: $('#c-email').value.trim(),
-      phone: phoneE164 || ccSel.dial + ' ' + $('#c-phone').value.trim(), destination: 'New Zealand',
-      page: location.host + location.pathname, from_name: 'NZ landing page · Counselling form',
-      botcheck: $('#c-bot').value, preferredCallTime: slotText + ' (' + ccSel.name + ' time)', consent: 'yes',
-      state: $('#c-state').value.trim(), interest,
-      course: $('#c-course').value, universities: $('#c-unis').value.trim(), source: 'New Zealand Landing Page',
-      level: $('#h-level').value, city: $('#h-city').value, country: ccSel.name
-    };
+    if (leadDone()) return;
+    // the same fields the Finland form sends; the function forwards them to the Website Leads sheet + email
+    const fd = new FormData($('#cform')), data = {};
+    fd.forEach((v, k) => { data[k] = String(v).trim(); });
+    data.phone = phoneE164 || ccSel.dial + ' ' + phEl.value.trim();
+    data.page = location.host + location.pathname;
     const utm = readUtm() || {}; UTM_KEYS.forEach(k => { if (utm[k]) data[k] = utm[k]; });
-    Object.keys(data).forEach(k => { if (data[k] === '' && k !== 'botcheck') delete data[k]; });
     const btn = $('#c-next'), btnHtml = btn.innerHTML;
     btn.disabled = true; btn.textContent = 'Sending…'; $('#c-err').textContent = '';
-    fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
+    fetch(ENQUIRY_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
       .then(r => r.json().catch(() => ({ success: false })))
       .then(res => {
         if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 73583 64959.'; return; }
-        store.set('tc_lead', '1');
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({ event: 'generate_lead', lead_source: 'Counselling form', country: 'new-zealand' });
-        $('#sent-h').textContent = "You're booked, " + data.name.split(' ')[0] + '.';
-        const rows = [['Call', slotText], ['WhatsApp', data.phone], ['Email', data.email]];
-        if (data.course) rows.push(['Course', data.course]);
-        if (data.universities) rows.push(['Universities', data.universities]);
-        $('#sent-card').innerHTML = rows.map(r => '<dt>' + r[0] + '</dt><dd>' + r[1].replace(/[<>&]/g, '') + '</dd>').join('');
-        stepsUI.forEach(s => { s.classList.add('done'); s.classList.remove('now'); });
-        $('#sent').classList.add('on');
+        const d = { name: data.name, call_time: data.call_time || '', at: Date.now() };
+        store.set(LEAD_DONE_KEY, JSON.stringify(d));
+        showLeadDone(d, true);
       })
       .catch(() => { $('#c-err').textContent = 'Network error. Check your connection and try again, or WhatsApp us on +91 73583 64959.'; })
       .then(() => { btn.disabled = false; btn.innerHTML = btnHtml; });
   });
+
+  /* ---------- "Form completed": a sent form stays completed in this browser for 30 days ---------- */
+  function leadDone() {
+    try { const d = JSON.parse(store.get(LEAD_DONE_KEY) || 'null'); return d && Date.now() - d.at < 30 * 864e5 ? d : null; } catch (e) { return null; }
+  }
+  function showLeadDone(d, animate) {
+    const first = String(d.name || '').trim().split(/\s+/)[0];
+    $('#sent-h').textContent = 'Thank you' + (first ? ', ' + first : '') + '!';
+    const when = d.call_time && !/^any/i.test(d.call_time) ? ' in the ' + d.call_time.replace(/\s*\(.*\)/, '').toLowerCase() : '';
+    $('#sent-p').textContent = 'Your New Zealand enquiry is with our counselling team. A counsellor will call you' + when + ' within one working day.';
+    $('#cform').hidden = true;
+    const sent = $('#sent'); sent.hidden = false;
+    if (animate && !reduce) { sent.classList.remove('on'); sent.classList.add('is-enter'); requestAnimationFrame(() => requestAnimationFrame(() => sent.classList.add('on'))); sent.focus({ preventScroll: true }); }
+    else sent.classList.add('on');
+  }
+  // "+ Submit another enquiry": forget the sent flag and bring back a fresh form
+  $('#sent-again').addEventListener('click', () => {
+    store.del(LEAD_DONE_KEY);
+    const form = $('#cform'); form.reset(); phoneE164 = '';
+    $$('#cform .ff').forEach(x => { x.dataset.state = ''; x.classList.remove('bad'); const m = $('.ff__msg', x); if (m) m.textContent = ''; });
+    $('#lvls').classList.remove('bad'); $('#c-level-msg').textContent = '';
+    const sl = window.TCShortlist ? window.TCShortlist.get() : []; $('#c-unis').value = sl.join(', ');
+    $('#sent').hidden = true; $('#sent').classList.remove('on', 'is-enter'); form.hidden = false;
+    go(0); nmEl.focus({ preventScroll: true });
+  });
+  { const d = leadDone(); if (d) showLeadDone(d, false); }
+
   // the hero quick-start bar carries its choices into the lead as hidden fields
-  $('#qform').addEventListener('submit', e => { e.preventDefault(); $('#h-course').value = $('#q-course').value; if ($('#q-course').value !== 'Not sure yet') $('#c-course').value = $('#q-course').value; $('#h-level').value = $('#q-level').value; $('#h-city').value = $('#q-city').value; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
+  const LEVEL_FROM_QUICK = { "Master's level": "Master's", "Bachelor's level": "Bachelor's", 'Diploma level': 'Diploma', 'PhD level': 'PhD' };
+  $('#qform').addEventListener('submit', e => {
+    e.preventDefault();
+    if ($('#q-course').value !== 'Not sure yet') $('#c-course').value = $('#q-course').value;
+    const lv = $('#cform input[name="study_level"][value="' + (LEVEL_FROM_QUICK[$('#q-level').value] || '') + '"]'); if (lv) lv.checked = true;
+    const city = $('#q-city').value; $('#h-dest').value = /^any/i.test(city) ? 'General New Zealand Inquiry' : 'New Zealand – ' + city;
+    goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
 
   /* ---------- why NZ: expanding photo accordion ---------- */
     const REASONS = [

@@ -34,10 +34,9 @@ scripts/build-nz-map.mjs        (earlier flat version; still provides nz-sat-eas
 assets/js/ai.js                 the Tutee AI chat widget; answers in the browser from the page's own FAQ/data (no API, no key)
 assets/js/unis.js, unis-dir.js  top-8 universities section, details pop-up, shortlist (localStorage) → form
 nz-universities.html            directory of all 195 institutions (opens in a new tab)
-netlify/functions/lead.mjs      this site's lead endpoint: POST /api/lead → Google Apps Script (Sheet + email)
-apps-script/                 Code.gs, Email.html, appsscript.json for the Google Sheet; SETUP.md = step-by-step linking guide
-scripts/render-email-preview.mjs   renders apps-script/Email.html with sample data → apps-script/email-preview.html
-netlify/functions/enquiry.mjs   shared lead endpoint (canonical copy lives in _tooling) (no longer used by the form)
+netlify/functions/enquiry.mjs   the form's endpoint: POST /api/enquiry → the shared Apps Script (New Zealand Leads tab + email),
+                                Resend only as a fallback. Same file as the Finland site; env vars in apps-script/README.md
+apps-script/                    reference copy of the shared Apps Script (already deployed) + README with the Netlify settings
 netlify/functions/verify-email.mjs   this site only: GET /api/verify-email?domain= (DNS MX lookup, no deps)
 netlify/functions/news.mjs       this site only: GET /api/news, live NZ education stories (RNZ, NZ Herald, Universities NZ RSS)
 netlify/functions/news-img.mjs   this site only: GET /api/news-img?u=, relays those stories' images (two allowed hosts only)
