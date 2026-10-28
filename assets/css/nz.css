@@ -698,10 +698,10 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .err { color: var(--pohu); font-weight: 600; font-size: .9rem; min-height: 1.2em; margin-top: -12px; }
 .sent { position: absolute; inset: 0; background: var(--paper); display: grid; place-items: center; text-align: center; padding: 40px; opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }
 .sent.on { opacity: 1; pointer-events: auto; }
-.sent svg { width: 96px; height: 96px; margin: 0 auto 18px; }
-.sent circle { fill: none; stroke: var(--kowhai); stroke-width: 3; stroke-dasharray: 290; stroke-dashoffset: 290; transition: stroke-dashoffset 1s var(--ease); }
-.sent path { fill: none; stroke: var(--teal); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; transition: stroke-dashoffset .6s var(--ease) .7s; }
-.sent.on circle, .sent.on path { stroke-dashoffset: 0; }
+.sent__mark { display: block; width: 96px; height: 96px; margin: 0 auto 18px; }   /* the big tick only, not the small icons */
+.sent__mark circle { fill: none; stroke: var(--kowhai); stroke-width: 3; stroke-dasharray: 290; stroke-dashoffset: 290; transition: stroke-dashoffset 1s var(--ease); }
+.sent__mark path { fill: none; stroke: var(--teal); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; transition: stroke-dashoffset .6s var(--ease) .7s; }
+.sent.on .sent__mark circle, .sent.on .sent__mark path { stroke-dashoffset: 0; }
 .sent h3 { font: 700 2rem/1.1 var(--display); letter-spacing: -.03em; color: var(--teal); }
 .sent p { margin-top: 10px; color: var(--muted); max-width: 40ch; margin-inline: auto; }
 .sent__card { margin: 22px auto 0; display: inline-grid; grid-template-columns: auto auto; gap: 6px 18px; text-align: left; padding: 16px 20px; border-radius: 16px; background: #fff; border: 1px solid var(--line); font-size: .9rem; }
@@ -1438,3 +1438,22 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
 .sent__again:hover { color: var(--pohu); }
 .sent .btn .ic { width: 18px; height: 18px; }
 @media (max-width: 600px) { .lvls { gap: 8px; } .pill span { height: 38px; padding: 0 13px; font-size: .84rem; } }
+
+/* completed panel: one centred column; small icons sit level with their text */
+.sent > div { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 460px; }
+.sent__kick { margin: 0 0 10px; }
+.sent__next .ic { margin: 0; }
+.sent .btn { gap: .55em; align-self: center; }
+.sent .btn .ic { margin: 0; }
+.sent h3, .sent p { text-wrap: balance; }
+/* dropdowns: the ✓ / ! mark sits left of the arrow instead of on top of it */
+.ff:has(select)[data-state]:not([data-state=""])::after { right: 42px; }
+.ff:has(select)[data-state="ok"] select, .ff:has(select)[data-state="bad"] select { padding-right: 72px; }
+/* news ticker: full headlines (it scrolls, so there is room) instead of cutting them with "…" */
+.nc__t, .news .nc__t { max-width: none; overflow: visible; text-overflow: clip; }
+/* form side panel: heading, steps and contact stack evenly from the top (no big empty gap mid-panel);
+   the contact block keeps to the bottom edge */
+@media (min-width: 980px) {
+  .cside { align-content: start; grid-template-rows: auto auto 1fr; gap: 30px; }
+  .cside .cside__contact { align-self: end; }
+}

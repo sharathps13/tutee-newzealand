@@ -532,17 +532,17 @@
   const looksFake = d => { const n = d.replace(/^0+/, ''); return n.length >= 6 && (/^(\d)\1+$/.test(n) || '01234567890123456789'.includes(n) || '98765432109876543210'.includes(n) || /^(\d{2,3})\1{2,}$/.test(n)); };
   function parsePhone() {
     const raw = phEl.value.trim(), digits = raw.replace(/\D/g, '');
-    if (!digits) return { bad: 'Add a WhatsApp number we can reach you on.' };
+    if (!digits) return { bad: 'Please enter your phone number.' };
     if (LP) {
       // a number pasted with its own country code (+971…, 0091…) switches the flag to match
       if (/^(\+|00)/.test(raw)) { const p = LP.parsePhoneNumberFromString(raw.replace(/^00/, '+')); if (p && p.country) { const c = CC.find(x => x.iso === p.country.toLowerCase()); if (c && c.dial !== ccSel.dial) pickCC(c.iso, true); } }
       const iso = ccSel.iso.toUpperCase(), nat = digits.replace(/^0+/, '');
       const tries = [() => LP.parsePhoneNumberFromString(raw.replace(/^00/, '+'), iso), () => LP.parsePhoneNumberFromString(ccSel.dial + nat), () => LP.parsePhoneNumberFromString('+' + digits)];
-      for (const t of tries) { let p = null; try { p = t(); } catch (e) { /* unparsable */ } if (p && p.isValid() && '+' + p.countryCallingCode === ccSel.dial) { if (looksFake(p.nationalNumber)) return { bad: 'This doesn’t look like a real number. Add the WhatsApp number you use.' }; return { ok: p }; } }
+      for (const t of tries) { let p = null; try { p = t(); } catch (e) { /* unparsable */ } if (p && p.isValid() && '+' + p.countryCallingCode === ccSel.dial) { if (looksFake(p.nationalNumber)) return { bad: 'This doesn’t look like a real number. Please check it.' }; return { ok: p }; } }
       return { bad: ccSel.iso === 'in' ? 'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.' : 'This isn’t a valid ' + ccSel.name + ' mobile number. Check the country code and digits.' };
     }
     // library not available: fall back to sane length and pattern checks
-    if (looksFake(digits)) return { bad: 'This doesn’t look like a real number. Add the WhatsApp number you use.' };
+    if (looksFake(digits)) return { bad: 'This doesn’t look like a real number. Please check it.' };
     if (ccSel.iso === 'in' && !/^[6-9]\d{9}$/.test(digits.replace(/^(91|0)(?=\d{10}$)/, ''))) return { bad: 'Indian mobile numbers have 10 digits and start with 6, 7, 8 or 9.' };
     if (digits.length < 6 || digits.length > 15) return { bad: 'Check the number: it looks too ' + (digits.length < 6 ? 'short.' : 'long.') };
     return { ok: null };
@@ -582,10 +582,11 @@
     const nmOk = verifySimple(nmEl, nameIssue);
     const [emOk, phOk] = await Promise.all([verifyEmail(true), verifyPhone()]);
     const stOk = verifySimple(stEl, stateIssue);
-    if (!nmOk) { nmEl.focus(); return 'Please enter your full name.'; }
-    if (!emOk) { emEl.focus(); return emEl.parentElement.dataset.state === 'warn' ? 'Check your email address above, then continue.' : 'Check your email address above.'; }
-    if (!phOk) { phEl.focus(); return 'Check your phone number above.'; }
-    if (!stOk) { stEl.focus(); return 'Please select your state.'; }
+    const fix = 'Please fix the highlighted fields above.';
+    if (!nmOk) { nmEl.focus(); return fix; }
+    if (!emOk) { emEl.focus(); return emEl.parentElement.dataset.state === 'warn' ? 'Check your email address above, then continue.' : fix; }
+    if (!phOk) { phEl.focus(); return fix; }
+    if (!stOk) { stEl.focus(); return fix; }
     return '';
   }
   $('#c-back').addEventListener('click', () => go(step - 1));
