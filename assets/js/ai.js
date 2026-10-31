@@ -152,6 +152,76 @@
     [/\b(who|what) are you\b|\bare you (a )?(bot|human|ai|real)\b|\bwhat can you do\b/, () => 'I’m **Tutee AI**, built from this page. I know its universities, cities, costs, steps, FAQ and the route to residence, and I answer instantly without sending your questions anywhere. For advice on your own profile, say **talk to a counsellor** and I’ll take your details for a callback.'],
     [/\b(phone|number|contact|email|e-mail|whatsapp|reach you|call you|address)\b/, () => 'You can reach Tutee Connect any of these ways:\n- **WhatsApp / call:** +91 73583 64959\n- **Email:** info@tuteeconnect.com\n- **Offices:** Chennai and Dubai\n[Book a free counselling call](#consult) and we’ll call you at the time you pick.'],
   ];
+  // intakes: the page gives no dates, so say what's usual and hand over ("programs in January intake" is not about work hours)
+  const MONTH = /\b(jan\w*|feb\w*|mar(?:ch)?|apr(?:il)?|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b|\b(?:in|from|for|the) (may)\b/;
+  const MONTHS = { jan: 'January', feb: 'February', mar: 'March', apr: 'April', may: 'May', jun: 'June', jul: 'July', aug: 'August', sep: 'September', oct: 'October', nov: 'November', dec: 'December' };
+  function intakeAnswer(q) {
+    if (/\b(work\w*|jobs?|hours)\b/.test(q)) return null;
+    const m = MONTH.exec(q), mon = m && MONTHS[(m[1] || m[2]).slice(0, 3)];
+    const general = /\b(intakes?|intak\w*|in takes?|start dates?|semesters?)\b/.test(q);
+    if (!(m ? general || /\b(start\w*|begin\w*|commenc\w*|batch|session|programmes?|programs?|courses?|admissions?|classes)\b/.test(q) : general)) return null;
+    const usual = 'New Zealand universities have two main intakes: **Semester 1**, starting in **late February or early March** (the main one), and **Semester 2** in **July**.';
+    let text;
+    if (!mon) text = usual + ' Many programmes take students in both; some only in February. A few polytechnic and private-institution courses start at other times of year.';
+    else if (/^(January|February|March)$/.test(mon)) text = (mon === 'January' ? 'There’s no January start at New Zealand universities: the first intake of the year is **Semester 1**, starting in **late February or early March**. ' : usual + ' ') +
+      'A few polytechnic and private-institution courses start at other times, and which programmes open each intake changes every year, so I can’t give you a reliable list here.';
+    else if (/^(June|July|August)$/.test(mon)) text = 'The mid-year intake is **Semester 2**, starting in **July**. Many programmes take students then, but not all: some only start in February. Which programmes open in July changes every year, so I can’t give you a reliable list here.';
+    else text = usual + ' A **' + mon + '** start isn’t usual: a few polytechnic and private-institution courses run then, so check with a counsellor before you plan around it.';
+    ctx = { city: null, uni: null, facet: null };
+    return text + '\nA counsellor can check the current intakes and deadlines for your subject: [book a free counselling call](#consult).' + sugg(['What do I need to apply?', 'Request a callback']);
+  }
+  // "universities near the Sky Tower": the city the place is in, never a generic answer
+  const NEAR = /\b(near|nearby|nearest|close to|closest to|close by|next to|walking distance|distance from)\b/;
+  const LANDMARKS = [
+    ['Auckland', /\b(sky ?tower|viaduct( harbou?r)?|queen street|ponsonby|mt eden|mount eden|maungawhau|harbou?r bridge|waiheke|devonport|parnell|newmarket|albany|auckland (airport|cbd|domain|museum|central))\b/],
+    ['Wellington', /\b(te papa|beehive|parliament|cuba street|oriental bay|lambton quay|cable car|mt victoria|mount victoria|kelburn|zealandia|weta( workshop)?)\b/],
+    ['Christchurch', /\b(hagley park|cathedral square|riccarton|port hills|new brighton|ilam|christchurch (airport|gondola|botanic gardens))\b/],
+    ['Dunedin', /\b(octagon|baldwin street|larnach castle|otago peninsula|st clair|forsyth barr)\b/],
+    ['Queenstown', /\b(lake wakatipu|remarkables|coronet peak|skyline( gondola)?|arrowtown|milford sound|fiordland|wanaka)\b/],
+    ['Hamilton', /\b(hamilton gardens|hobbiton|matamata|waikato river|tauranga|mount maunganui|rotorua)\b/],
+    ['Palmerston North', /\b(palmerston north|manawatu)\b/]
+  ];
+  function nearAnswer(q, unisHit, citiesHit) {
+    if (!NEAR.test(q)) return null;
+    const spot = LANDMARKS.find(l => l[1].test(q));
+    if (!spot) {
+      if (unisHit.length || citiesHit.length || /\b(rent|cost|costs|price|fees?|accommodation|housing|living)\b/.test(q) || !/\b(uni|unis|universit\w*|college\w*|institution\w*|campus\w*|study)\b/.test(q)) return null;
+      ctx = { city: null, uni: null, facet: null };
+      return 'I can match universities to a New Zealand city, or to a well-known place in one (the Sky Tower, Te Papa or Hagley Park, say), but I didn’t recognise the place in your question, and I can’t work out distances. Tell me the city, or ask a counsellor: [book a free counselling call](#consult).' + sugg(['Universities in Auckland', 'Universities in Wellington']);
+    }
+    const lead = 'That’s in **' + spot[0] + '**. This goes by city, not travel time; a counsellor can help with commutes from where you’d live.\n';
+    const c = M.cities.map(x => x.c).find(x => x.name === spot[0]);
+    if (c) { ctx = { city: c, uni: null, facet: 'university' }; return lead + cityAnswer(c, 'university') + sugg(['How much is rent in ' + c.name + '?', 'Tell me about ' + c.name]); }
+    const U = M.unis.map(x => x.u).filter(u => u.city.indexOf(spot[0]) > -1);
+    ctx = { city: null, uni: U.length === 1 ? U[0] : null, facet: null };
+    return lead + '**Study in or near ' + spot[0] + ':** ' + (U.length ? U.map(u => u.name).join(', ') : 'see the [Universities](#unis) section') + '.' + sugg(U.slice(0, 2).map(u => 'Tell me about ' + u.name));
+  }
+  // Questions this site can't answer reliably (distances and travel times, whether your marks are enough, what can
+  // still start next month, the best area to live, a university's exact English score): say so, then hand over.
+  var NEEDS_COUNSELLOR = [
+    [/\b(how far|distance (from|to|between)|how long (does it|will it|would it|to) (take|get|reach|travel|commute)|commut\w*|by (train|bus|metro|tram|mrt|subway|tube|car)|travel time|minutes? (from|to|away)|km (from|to|away)|close to the city|far from)\b/, null,
+      'I can\'t give reliable distances or travel times: they depend on the exact campus and where you\'d live.'],
+    [/\b(next|this|coming) (month|week|few weeks)\b|\bstart\w* (soon|immediately|asap|right away)\b|\b(still|currently) (open|accepting)\b/, null,
+      'Which courses can still take you that soon depends on each university\'s current deadlines and places, which change all the time.'],
+    [/\b\d{2}(\.\d+)? ?(%|percent)|\b(percentage|marks|cgpa|gpa|backlogs?|gap year|study gap|year gap|education gap)\b/, /\b(admission|admit|get in|get into|eligib\w*|accept\w*|apply|qualify|enough|chances?|possible)\b/,
+      'Whether your marks are enough depends on the university, the course and the rest of your profile, so I won\'t guess.'],
+    [/\b(best|good|safe|safest|cheap\w*|nice) (area|areas|suburbs?|neighbou?rhoods?|localit(y|ies)|places?|part of (the )?(city|town)) (to (live|stay)|for students?)\b|\bwhere (should|can|do) (i|students) (live|stay)\b/, null,
+      'The best area to live depends on your campus, budget and lifestyle, and this site doesn\'t compare neighbourhoods.'],
+    [/\b(ielts|pte|toefl|duolingo)\b.*\b(scores?|bands?|minimum)\b|\b(scores?|bands?|minimum)\b.*\b(ielts|pte|toefl|duolingo)\b/, null,
+      'Each university sets its own minimum English test score, and it varies by course, so I won\'t quote one.'],
+    [/\b(distance learning|distance education|online (course|courses|degree|degrees|study|studies|classes|programmes?|programs?)|study online|studying online|remote study)\b/, null,
+      'A student visa is for full-time study on campus, and this site does not cover online or distance courses.']
+  ];
+  // "How do I apply?" (to a university, not for a visa, loan or scholarship): how applying works here, then hand over
+  var APPLY_Q = /\b(how (do|can|should|would|will) (i|we|one|students?) apply|how to apply|application process|admission process|applying (to|for) (a |an |the )?(universit\w*|unis?|college\w*|courses?|programm?e?s?|admissions?)|apply (to|for) (a |an |the )?(universit\w*|unis?|college\w*|courses?|programm?e?s?|admissions?))\b/;
+  function asksHowToApply(q) { return APPLY_Q.test(q) && !/\b(visa|pass|permit|stamp|loans?|scholarships?|bursar\w*|grants?|jobs?|work)\b/.test(q); }
+  function needsCounsellor(q) {
+    for (var i = 0; i < NEEDS_COUNSELLOR.length; i++) { var n = NEEDS_COUNSELLOR[i]; if (n[0].test(q) && (!n[1] || n[1].test(q))) return n[2]; }
+    return '';
+  }
+  // "universities near <a place we know>" is answered by its city instead
+  function namesLandmark(q) { return /b(near|nearby|nearest|close to|closest to|next to|around|walking distance)b/.test(q) && LANDMARKS.some(function (l) { return l.some(function (x) { return x instanceof RegExp && x.test(q); }); }); }
+
   const sugg = list => list.length ? '\nYou could also ask:\n' + list.map(s => '[[' + s + ']]').join('\n') : '';
   let ctx = { city: null, uni: null, facet: null };   // what the conversation is about, for follow-ups
 
@@ -164,7 +234,31 @@
     const qNoUni = unisHit.reduce((s, u) => s.replace(new RegExp(fold(u.name), 'g'), ' '), q);
     const citiesHit = M.cities.filter(x => x.re.test(unisHit.length ? qNoUni : q)).map(x => x.c);
     const qt = toks(raw).map(fix);
+    // course fees aren't on this page: never let a fee question land on a university's profile
+    const unsure = !namesLandmark(q) && (needsCounsellor(q) || (/\b(fees?|tuition)\b/.test(q) && !citiesHit.length ? 'Tuition depends on the university and the programme, and this page doesn’t list course fees, so I won’t quote a figure.' : ''));
+    if (unsure) { ctx = { city: null, uni: null, facet: null }; return unsure + ' A counsellor can check it for you: [book a free counselling call](#consult), or WhatsApp **+91 73583 64959**.' + sugg(['What does it cost to live in Auckland?', 'Request a callback']); }
+    if (asksHowToApply(q)) {
+      ctx = { city: null, uni: null, facet: null };
+      const S = (window.__TC_DATA || {}).steps || [];
+      return 'You apply to each New Zealand university directly, usually online, for the programme you choose.' + (S.length ? ' With us it runs in these steps:\n' + S.map(s => '- **' + s[2] + '**').join('\n') : '') +
+        '\nEntry requirements and deadlines differ by university and programme, so your counsellor checks them for your shortlist: [book a free counselling call](#consult).' + sugg(['Do I need IELTS, PTE or TOEFL?', 'Request a callback']);
+    }
+    // "how do I get / apply for a student visa?" is the visa process, not a partner's or a work visa
+    if (/\b(visa|visas)\b/.test(q) && /\b(apply|applying|get|process|how)\b/.test(q) && !/\b(partner|family|spouse|wife|husband|child|children|kids|work|post.?study|residence|pr)\b/.test(q)) {
+      const V = M.docs.find(x => /visa process/i.test(x.title));
+      if (V) { ctx = { city: null, uni: null, facet: null }; return V.answer + sugg(['Can I work while I study?', 'Request a callback']); }
+    }
+    const byMonth = intakeAnswer(q);
+    if (byMonth) return byMonth;
+    const byPlace = nearAnswer(q, unisHit, citiesHit);
+    if (byPlace) return byPlace;
     let facet = facetOf(q, qt);
+    // rent or living costs with no city named or being discussed: each city's rent from the page, not a guess
+    if ((facet === 'rent' || facet === 'cost') && !citiesHit.length && !unisHit.length && !ctx.city) {
+      ctx = { city: null, uni: null, facet };
+      return 'Rent depends on the city. Room rent from this page:\n' + M.cities.map(x => { const r = x.c.facts.find(f => /rent/i.test(f[1])); return r ? '- **' + x.c.name + ':** ' + r[2] + ' (' + r[3].toLowerCase() + ')' : ''; }).filter(Boolean).join('\n') +
+        '\nTuition depends on your course and university; a counsellor builds your full budget on the [free call](#consult).' + sugg(['How much is rent in Auckland?', 'Request a callback']);
+    }
     // a follow-up is "and the weather?", "what about Dunedin?": nothing in it but a place and/or a topic word
     const cityWords = new Set(M.cities.flatMap(x => toks(x.c.name + ' ' + x.c.reo + ' ' + x.c.id)));
     const followUp = /^(and|what about|how about|same for|there)\b/.test(q) || qt.every(t => FACET_TOK[t] || cityWords.has(t) || ['live', 'living', 'like', 'there', 'city'].includes(t));
@@ -289,5 +383,5 @@
     e.preventDefault(); if (matchMedia('(max-width: 700px)').matches) setOpen(false);
     const h = a.getAttribute('href'); if (window.__goTo) window.__goTo(h); else location.hash = h;
   });
-  window.TCAI = { ask, open: () => setOpen(true) };
+  window.TCAI = { ask, answer, open: () => setOpen(true) };   // answer(q): the reply text without the chat window, for checks
 })();
