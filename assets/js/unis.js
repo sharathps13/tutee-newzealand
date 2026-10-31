@@ -71,17 +71,29 @@
   $$('[data-um-close]', modal).forEach(b => b.addEventListener('click', close));
   modal.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
-  /* ---------------- shortlist tray ("cart") ---------------- */
+  /* ---------------- shortlist tray ("cart") ----------------
+     Maroon (the page's call-to-action colour) so it never blends into a section. Every addition makes it pop, flips
+     the count, sends a ring out and reads "Added: <name>" for a moment; a removal just settles the count. Until the
+     student first opens it, it glows softly every ~10s. On the main page it steps aside while the form is on screen. */
   const onIndex = !!document.getElementById('cform');
+  const LBL = 'shortlisted · Review & send';
   const tray = document.createElement('div');
   tray.className = 'sl'; tray.innerHTML =
-    '<button type="button" class="sl__btn" aria-expanded="false" aria-controls="sl-panel"><svg class="ic" aria-hidden="true"><use href="#i-book"/></svg><span>Shortlist</span><b class="sl__n">0</b></button>' +
+    '<button type="button" class="sl__btn" aria-expanded="false" aria-controls="sl-panel"><b class="sl__n">0</b><span class="sl__lbl" aria-live="polite">' + LBL + '</span><svg class="ic sl__up" aria-hidden="true"><use href="#i-chev"/></svg></button>' +
     '<div class="sl__panel" id="sl-panel" hidden><div class="sl__head"><b>My shortlist</b><button type="button" class="sl__clear">Clear</button></div><ul class="sl__list"></ul>' +
     '<a class="btn btn--go btn--block sl__go" href="' + (onIndex ? '#consult' : 'index.html#consult') + '">Add to my counselling form <svg class="ic"><use href="#i-arrow"/></svg></a><p class="sl__note">A counsellor will check entry requirements, fees and intakes for each.</p></div>';
   document.body.appendChild(tray);
   const tBtn = $('.sl__btn', tray), tPanel = $('.sl__panel', tray);
   const setOpen = on => { tPanel.hidden = !on; tBtn.setAttribute('aria-expanded', on); tray.classList.toggle('is-open', on); };
-  tBtn.addEventListener('click', () => setOpen(tPanel.hidden));
+  const SEEN = 'tc_shortlist_seen';   // the idle glow stops for good (this visit) once the tray has been opened
+  try { if (sessionStorage.getItem(SEEN)) tray.classList.add('is-seen'); } catch (e) { /* private mode */ }
+  tBtn.addEventListener('click', () => {
+    setOpen(tPanel.hidden);
+    tray.classList.add('is-seen'); try { sessionStorage.setItem(SEEN, '1'); } catch (e) { /* private mode */ }
+  });
+  // the form already shows the shortlist as chips, so the tray steps aside while the form is on screen
+  const cbox = document.getElementById('cbox');
+  if (onIndex && cbox && 'IntersectionObserver' in window) new IntersectionObserver(es => { const away = es[0].isIntersecting; tray.classList.toggle('is-away', away); if (away) setOpen(false); }, { threshold: .15 }).observe(cbox);
   document.addEventListener('click', e => { if (!tray.contains(e.target)) setOpen(false); });
   $('.sl__clear', tray).addEventListener('click', () => Shortlist.clear());
   $('.sl__go', tray).addEventListener('click', e => {
@@ -89,18 +101,75 @@
     if (onIndex) { e.preventDefault(); const f = document.getElementById('c-unis'); if (f) f.value = list.join(', '); if (window.__goTo) window.__goTo('#consult'); else location.hash = '#consult'; }
   });
   $('.sl__list', tray).addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) Shortlist.remove(b.dataset.rm); });
-  let first = true;
+  const tLbl = $('.sl__lbl', tray);
+  let prev = null, addedT = 0;
+  const replay = c => { tray.classList.remove('bump', 'settle'); void tray.offsetWidth; tray.classList.add(c); };
   Shortlist.on(l => {
     $('.sl__n', tray).textContent = l.length;
     tray.classList.toggle('has-items', l.length > 0);
-    if (!l.length) setOpen(false);
+    if (!l.length) { setOpen(false); clearTimeout(addedT); tLbl.textContent = LBL; }
     $('.sl__list', tray).innerHTML = l.map(n => '<li><span>' + esc(n) + '</span><button type="button" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + '"><svg class="ic"><use href="#i-plus"/></svg></button></li>').join('');
-    // the bump restarts via a reflow; skipped on page load, where that reflow would lay out the whole page early
-    if (!first) { tray.classList.remove('bump'); void tray.offsetWidth; if (l.length) tray.classList.add('bump'); }
-    first = false;
-    // keep the form's "Shortlisted universities" field in step with the shortlist
+    // the bump restarts via a reflow; skipped on page load (prev is null), where that reflow would lay out the whole page early.
+    // Reduced motion: the CSS drops the pop and the ring, but the label still announces what was added.
+    if (prev && l.length) {
+      const added = l.filter(n => !prev.includes(n));
+      if (added.length) {
+        replay('bump');
+        tLbl.textContent = 'Added: ' + added[added.length - 1];
+        clearTimeout(addedT); addedT = setTimeout(() => { tLbl.textContent = LBL; }, 2500);
+      } else if (l.length < prev.length) replay('settle');
+    }
+    prev = l.slice();
+    // keep the form's hidden "shortlist" field in step with the shortlist (same comma-separated value as before)
     const f = document.getElementById('c-unis'); if (f) f.value = l.join(', ');
   });
+
+  // the attention cue on the shortlist buttons only runs while their list is on screen
+  // (watch: the box to observe, when the list itself has no height of its own)
+  const live = (el, watch) => {
+    if (!('IntersectionObserver' in window)) { el.classList.add('is-live'); return; }
+    new IntersectionObserver(es => el.classList.toggle('is-live', es[0].isIntersecting)).observe(watch || el);
+  };
+
+  /* ---------------- shortlist chips in the counselling form (index.html) ----------------
+     Each shortlisted university is a chip whose × removes it from the shortlist itself (so the tray and the buttons
+     update too). The add box keeps what the old free-text field allowed: anything typed becomes a chip. */
+  const chips = document.getElementById('sl-chips');
+  if (chips) {
+    const add = document.getElementById('c-unis-add'), addBtn = document.getElementById('c-unis-addbtn'), empty = document.getElementById('sl-empty');
+    const KNOWN = TOP.map(t => t.name);
+    let refocus = -1;
+    Shortlist.on(l => {
+      chips.innerHTML = l.map(n => '<li class="slchip"><span>' + esc(n) + '</span><button type="button" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + ' from your shortlist"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button></li>').join('');
+      chips.hidden = !l.length; empty.hidden = l.length > 0;
+      // after a removal, focus stays in the chips (the next one along), or goes to the add box when none are left
+      if (refocus > -1) { const bs = $$('button', chips); (bs[Math.min(refocus, bs.length - 1)] || add).focus(); refocus = -1; }
+    });
+    chips.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; refocus = $$('button', chips).indexOf(b); Shortlist.remove(b.dataset.rm); });
+    // one entry or several separated by commas; a known university is stored under its usual name so its button lights up
+    const fromBox = () => {
+      const v = add.value; add.value = '';
+      v.split(/[,;]/).map(s => s.trim().replace(/\s+/g, ' ').slice(0, 120)).filter(Boolean).forEach(s => {
+        const n = KNOWN.find(k => k.toLowerCase() === s.toLowerCase()) || (/^aut$/i.test(s) ? 'Auckland University of Technology' : s);
+        if (Shortlist.get().length < 20 && !Shortlist.get().some(x => x.toLowerCase() === n.toLowerCase())) Shortlist.add(n);
+      });
+    };
+    add.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ',') && !e.isComposing) { e.preventDefault(); fromBox(); } });   // Enter adds, never submits
+    add.addEventListener('input', e => { if ((!e.inputType || e.inputType === 'insertReplacementText') && KNOWN.includes(add.value.trim())) fromBox(); });   // picked from the suggestions
+    add.addEventListener('blur', fromBox);   // typed but not added: kept when they move on
+    addBtn.addEventListener('click', () => { fromBox(); add.focus(); });
+    document.addEventListener('submit', e => { if (e.target.id === 'cform') fromBox(); }, true);   // runs before the form's own handler reads the field
+  }
+
+  /* ---------------- shortlist buttons on the universities map list (index.html) ----------------
+     Each university in the list gets its own round "+" next to its name, so shortlisting no longer needs the pop-up. */
+  const mapList = $('.nzm__list');
+  if (mapList) {
+    $$('li', mapList).forEach((li, i) => { const u = $('[data-uni]', li); if (u) li.insertAdjacentHTML('beforeend', '<button type="button" class="nzm__sl" data-sl="' + esc(u.dataset.uni) + '" aria-pressed="false" style="--i:' + i + '"></button>'); });
+    Shortlist.on(() => $$('.nzm__sl', mapList).forEach(b => { const on = Shortlist.has(b.dataset.sl); b.setAttribute('aria-pressed', on); b.innerHTML = on ? CHECK : PLUS; b.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') + b.dataset.sl + (on ? ' from' : ' to') + ' shortlist'); b.title = on ? 'Shortlisted' : 'Add to shortlist'; }));
+    mapList.addEventListener('click', e => { const b = e.target.closest('.nzm__sl'); if (b) Shortlist.toggle(b.dataset.sl); });
+    live(mapList, mapList.closest('.nzm__stage'));   // on desktop the names are placed absolutely, so the list box is empty
+  }
 
   /* ---------------- top universities section (index.html) ---------------- */
   const grid = document.getElementById('uni-grid');
@@ -118,7 +187,7 @@
     });
   }
 
-  window.TCUnis = { open, TOP, esc, initials, Shortlist };
+  window.TCUnis = { open, TOP, esc, initials, Shortlist, live };
 })();
 
 /* click burst: thin lines spark out from wherever you click or tap, in the colours of the New Zealand flag

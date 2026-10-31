@@ -1,7 +1,7 @@
 /* nz-universities.html: the full directory (all 195 Code-signatory providers), search, course / area / type filters, details
    pop-up and shortlist (shared with the main page through unis.js). */
 (() => {
-  const { open, esc, initials, Shortlist } = window.TCUnis;
+  const { open, esc, initials, Shortlist, live } = window.TCUnis;
   const all = (window.NZ_UNIVERSITIES || []).slice();
   const $ = s => document.querySelector(s);
   const list = $('#dir-list'), q = $('#dir-q'), more = $('#dir-more'), count = $('#dir-count');
@@ -52,7 +52,7 @@
         '<div class="dc__main"><p class="dc__type">' + esc(typeLabel(u.type)) + ' · ' + esc(u.assurance) + '</p><h3>' + esc(u.name) + '</h3>' +
         '<p class="uc__city"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>' + esc(u.location) + '</p>' +
         (u.programs ? '<p class="dc__prog">' + esc(u.programs) + '</p>' : '') + '</div>' +
-        '<button type="button" class="uc__sl" data-sl="' + esc(u.name) + '" aria-pressed="' + on + '">' + (on ? CHECK + '<span>Shortlisted</span>' : PLUS + '<span>Shortlist</span>') + '</button></li>';
+        '<button type="button" class="uc__sl" data-sl="' + esc(u.name) + '" aria-pressed="' + on + '" style="--i:' + (i % 8) + '">' + (on ? CHECK + '<span>Shortlisted</span>' : PLUS + '<span>Shortlist</span>') + '</button></li>';
     }).join('') || '<li class="dc dc--empty">No institution matches ' + (q.value.trim() ? '“' + esc(q.value) + '” with ' : '') + 'these filters. Try clearing one.</li>';
     more.hidden = rows.length <= shown;
     reset.hidden = !(selCourse.value || selArea.value || selType.value);
@@ -66,4 +66,5 @@
     const o = e.target.closest('.dc__open'); if (o) open(rows[+o.dataset.i]);
   });
   Shortlist.on(() => render());
+  live(list);   // the shortlist buttons' attention cue runs only while the list is on screen
 })();

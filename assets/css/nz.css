@@ -1047,9 +1047,18 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
 .uc__chips li { padding: 5px 9px; border-radius: 999px; background: var(--sand); font-size: .74rem; font-weight: 600; color: var(--teal); }
 .uc__foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
 .uc__more { font-size: .82rem; font-weight: 700; color: var(--fjord); }
-.uc__sl { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 0; border-radius: 999px; background: var(--sand); color: var(--teal); font: 700 .78rem/1 var(--sans); cursor: pointer; transition: background .25s, color .25s; }
-.uc__sl .ic { width: 14px; height: 14px; }
-.uc__sl[aria-pressed="true"] { background: var(--teal); color: var(--kowhai); }
+.uc__sl { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border: 0; border-radius: 999px; background: var(--kowhai); color: var(--ink); box-shadow: inset 0 0 0 1px var(--kowhai-d); font: 700 .8rem/1 var(--sans); cursor: pointer; transition: background .25s, color .25s; }   /* kōwhai at rest, so it reads as a button on the white card */
+.uc__sl:hover { background: var(--kowhai-2); }
+.uc__sl .ic { width: 14px; height: 14px; stroke-width: 2.4; }
+.uc__sl[aria-pressed="true"] { background: var(--teal); color: var(--kowhai); box-shadow: none; }
+/* attention cue: a soft kōwhai ring breathes out of each un-shortlisted button once every 7s, staggered card to card
+   (--i) so they never pulse together; runs only while the list is on screen (.is-live), stops once shortlisted, and
+   reduced motion turns it off (the resting contrast carries it). Transform and opacity only: nothing moves the layout. */
+.uc__sl::after, .nzm__sl::after { content: ""; position: absolute; inset: -3px; border-radius: 999px; border: 2px solid var(--kowhai); opacity: 0; pointer-events: none;
+  animation: sl-ping 7s calc(1.2s + var(--i, 0) * .85s) infinite paused; }
+.is-live .uc__sl::after, .is-live .nzm__sl::after { animation-play-state: running; }
+.uc__sl[aria-pressed="true"]::after, .nzm__sl[aria-pressed="true"]::after { animation: none; }
+@keyframes sl-ping { 0%, 84% { opacity: 0; transform: none; } 87% { opacity: .9; transform: none; } 100% { opacity: 0; transform: scale(var(--px, 1.12), var(--py, 1.45)); } }
 @media (max-width: 1099px) { .uni-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .unis { padding-block: 56px; } .unis .h2 { font-size: 1.85rem; }
@@ -1085,12 +1094,32 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
 /* shortlist tray ("cart"), sits above the call / WhatsApp buttons */
 /* the shortlist sits at the bottom centre of the screen, clear of Tutee AI (left) and the contact buttons (right) */
 .sl { position: fixed; left: 50%; bottom: calc(clamp(10px, 1.4vw, 18px) + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 121; display: none; }
-.sl.has-items { display: block; }
-.sl__btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 8px 0 16px; line-height: 1; border: 0; border-radius: 999px; background: var(--kowhai); color: var(--ink); font: 700 .86rem/1 var(--sans); cursor: pointer; box-shadow: 0 14px 30px -12px rgba(2,13,14,.6); }
-.sl__btn .ic { width: 18px; height: 18px; }
-.sl__n { display: grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 999px; background: var(--ink); color: var(--kowhai); font-size: .82rem; }
-.sl.bump .sl__btn { animation: sl-bump .5s var(--spring); }
-@keyframes sl-bump { 40% { transform: scale(1.12); } }
+.sl.has-items { display: block; animation: sl-in .7s var(--spring); }   /* rises in when it first appears */
+@keyframes sl-in { from { opacity: 0; translate: 0 28px; } }
+.sl { transition: opacity .35s, translate .45s var(--ease), visibility .35s; }
+.sl.is-away { opacity: 0; translate: 0 24px; visibility: hidden; pointer-events: none; }   /* main page: while the form is on screen */
+.sl__btn { position: relative; display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px 0 8px; line-height: 1; border: 0; border-radius: 999px; background: var(--pohu); color: #fff; font: 700 .9rem/1 var(--sans); cursor: pointer; transition: background .25s;
+  box-shadow: 0 18px 34px -14px rgba(140,11,11,.95), 0 8px 18px -10px rgba(2,13,14,.6), 0 0 0 1px rgba(255,255,255,.16); }
+.sl__btn:hover { background: var(--pohu-2); }
+.sl__n { display: grid; place-items: center; min-width: 36px; height: 36px; padding: 0 9px; border-radius: 999px; background: var(--kowhai); color: var(--ink); font-size: .92rem; }
+.sl__lbl { max-width: min(calc(100vw - 132px), 300px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl__btn .sl__up { width: 16px; height: 16px; transform: rotate(180deg); transition: transform .35s var(--ease); }
+.sl.is-open .sl__up { transform: none; }
+/* every addition: the button pops, the count flips in, a ring ripples out */
+.sl.bump .sl__btn { animation: sl-bump .45s var(--spring); }
+@keyframes sl-bump { 45% { transform: scale(1.12); } }
+.sl.bump .sl__n { animation: sl-flip .5s var(--ease); }
+@keyframes sl-flip { 0% { transform: perspective(200px) rotateX(90deg) scale(.7); } 60% { transform: perspective(200px) rotateX(0) scale(1.2); } }
+.sl__btn::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2px solid var(--pohu-2); opacity: 0; pointer-events: none; }
+.sl.bump .sl__btn::after { animation: sl-ripple .75s var(--ease); }
+@keyframes sl-ripple { from { opacity: .9; transform: none; } to { opacity: 0; transform: scale(1.18, 1.75); } }
+/* a removal: the count just settles */
+.sl.settle .sl__n { animation: sl-settle .35s var(--ease); }
+@keyframes sl-settle { from { transform: scale(.8); } }
+/* idle: a soft glow every ~10s until the student first opens it */
+.sl__btn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 5px rgba(179,23,26,.28), 0 0 28px 8px rgba(244,183,61,.5); opacity: 0; pointer-events: none; }
+.sl.has-items:not(.is-seen):not(.is-open) .sl__btn::before { animation: sl-glow 10s 4s infinite; }
+@keyframes sl-glow { 0%, 76%, 100% { opacity: 0; } 86% { opacity: 1; } }
 .sl__panel { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 10px); width: min(340px, calc(100vw - 28px)); padding: 16px; border-radius: 20px; background: var(--paper); color: var(--ink); box-shadow: 0 30px 60px -24px rgba(2,13,14,.65), 0 0 0 1px var(--line); }
 .sl__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sl__head b { font: 700 1.05rem/1 var(--display); color: var(--teal); }
@@ -1456,4 +1485,46 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
 @media (min-width: 980px) {
   .cside { align-content: start; grid-template-rows: auto auto 1fr; gap: 30px; }
   .cside .cside__contact { align-self: end; }
+}
+
+/* counselling form, step changes: focus lands on the step heading (no ring on a heading), and scrolling back to the
+   form leaves room for the header */
+.cform { scroll-margin-top: 90px; }
+.cpane legend:focus { outline: none; }
+
+/* counselling form: the shortlist as chips (× removes one from the shortlist itself), plus a box for any other university */
+.slbox { display: grid; gap: 12px; padding: 16px; border-radius: 18px; border: 1.5px solid var(--line); background: #fff; }
+.slbox__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 14px; }
+.slbox__top .csub { margin: 0; }
+.slbox__top .csub i { font-style: normal; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.slbox__more { font: 700 .88rem/1.2 var(--sans); color: var(--pohu); text-decoration: none; }
+.slbox__more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.slbox__chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.slbox__chips[hidden], .slbox__empty[hidden] { display: none; }
+.slchip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 40px; padding: 0 5px 0 14px; border-radius: 999px; background: var(--teal); color: #fff; font: 600 .88rem/1.2 var(--sans); }
+.slchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slchip button { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(245,239,228,.14); color: var(--kowhai); cursor: pointer; transition: background .2s, color .2s; }
+.slchip button:hover { background: var(--pohu-2); color: #fff; }
+.slchip button .ic { width: 15px; height: 15px; stroke-width: 2.4; transform: rotate(45deg); }
+.slbox__empty { font-size: .88rem; color: var(--muted); line-height: 1.45; }
+.slbox__add { display: flex; gap: 8px; }
+.slbox__add input { flex: 1; width: 0; min-width: 0; height: 46px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--paper); font: 600 1rem/1.2 var(--sans); color: var(--ink); transition: border-color .25s, box-shadow .25s; }
+.slbox__add input::placeholder { color: var(--muted); font-weight: 500; }
+.slbox__add input:focus { outline: none; border-color: var(--teal); background: #fff; box-shadow: 0 0 0 4px rgba(15,85,86,.12); }
+.slbox__add button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 46px; padding: 0 16px; border: 1.5px solid var(--teal); border-radius: 14px; background: #fff; color: var(--teal); font: 700 .92rem/1 var(--sans); cursor: pointer; transition: background .2s, color .2s; }
+.slbox__add button:hover { background: var(--teal); color: #fff; }
+.slbox__add button .ic { width: 16px; height: 16px; stroke-width: 2.4; }
+@media (max-width: 560px) { .slbox { padding: 14px; } .slchip { font-size: .84rem; } }
+
+/* universities map list (main page): a round kōwhai "+" beside each name shortlists it; ticked once shortlisted.
+   Its attention ring is shared with the directory's buttons (sl-ping above). */
+.nzm__list li { display: flex; align-items: center; gap: 6px; }
+.nzm__list .nzm__sl { position: relative; flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 50%; background: var(--kowhai); color: var(--night); box-shadow: 0 6px 14px -6px rgba(2,13,14,.7); transition: background .25s, color .25s, box-shadow .25s; --px: 1.55; --py: 1.55; }
+.nzm__list .nzm__sl:hover { background: var(--kowhai-2); }
+.nzm__list .nzm__sl .ic { width: 16px; height: 16px; stroke-width: 2.6; }
+.nzm__list .nzm__sl[aria-pressed="true"] { background: rgba(244,183,61,.16); color: var(--kowhai); box-shadow: inset 0 0 0 1.5px var(--kowhai); }
+.nzm__list .nzm__sl::after { inset: -3px; width: auto; height: auto; border: 2px solid var(--kowhai); opacity: 0; transform: none; }   /* the ring, not the phone list's chevron */
+@media (max-width: 899px) {
+  .nzm__list li > [data-uni] { flex: 1; min-width: 0; }
+  .nzm__list .nzm__sl { width: 36px; height: 36px; margin-left: 4px; }
 }

@@ -311,7 +311,7 @@
       imm.addEventListener('pointermove', e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; layers.style.transform = 'translate(' + (-x * 36) + 'px,' + (-y * 24) + 'px)'; });
     }
     // the CTA carries the city into the counselling form
-    $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-dest').value = 'New Zealand – ' + name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); }); });
+    $('#imm-go').addEventListener('click', () => { const name = CITIES[cur].name; closeCity(() => { $('#h-dest').value = 'New Zealand – ' + name; const q = $('#q-city'); if (q) q.value = name; goTo('#consult'); setTimeout(formStart, 1700); }); });
   })();
 
   /* ---------- city route: a flight itinerary (AKL → WLG → CHC → DUD → ZQN) plus arrows on every card ----------
@@ -448,8 +448,15 @@
     stepsUI.forEach((s, i) => { s.classList.toggle('done', i < n); s.classList.toggle('now', i === n); });
     $('#c-back').hidden = n === 0; $('#c-n').textContent = 'Step ' + (n + 1) + ' of 2';
     $('#c-next').innerHTML = n === 1 ? 'Request my call <svg class="ic"><use href="#i-arrow"/></svg>' : 'Continue <svg class="ic"><use href="#i-arrow"/></svg>';
+    $('#c-fine').hidden = n === 0;   // the consent line sits with the details it covers
     $('#c-err').textContent = '';
+    // focus moves to the new step's heading (keyboard and screen-reader users start there), and the form's top
+    // scrolls back into view if it has gone off-screen
+    $('legend', panes[n]).focus({ preventScroll: true });
+    const top = $('#cform').getBoundingClientRect().top; if (top < 0 || top > innerHeight) goTo('#cform');
   }
+  // where a "go to the form" link leaves the cursor: the study-level choice on step 1, the name on step 2
+  function formStart() { (step === 0 ? $('#cform input[name="study_level"]:checked') || $('#lvls input') : $('#c-name')).focus({ preventScroll: true }); }
   /* ---------- email + phone verification ----------
      Not a code sent to the student: checks that the address and number are real.
      Email: strict format, typo suggestions (gmial.com → gmail.com), throwaway inboxes and
@@ -573,7 +580,7 @@
 
   async function check() {
     $$('#cform .ff').forEach(f => f.classList.remove('bad'));
-    if (step === 1) {
+    if (step === 0) {
       const ok = !!$('#cform input[name="study_level"]:checked');
       $('#lvls').classList.toggle('bad', !ok); $('#c-level-msg').textContent = ok ? '' : 'Choose what you’re aiming for to continue.';
       if (!ok) { $('#lvls input').focus(); return 'Choose what you’re aiming for above.'; }
@@ -643,7 +650,7 @@
     $('#lvls').classList.remove('bad'); $('#c-level-msg').textContent = '';
     const sl = window.TCShortlist ? window.TCShortlist.get() : []; $('#c-unis').value = sl.join(', ');
     $('#sent').hidden = true; $('#sent').classList.remove('on', 'is-enter'); form.hidden = false;
-    go(0); nmEl.focus({ preventScroll: true });
+    go(0);
   });
   { const d = leadDone(); if (d) showLeadDone(d, false); }
 
@@ -654,7 +661,7 @@
     if ($('#q-course').value !== 'Not sure yet') $('#c-course').value = $('#q-course').value;
     const lv = $('#cform input[name="study_level"][value="' + (LEVEL_FROM_QUICK[$('#q-level').value] || '') + '"]'); if (lv) lv.checked = true;
     const city = $('#q-city').value; $('#h-dest').value = /^any/i.test(city) ? 'General New Zealand Inquiry' : 'New Zealand – ' + city;
-    goTo('#consult'); setTimeout(() => $('#c-name').focus({ preventScroll: true }), 1700); });
+    goTo('#consult'); setTimeout(formStart, 1700); });
 
   /* ---------- why NZ: expanding photo accordion ---------- */
     const REASONS = [
