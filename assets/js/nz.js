@@ -17,7 +17,7 @@
 
   /* ---------- storage, UTM capture (first touch, 30 days), legacy anchors ---------- */
   const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* blocked */ } }, del: k => { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } } };
-  const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+  const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid'];
   const ENQUIRY_ENDPOINT = '/api/enquiry';     // this site's own Netlify function; it forwards to Apps Script
   const LEAD_DONE_KEY = 'tc_nz_lead_done';      // a sent form shows "Form completed" for 30 days
   const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
