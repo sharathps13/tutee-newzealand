@@ -130,7 +130,8 @@
   function cityAnswer(c, facet) {
     const F = c.facts.map(f => ({ k: f[1], v: f[2], n: f[3] }));
     const line = f => '- **' + f.k + ':** ' + f.v + ' (' + f.n + ')';
-    if (facet === 'rent' || facet === 'cost') { const f = F.find(x => /rent/i.test(x.k)); return '**Living in ' + c.name + '.** Room rent is about **' + f.v + '** (' + f.n.toLowerCase() + ').' + (facet === 'cost' ? ' Tuition depends on your course and university; a counsellor builds your full budget on the free call.' : '') + '\nSee [' + c.name + ' in Pick a city](#cities).'; }
+    // the page quotes no rent or fee figures (none it can source), so costs go to a counsellor's budget
+    if (facet === 'rent' || facet === 'cost') return '**Living in ' + c.name + '.** Rent depends on the suburb, the room and the time of year, and this page doesn’t quote rent figures.' + (facet === 'cost' ? ' Tuition depends on your course and university.' : '') + ' A counsellor builds your full budget, in INR or AED, on the [free call](#consult).\nSee [' + c.name + ' in Pick a city](#cities).';
     if (facet === 'weather') { const f = F.find(x => /climate/i.test(x.k)); return '**' + c.name + ' weather:** ' + f.v + ' (' + f.n.toLowerCase() + ').'; }
     if (facet === 'population') { const f = F.find(x => /population/i.test(x.k)); return '**' + c.name + '** has about **' + f.v + '** people. ' + f.n + '.'; }
     if (facet === 'work') { const f = F.find(x => /work/i.test(x.k)); return '**Part-time work in ' + c.name + ':** ' + f.v + '. ' + f.n + '. Most student visas allow part-time work during term and full-time in scheduled breaks.'; }
@@ -150,7 +151,7 @@
     [/\b(thanks|thank you|thx|cheers|great|awesome|perfect|helpful)\b/, () => 'You’re welcome! Anything else about New Zealand? When you’re ready, [book a free counselling call](#consult).'],
     [/^(bye|goodbye|see you|that'?s all)\b/, () => 'Ka kite anō, see you soon! ' + CONTACT],
     [/\b(who|what) are you\b|\bare you (a )?(bot|human|ai|real)\b|\bwhat can you do\b/, () => 'I’m **Tutee AI**, built from this page. I know its universities, cities, costs, steps, FAQ and the route to residence, and I answer instantly without sending your questions anywhere. For advice on your own profile, say **talk to a counsellor** and I’ll take your details for a callback.'],
-    [/\b(phone|number|contact|email|e-mail|whatsapp|reach you|call you|address)\b/, () => 'You can reach Tutee Connect any of these ways:\n- **WhatsApp / call:** +91 73583 64959\n- **Email:** info@tuteeconnect.com\n- **Offices:** Chennai and Dubai\n[Book a free counselling call](#consult) and we’ll call you at the time you pick.'],
+    [/\b(phone|number|contact|email|e-mail|whatsapp|reach you|call you|address)\b/, () => 'You can reach Tutee Connect any of these ways:\n- **WhatsApp / call (Chennai):** +91 73583 64959\n- **Call (Dubai):** +971 55 379 9068\n- **Email:** info@tuteeconnect.com\n- **Offices:** 1st Floor, ALA Corner Complex, Virugambakkam, Chennai; Tutee Connect LLC FZ, Meydan Grandstand, Dubai\n[Book a free counselling call](#consult) and we’ll call you at the time you pick.'],
   ];
   // intakes: the page gives no dates, so say what's usual and hand over ("programs in January intake" is not about work hours)
   const MONTH = /\b(jan\w*|feb\w*|mar(?:ch)?|apr(?:il)?|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b|\b(?:in|from|for|the) (may)\b/;
@@ -245,7 +246,7 @@
     }
     // "how do I get / apply for a student visa?" is the visa process, not a partner's or a work visa
     if (/\b(visa|visas)\b/.test(q) && /\b(apply|applying|get|process|how)\b/.test(q) && !/\b(partner|family|spouse|wife|husband|child|children|kids|work|post.?study|residence|pr)\b/.test(q)) {
-      const V = M.docs.find(x => /visa process/i.test(x.title));
+      const V = M.docs.find(x => /need for a new zealand student visa/i.test(x.title)) || M.docs.find(x => /visa process/i.test(x.title));   // the FAQ answer (official link) first
       if (V) { ctx = { city: null, uni: null, facet: null }; return V.answer + sugg(['Can I work while I study?', 'Request a callback']); }
     }
     const byMonth = intakeAnswer(q);
@@ -253,11 +254,11 @@
     const byPlace = nearAnswer(q, unisHit, citiesHit);
     if (byPlace) return byPlace;
     let facet = facetOf(q, qt);
-    // rent or living costs with no city named or being discussed: each city's rent from the page, not a guess
-    if ((facet === 'rent' || facet === 'cost') && !citiesHit.length && !unisHit.length && !ctx.city) {
+    // rent with no city named or being discussed: no figures (the page quotes none), a counsellor's budget instead.
+    // "How much does it cost to study…" goes on to the FAQ answer on costs.
+    if (facet === 'rent' && !citiesHit.length && !unisHit.length && !ctx.city) {
       ctx = { city: null, uni: null, facet };
-      return 'Rent depends on the city. Room rent from this page:\n' + M.cities.map(x => { const r = x.c.facts.find(f => /rent/i.test(f[1])); return r ? '- **' + x.c.name + ':** ' + r[2] + ' (' + r[3].toLowerCase() + ')' : ''; }).filter(Boolean).join('\n') +
-        '\nTuition depends on your course and university; a counsellor builds your full budget on the [free call](#consult).' + sugg(['How much is rent in Auckland?', 'Request a callback']);
+      return 'Rent depends on the city, the suburb, the room and the time of year, and this page doesn’t quote rent figures. Tuition depends on your course and university. A counsellor builds your full budget, in INR or AED, on the [free call](#consult).' + sugg(['How much does it cost to study in New Zealand?', 'Request a callback']);
     }
     // a follow-up is "and the weather?", "what about Dunedin?": nothing in it but a place and/or a topic word
     const cityWords = new Set(M.cities.flatMap(x => toks(x.c.name + ' ' + x.c.reo + ' ' + x.c.id)));
@@ -271,7 +272,7 @@
     if (citiesHit.length >= 2) {   // comparison
       const f = facet || 'rent';
       ctx = { city: citiesHit[citiesHit.length - 1], uni: null, facet: f };
-      return '**' + citiesHit.map(c => c.name).join(' vs ') + ':**\n' + citiesHit.map(c => { const F = c.facts; const r = F.find(x => /rent/i.test(x[1])), w = F.find(x => /climate/i.test(x[1])); return '- **' + c.name + ':** rent ' + r[2] + ' a week, ' + w[2] + ' (' + w[3].toLowerCase() + '), study at ' + c.unis[0]; }).join('\n') + '\nCompare them side by side in [Pick a city](#cities).';
+      return '**' + citiesHit.map(c => c.name).join(' vs ') + ':**\n' + citiesHit.map(c => { const F = c.facts; const w = F.find(x => /climate/i.test(x[1])); return '- **' + c.name + ':** ' + w[2] + ' (' + w[3].toLowerCase() + '), study at ' + c.unis[0]; }).join('\n') + '\nCompare them side by side in [Pick a city](#cities).';
     }
     if (unisHit.length === 1 && !(facet && facet !== 'university' && citiesHit.length)) { ctx = { city: null, uni: unisHit[0], facet: null }; return uniAnswer(unisHit[0]) + sugg(['What does it cost to live in ' + unisHit[0].city.replace(/ \(.*/, '') + '?']); }
     if (unisHit.length > 1) { ctx = { city: null, uni: null, facet: null }; return unisHit.map(u => '- **' + u.name + '** (' + u.city + '): known for ' + u.known.join(', ')).join('\n') + '\nTap any of them in [Universities](#unis) for details.'; }
@@ -307,6 +308,8 @@
   const LEAD_RE = /^(request a (call ?back|callback)|evaluate my profile|talk to a counsell?or|book a (free )?(consultation|call|counselling call)|call me( back)?|i want to (talk|speak) to (a|someone|someone from your team|a counsell?or))\b|\b(talk|speak) to (a |an )?(human|person|counsell?or|someone|agent)\b|\bcall ?back\b/i;
   const LEAD_EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[A-Za-z]{2,}$/;
   let stage = 'idle', lead = { name: '', phone: '', email: '' };
+  // analytics (through analytics.js): only that a chat callback went through and its lead id, never the details typed
+  const track = (event, params) => { if (window.tcTrack) window.tcTrack(event, Object.assign({ form_location: 'Tutee AI chat' }, params)); };
   function submitLead() {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
     return fetch('/api/enquiry', {
@@ -338,7 +341,7 @@
       if (!LEAD_EMAIL_RE.test(q)) return 'That doesn’t look like a valid email address. Could you check it, or type *cancel*?';
       lead.email = q.slice(0, 200); stage = 'idle';
       return submitLead().then(res => res && res.success
-        ? '✅ **Done!** A counsellor will contact you within one working day.\n\nAnything else I can help with in the meantime?'
+        ? (track('chat_lead', { lead_id: res.lead_id || '' }), '✅ **Done!** A counsellor will contact you within one working day.\n\nAnything else I can help with in the meantime?')
         : 'Sorry, that didn’t go through. Please use the [counselling form](#consult) or WhatsApp us on **+91 73583 64959**.')
         .catch(() => 'Network error while sending. Please use the [counselling form](#consult) or WhatsApp us on **+91 73583 64959**.');
     }

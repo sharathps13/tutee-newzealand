@@ -25,11 +25,14 @@
   let list = read();
   const subs = [];
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* private mode */ } subs.forEach(f => f(list)); };
+  // analytics (through analytics.js): the shortlist size and a listed institution's name only, never anything about the
+  // student (a name the student typed into the form's add box is sent as "Other", since it is free text)
+  const added = n => { const known = byName(n) || (window.NZ_UNIVERSITIES || []).some(u => u.name === n); if (window.tcTrack) window.tcTrack('shortlist_add', { count: list.length, institution: known ? n : 'Other', page: document.getElementById('cform') ? 'landing' : 'directory' }); };
   const Shortlist = {
     get: () => list.slice(),
     has: n => list.includes(n),
-    toggle(n) { list = list.includes(n) ? list.filter(x => x !== n) : list.concat(n); save(); return list.includes(n); },
-    add(n) { if (!list.includes(n)) { list = list.concat(n); save(); } },
+    toggle(n) { list = list.includes(n) ? list.filter(x => x !== n) : list.concat(n); save(); if (list.includes(n)) added(n); return list.includes(n); },
+    add(n) { if (!list.includes(n)) { list = list.concat(n); save(); added(n); } },
     remove(n) { list = list.filter(x => x !== n); save(); },
     clear() { list = []; save(); },
     on(f) { subs.push(f); f(list); }
@@ -81,7 +84,7 @@
   tray.className = 'sl'; tray.innerHTML =
     '<button type="button" class="sl__btn" aria-expanded="false" aria-controls="sl-panel"><b class="sl__n">0</b><span class="sl__lbl" aria-live="polite">' + LBL + '</span><svg class="ic sl__up" aria-hidden="true"><use href="#i-chev"/></svg></button>' +
     '<div class="sl__panel" id="sl-panel" hidden><div class="sl__head"><b>My shortlist</b><button type="button" class="sl__clear">Clear</button></div><ul class="sl__list"></ul>' +
-    '<a class="btn btn--go btn--block sl__go" href="' + (onIndex ? '#consult' : 'index.html#consult') + '">Add to my counselling form <svg class="ic"><use href="#i-arrow"/></svg></a><p class="sl__note">A counsellor will check entry requirements, fees and intakes for each.</p></div>';
+    '<a class="btn btn--go btn--block sl__go" href="' + (onIndex ? '#consult' : '/#consult') + '">Add to my counselling form <svg class="ic"><use href="#i-arrow"/></svg></a><p class="sl__note">A counsellor will check entry requirements, fees and intakes for each.</p></div>';
   document.body.appendChild(tray);
   const tBtn = $('.sl__btn', tray), tPanel = $('.sl__panel', tray);
   const setOpen = on => { tPanel.hidden = !on; tBtn.setAttribute('aria-expanded', on); tray.classList.toggle('is-open', on); };

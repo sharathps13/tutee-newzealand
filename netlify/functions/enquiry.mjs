@@ -90,7 +90,7 @@ const COUNTRY_ALIASES = {
 const FIELD_LIMITS = {
   name: 120, email: 200, phone: 40, destination: 600, subject: 200, from_name: 120,
   state: 80, course: 120, call_time: 80, shortlist: 1500, study_level: 40, intake: 60,
-  form_location: 80,
+  form_location: 80, cta_source: 60, qualification: 80, english_test: 40,
 };
 
 // Fields this handler consumes by name. Anything else the form grows later is
@@ -100,8 +100,8 @@ const FIELD_LIMITS = {
 const KNOWN_FIELDS = new Set(['name', 'email', 'phone', 'phone_number',
   'country_code', 'destination', 'from_name', 'page', 'botcheck',
   'access_key', 'subject', 'state', 'course', 'call_time', 'shortlist',
-  'study_level', 'intake', 'form_location', 'utm_source', 'utm_medium',
-  'utm_campaign', 'utm_content']);
+  'study_level', 'intake', 'form_location', 'cta_source', 'qualification',
+  'english_test', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content']);
 const MAX_EXTRA_FIELDS = 12;
 
 /** Collapse whitespace and strip CR/LF.
@@ -182,6 +182,9 @@ export function parsePayload(raw) {
     study_level: clean(data.study_level, FIELD_LIMITS.study_level),
     intake: clean(data.intake, FIELD_LIMITS.intake),
     form_location: clean(data.form_location, FIELD_LIMITS.form_location),
+    cta_source: clean(data.cta_source, FIELD_LIMITS.cta_source),
+    qualification: clean(data.qualification, FIELD_LIMITS.qualification),
+    english_test: clean(data.english_test, FIELD_LIMITS.english_test),
     utm: ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']
       .map((k) => clean(data[k], 100)).filter(Boolean),
     extras,
@@ -189,20 +192,26 @@ export function parsePayload(raw) {
   };
 }
 
-/** "Master's – Data Science (Next intake)": level, course and start together,
- * matching the sheet's single Course column. */
+/** "Master's – Data Science (Next intake) · B.Tech, 72% · English: Test booked":
+ * level, course, start and the two optional qualifiers together, matching the
+ * sheet's single Course column (the sheet has no columns of their own). */
 export function courseLine(f) {
   const level = /^not sure/i.test(f.study_level) ? 'Level not decided' : f.study_level;
   const main = [level, f.course].filter(Boolean).join(' – ');
-  return main + (f.intake ? `${main ? ' ' : ''}(${f.intake})` : '');
+  return main + (f.intake ? `${main ? ' ' : ''}(${f.intake})` : '')
+    + (f.qualification ? ` · ${f.qualification}` : '')
+    + (f.english_test ? ` · English: ${f.english_test}` : '');
 }
 
-/** Where the lead came from: page, then form, then any campaign tags. */
-export function leadSource(f, country) {
+/** Where the lead came from: page, then form, then any campaign tags, the button
+ * that brought the visitor to the form, and the lead's short reference. */
+export function leadSource(f, country, leadRef = '') {
   const page = country ? `${country} Landing Page` : 'Tutee Connect Website';
   const where = f.form_location || f.from_name;
   return [page, where].filter(Boolean).join(' – ')
-    + (f.utm.length ? ` (${f.utm.join(' / ')})` : '');
+    + (f.utm.length ? ` (${f.utm.join(' / ')})` : '')
+    + (f.cta_source && f.cta_source !== 'direct' ? ` · via ${f.cta_source}` : '')
+    + (leadRef ? ` · ref ${leadRef}` : '');
 }
 
 /** Mirror of the client-side rules. The browser check is for UX; this one is the
@@ -224,7 +233,7 @@ function esc(text) {
 }
 
 /** The Resend request body. Returns a plain object, ready to be JSON-encoded. */
-export function buildEmail(f, country) {
+export function buildEmail(f, country, leadRef = '') {
   const subject = country
     ? `New Enquiry – ${country} Landing Page`
     : 'New Enquiry – Tutee Connect Landing Page';
@@ -238,7 +247,11 @@ export function buildEmail(f, country) {
   if (f.state) rows.push(['State', f.state]);
   if (f.shortlist) rows.push(['Shortlisted Universities', f.shortlist]);
   if (courseLine(f)) rows.push(['Course', courseLine(f)]);
-  rows.push(['Lead Source', leadSource(f, country)]);
+  if (f.qualification) rows.push(['Highest Qualification', f.qualification]);
+  if (f.english_test) rows.push(['English Test', f.english_test]);
+  if (f.cta_source) rows.push(['CTA Source', f.cta_source]);
+  rows.push(['Lead Source', leadSource(f, country, leadRef)]);
+  if (leadRef) rows.push(['Lead Ref', leadRef]);
   if (f.call_time) rows.push(['Preferred Call Time', f.call_time]);
   if (country) rows.push(['Landing Page', country]);
   if (f.page) rows.push(['Submitted From', country ? `${country} Landing Page` : f.page]);
@@ -354,7 +367,7 @@ async function storeInSupabase(f, country) {
  * sends the formatted email. Returns { saved, mailed }, or null when the
  * script is not configured. Apps Script answers a POST with a redirect to
  * its output; fetch follows it, so the JSON below is the script's reply. */
-async function sendToAppsScript(f, country) {
+async function sendToAppsScript(f, country, leadRef) {
   const url = (process.env.APPS_SCRIPT_URL || '').trim();
   const token = (process.env.APPS_SCRIPT_TOKEN || '').trim();
   if (!url || !token) return null;
@@ -368,7 +381,7 @@ async function sendToAppsScript(f, country) {
     state: f.state,
     shortlist: f.shortlist,
     course: courseLine(f),
-    lead_source: leadSource(f, country),
+    lead_source: leadSource(f, country, leadRef),
     call_time: f.call_time,
     destination: f.destination,
     page: country ? `${country} Landing Page` : f.page,
@@ -395,6 +408,8 @@ export async function handle(rawBody, headers = {}) {
 
   const host = headers['x-forwarded-host'] || headers['host'] || '';
   const country = resolveCountry(fields.destination, host);
+  // short reference that ties the sheet row, the email and the analytics event together
+  const leadRef = crypto.randomUUID().slice(0, 8);
 
   // 1. system of record first, so a lead survives an email outage
   let leadId = null;
@@ -409,7 +424,7 @@ export async function handle(rawBody, headers = {}) {
   // 2. the Website Leads sheet, plus its email to the business inbox
   let sheet = null;
   try {
-    sheet = await sendToAppsScript(fields, country);
+    sheet = await sendToAppsScript(fields, country, leadRef);
     if (sheet) stored = true;
   } catch (exc) {
     console.error(`enquiry: apps script failed: ${exc.message}`);
@@ -420,7 +435,7 @@ export async function handle(rawBody, headers = {}) {
   let emailed = Boolean(sheet && sheet.mailed);
   if (!emailed) {
     try {
-      messageId = await sendViaResend(buildEmail(fields, country));
+      messageId = await sendViaResend(buildEmail(fields, country, leadRef));
       emailed = true;
     } catch (exc) {
       console.error(`enquiry: send refused: ${exc.message}`);
@@ -447,28 +462,16 @@ export async function handle(rawBody, headers = {}) {
   }
 
   console.log(`enquiry: country=${country || '-'} destination=${fields.destination} `
-    + `stored=${stored ? (leadId ?? 'sheet') : 'no'} sheet=${sheet ? 'yes' : 'no'} `
+    + `ref=${leadRef} stored=${stored ? (leadId ?? 'sheet') : 'no'} sheet=${sheet ? 'yes' : 'no'} `
     + `emailed=${emailed ? (messageId || 'yes') : 'no'}`);
 
-  return { status: 200, payload: { success: true, message: OK_MESSAGE } };
+  return { status: 200, payload: { success: true, message: OK_MESSAGE, lead_id: leadRef } };
 }
 
-/** What the GET probe reports: whether config is present, never what it is. */
+/** What the GET probe reports: only that the endpoint is up. The recipient, sender and which providers are
+ *  configured are not public information, so none of it is returned (check them in the Netlify dashboard). */
 export function health() {
-  return {
-    success: true,
-    endpoint: 'enquiry',
-    recipient: MAIL_TO,
-    provider: 'resend',
-    runtime: 'netlify-functions',
-    resend_configured: Boolean((process.env.RESEND_API_KEY || '').trim()),
-    supabase_configured: Boolean((process.env.SUPABASE_URL || '').trim()
-      && (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()),
-    sheet_configured: Boolean((process.env.APPS_SCRIPT_URL || '').trim()
-      && (process.env.APPS_SCRIPT_TOKEN || '').trim()),
-    from: (process.env.MAIL_FROM || DEFAULT_FROM).trim(),
-    country: resolveCountry('') || '(inferred per request)',
-  };
+  return { success: true, endpoint: 'enquiry' };
 }
 
 function json(status, payload) {

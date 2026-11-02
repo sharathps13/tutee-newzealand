@@ -468,18 +468,18 @@
   /* ------------------------------------------------------------------ *
    * 10. AI counsellor panel.
    * ------------------------------------------------------------------ */
-  var CHAT_WELCOME = "Hi! 👋 I'm your **Tutee Connect AI Counsellor**. \n\nI can answer questions about New Zealand Student Visas, top New Zealand universities, and our 99% success rate programmes. How can I help you today?";
+  var CHAT_WELCOME = "Hi! 👋 I'm your **Tutee Connect AI Counsellor**. \n\nI can answer questions about New Zealand Student Visas, top New Zealand universities, and our counselling services. How can I help you today?";
 
   function cannedReply(text) {
     var q = text.toLowerCase();
     if (/visa|offer of place|inz|immigration|refus/.test(q))
-      return 'The Fee Paying Student Visa is for international students studying in New Zealand, and it needs an **Offer of Place from a provider that has signed the Code of Practice** \u2014 the only kind our directory lists. Immigration New Zealand runs no routine interview and decides on the file, so the file is what we perfect. Tutee Connect boasts a **99% New Zealand Student Visa Success Rate**!';
+      return 'The Fee Paying Student Visa is for international students studying in New Zealand, and it needs an **Offer of Place from a provider that has signed the Code of Practice** \u2014 the only kind our directory lists. Immigration New Zealand runs no routine interview and decides on the file, so the file is what we prepare with you.';
     if (/scholarship|fund|financial|aid|bursar/.test(q))
-      return 'All eight New Zealand universities offer merit-based scholarships, and Indian students are automatically considered for the **New Zealand Excellence Awards**, jointly funded by the universities and Education New Zealand. We analyse your academic profile and help you apply where you have the highest chance of securing funding.';
+      return 'Scholarships vary by university and programme, and eligibility and deadlines change every year. We review your academic profile and help you find and apply for the ones you may be eligible for.';
     if (/cost|fee|tuition|money|expense/.test(q))
-      return 'Tuition in New Zealand typically ranges from **NZ$25,000 to NZ$50,000+ per year** depending on the provider and course, and Immigration New Zealand also wants to see **NZ$20,000 of living costs for each year** on top of it. We help students secure **non-collateral education loans** and find part-time work to manage living expenses.';
+      return 'Tuition depends on the provider and course, so a counsellor builds your budget with you. Immigration New Zealand also wants to see **NZ$20,000 of living costs for each year** on top of it. We help students compare **education loans** and plan for living expenses.';
     if (/job|work|earn|part.?time|post.?study|pswv/.test(q))
-      return "Absolutely! On a New Zealand student visa you can work up to **25 hours a week during term** \u2014 more than most destinations allow \u2014 and full time in the scheduled holidays. After you graduate, the **Post Study Work Visa** lets you stay and work anywhere for up to three years with no employer sponsorship. Our 'Earn While You Learn' initiative guides our students on securing these jobs immediately upon arrival.";
+      return "Depending on your visa conditions, on a New Zealand student visa you may be able to work up to **25 hours a week while you study** and full time in the holidays. After you graduate, the **Post Study Work Visa** can let you work for up to three years, depending on what you studied. We also help you look for part-time work once you arrive.";
     if (/ielts|pte|duolingo|gmat|exam|english/.test(q))
       return 'Providers ask for an English language test \u2014 **IELTS Academic, TOEFL iBT, PTE Academic or NZCEL** \u2014 typically 6.0 overall for a bachelor\u2019s and 6.5 for postgraduate study, and some postgraduate courses such as MBAs also ask for a GMAT score. We can help you shortlist providers that perfectly match your current scores.';
     if (/tutee|connect|service|help/.test(q))

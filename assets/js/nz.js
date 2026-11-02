@@ -5,7 +5,8 @@
   const HDW = { 'hero-': [640, 1024, 1600, 1920, 2400, 2880], 'postcard-': [640, 1024, 1600], 'consult-': [640, 1024, 1600] };
   const hdSet = s => (HDW[Object.keys(HDW).find(k => s.startsWith(k))] || [640, 1024, 1600, 2400]).map(w => './assets/img/hd/' + s + '-' + w + '.webp ' + w + 'w').join(', ');
   const hdSrc = s => './assets/img/hd/' + s + '-1024.webp';
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // reduced motion, and also Data Saver: the scroll choreography and looping effects are skipped, the content is the same
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || !!(navigator.connection && navigator.connection.saveData);
   const G = window.gsap, ST = window.ScrollTrigger;
 
   /* ---------- a refresh always starts at the hero (no restored scroll position, no section hash) ---------- */
@@ -22,9 +23,15 @@
   const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
   if (!readUtm()) { const p = new URLSearchParams(location.search), f = {}; UTM_KEYS.forEach(k => { const v = p.get(k); if (v) f[k] = v.slice(0, 150); }); if (Object.keys(f).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: f })); }
   // universities.html and older campaigns link to the previous page's section ids
-  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', intakes: 'consult', visas: 'process', documents: 'process', universities: 'unis', loans: 'trust' };
+  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', visas: 'visa', documents: 'visa', universities: 'unis', loans: 'trust' };
   const legacyId = LEGACY[location.hash.slice(1)];
   if (legacyId) history.replaceState(null, '', '#' + legacyId);
+
+  /* ---------- analytics events ----------
+     All events go through tcTrack() from analytics.js (GA4 after consent; otherwise only window.dataLayer). analytics.js
+     itself fires page_view, whatsapp_click, phone_click and form_start; this file adds form_step_2 and generate_lead.
+     Never any personal detail (no name, email, phone or free text). */
+  const pushEvent = (event, params) => { if (window.tcTrack) window.tcTrack(event, params); };
 
 
   /* ---------- split headings into masked words ---------- */
@@ -45,18 +52,9 @@
   const bl = banks.map(b => '<li><img src="./assets/img/loan-partner/' + b[0] + '" alt="' + b[1] + '" loading="lazy"></li>').join('');
   $('#banks').innerHTML = '<ul>' + bl + '</ul><ul aria-hidden="true">' + bl + '</ul>';
 
-  const POST = [
-    { msg: 'Amma, the lake here changes colour every hour. Classes are small and my lecturer already knows my name!', name: 'Karthik', to: ['Amma & Appa', 'Anna Nagar, Chennai', 'Tamil Nadu, India'], place: 'Wānaka', reo: 'Glendhu Bay', img: 'postcard-wanaka', c: '#0F5556', date: '12 MAR 26' },
-    { msg: 'Got a part-time job at a café in week three. The loan plan is working out exactly as they said.', name: 'Ananya', to: ['Mr & Mrs Rao', 'Indiranagar, Bengaluru', 'Karnataka, India'], place: 'Auckland', reo: 'Tāmaki Makaurau', img: 'postcard-auckland', c: '#8C0B0B', date: '04 APR 26' },
-    { msg: 'Dunedin feels like a whole town of students. Found three Tamil friends in the first week.', name: 'Harini', to: ['Amma', 'RS Puram, Coimbatore', 'Tamil Nadu, India'], place: 'Dunedin', reo: 'Ōtepoti', img: 'postcard-dunedin', c: '#B07510', date: '21 FEB 26' }
-  ]; (window.__TC_DATA = window.__TC_DATA || {}).post = POST;   // read by Tutee AI
-  $('#cards').innerHTML = POST.map((p, i) => '<article class="pcard" tabindex="0" aria-label="Postcard from ' + p.name + ' in ' + p.place + '"><div class="pcard__in">' +
-    '<div class="pcard__face pc-back"><div class="pc-msg"><p>' + p.msg + '</p><b>– ' + p.name + '</b></div>' +
-    '<div class="pc-side"><span class="pc-stamp"><svg viewBox="0 0 50 62" aria-hidden="true"><rect width="50" height="62" fill="' + p.c + '"/><path d="M25 54C25 40 24 32 30 25C36 18 34 9 27 9C20 9 17 16 21 21C24 25 29 22 28 18" fill="none" stroke="#F4B73D" stroke-width="2.6" stroke-linecap="round"/><path d="M25 46q-6-2-9-7M25 40q-5-2-7-6M26 46q6-2 9-7M26 40q5-2 7-6" fill="none" stroke="#FBF6EE" stroke-width="1.4" stroke-linecap="round" opacity=".7"/><text x="25" y="59" text-anchor="middle" font-family="DM Mono, monospace" font-size="5.5" fill="#FBF6EE" letter-spacing=".6">AOTEAROA</text></svg></span>' +
-    '<svg class="pc-post" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="30"/><circle cx="40" cy="40" r="22"/><defs><path id="pp' + i + '" d="M40 40m-26 0a26 26 0 1 1 52 0a26 26 0 1 1-52 0"/></defs><text><textPath href="#pp' + i + '">' + p.place.toUpperCase() + ' · NEW ZEALAND ·</textPath></text><text x="40" y="43" text-anchor="middle" style="font-size:7px">' + p.date + '</text><path d="M72 30q6 -4 12 0t12 0M72 40q6 -4 12 0t12 0M72 50q6 -4 12 0t12 0"/></svg>' +
-    '<div class="pc-addr">' + p.to.map(t => '<span>' + t + '</span>').join('') + '</div><span class="pc-from">Postcard · Aotearoa NZ</span></div></div>' +
-    '<div class="pcard__face pc-front"><img src="' + hdSrc(p.img) + '" srcset="' + hdSet(p.img) + '" sizes="(max-width: 1000px) 92vw, 30vw" alt="' + p.place + '" loading="lazy" decoding="async"><small>Greetings from</small><strong>' + p.place + '</strong><span class="reo" style="color:var(--kowhai)">' + p.reo + '</span></div>' +
-    '</div></article>').join('');
+  // the postcards are written in index.html (so they are in the page without JavaScript); Tutee AI gets their text
+  const POST = $$('#cards .pcard').map(c => ({ msg: $('.pc-msg p', c).textContent, name: $('.pc-msg b', c).textContent.replace(/^–\s*/, ''), place: $('.pc-front strong', c).textContent }));
+  (window.__TC_DATA = window.__TC_DATA || {}).post = POST;   // read by Tutee AI
   // a mouse flips the card while it is over it (any device with a mouse, including touchscreen laptops);
   // touch and pen flip on tap; keyboard on Enter / Space
   // the card only goes 3D while it turns (.is-turning), then settles back to flat, crisp layers
@@ -171,41 +169,42 @@
 
   /* ---------- city gallery: each card opens an immersive "step inside" view ---------- */
   (() => {
+    // no rent or cost figures: the page quotes no money amounts it cannot source; a counsellor budgets in INR or AED
     const CITIES = [
       { id: 'auckland', code: 'AKL', name: 'Auckland', reo: 'Tāmaki Makaurau', island: 'North', at: [67.3, 21.5], tag: 'The City of Sails: harbours, volcanoes and New Zealand’s biggest job market.',
         week: { img: 'city-auckland', pic: 'Waitematā Harbour and the city skyline', alt: 'Auckland waterfront and skyline' },
         weekend: { img: 'weekend-auckland', pic: 'Piha black-sand beach, about 45 minutes west', alt: 'Lion Rock on Piha Beach, west of Auckland' },
         day: [['i-sunrise', '8:00 am', 'Flat white on the way to a 9 am lecture in the city campus.'], ['i-sun', '1:00 pm', 'Lunch by the Viaduct with your study group.'], ['i-sunset', '6:00 pm', 'A part-time shift in the CBD, or sunset from Maungawhau / Mt Eden.']],
         end: [['i-waves', 'Saturday', 'Surf or walk the black sand at Piha.'], ['i-mountain', 'Sunday', 'Ferry across the harbour to Waiheke Island.'], ['i-music', 'Festival season', 'Auckland’s Diwali festival and weekend night markets.']],
-        facts: [['i-sun', 'Climate', '24° / 15°', 'Summer / winter highs, mild all year'], ['i-home', 'Room rent', 'NZ$250–380', 'Per week, shared flat'], ['i-users', 'Population', '1.7 million', 'NZ’s largest city'], ['i-briefcase', 'Part-time work', 'Plenty', 'Retail, hospitality, tech']],
+        facts: [['i-sun', 'Climate', '24° / 15°', 'Summer / winter highs, mild all year'], ['i-home', 'Room rent', 'Varies', 'By suburb and room type; we build your budget'], ['i-users', 'Population', '1.7 million', 'NZ’s largest city'], ['i-briefcase', 'Part-time work', 'Plenty', 'Retail, hospitality, tech']],
         unis: ['University of Auckland', 'AUT', 'Massey (Albany)'], known: ['Business', 'Engineering', 'IT', 'Health'], vibe: [5, 3, 4, 2] },
       { id: 'wellington', code: 'WLG', name: 'Wellington', reo: 'Te Whanganui-a-Tara', island: 'North', at: [67.4, 53.3], tag: 'The capital: compact, creative and walkable, with the harbour at the end of every street.',
         week: { img: 'city-wellington', pic: 'The Wellington Cable Car, up to Kelburn campus', alt: 'The red Wellington Cable Car above the city and harbour' },
         weekend: { img: 'weekend-wellington', pic: 'Harbourside on the city waterfront', alt: 'Wellington waterfront buildings on a sunny day' },
         day: [['i-sunrise', '8:00 am', 'Ride the red cable car up the hill to Kelburn campus.'], ['i-sun', '1:00 pm', 'Lunch and vintage shops on Cuba Street.'], ['i-sunset', '6:00 pm', 'A walk along the waterfront, then Te Papa museum (free entry).']],
         end: [['i-cash', 'Sunday', 'Harbourside Market for cheap fruit, veg and street food.'], ['i-mountain', 'Morning', 'Climb Mt Victoria for the view over the harbour.'], ['i-waves', 'Afternoon', 'Ferry out to Matiu / Somes Island.']],
-        facts: [['i-sun', 'Climate', '20° / 11°', 'Summer / winter highs, famously windy'], ['i-home', 'Room rent', 'NZ$230–330', 'Per week, shared flat'], ['i-users', 'Population', '215,000', 'City; about 440,000 in the region'], ['i-briefcase', 'Part-time work', 'Good', 'Hospitality, government, creative']],
+        facts: [['i-sun', 'Climate', '20° / 11°', 'Summer / winter highs, famously windy'], ['i-home', 'Room rent', 'Varies', 'By suburb and room type; we build your budget'], ['i-users', 'Population', '215,000', 'City; about 440,000 in the region'], ['i-briefcase', 'Part-time work', 'Good', 'Hospitality, government, creative']],
         unis: ['Victoria University of Wellington', 'Massey (Wellington)'], known: ['Law', 'Public policy', 'Design', 'Film & screen'], vibe: [4, 4, 4, 3] },
       { id: 'christchurch', code: 'CHC', name: 'Christchurch', reo: 'Ōtautahi', island: 'South', at: [51.3, 69.3], tag: 'The Garden City: flat, green and easy to cycle, with mountains and coast an hour away.',
         week: { img: 'city-christchurch', pic: 'New Regent Street in the central city', alt: 'Pastel shopfronts and a tram on New Regent Street, Christchurch' },
         weekend: { img: 'weekend-christchurch', pic: 'The road to Akaroa on Banks Peninsula', alt: 'Hills above Akaroa Harbour on Banks Peninsula' },
         day: [['i-sunrise', '8:00 am', 'Cycle to class through Hagley Park.'], ['i-sun', '1:00 pm', 'Lunch at Riverside Market in the rebuilt city centre.'], ['i-sunset', '6:00 pm', 'An evening punt or walk along the Ōtākaro / Avon River.']],
         end: [['i-waves', 'Saturday', 'Drive over the hills to Akaroa on Banks Peninsula.'], ['i-mountain', 'Winter', 'Ski fields such as Mt Hutt, about 90 minutes away.'], ['i-compass', 'Sunday', 'Walk or bike the Port Hills tracks.']],
-        facts: [['i-sun', 'Climate', '23° / 11°', 'Summer / winter highs, four clear seasons'], ['i-home', 'Room rent', 'NZ$190–280', 'Per week, shared flat'], ['i-users', 'Population', '400,000', 'South Island’s largest city'], ['i-briefcase', 'Part-time work', 'Good', 'Construction, agritech, hospitality']],
+        facts: [['i-sun', 'Climate', '23° / 11°', 'Summer / winter highs, four clear seasons'], ['i-home', 'Room rent', 'Varies', 'By suburb and room type; we build your budget'], ['i-users', 'Population', '400,000', 'South Island’s largest city'], ['i-briefcase', 'Part-time work', 'Good', 'Construction, agritech, hospitality']],
         unis: ['University of Canterbury', 'Lincoln University', 'Ara Institute'], known: ['Engineering', 'Agritech', 'Sciences', 'Teaching'], vibe: [3, 4, 4, 4] },
       { id: 'dunedin', code: 'DUD', name: 'Dunedin', reo: 'Ōtepoti', island: 'South', at: [35.1, 86], tag: 'New Zealand’s student city: Scottish stone, flatting culture and wildlife on the doorstep.',
         week: { img: 'city-dunedin', pic: 'Dunedin Railway Station', alt: 'The Dunedin Railway Station in stone and tile' },
         weekend: { img: 'weekend-dunedin', pic: 'Second Beach, St Clair', alt: 'Surf rolling into the coast at St Clair, Dunedin' },
         day: [['i-sunrise', '8:00 am', 'Walk to lectures past the University of Otago clocktower.'], ['i-sun', '1:00 pm', 'Lunch with friends around the Octagon.'], ['i-sunset', '6:00 pm', 'Flat dinner with your flatmates. Student flats here are a tradition.']],
         end: [['i-waves', 'Saturday', 'Surf or swim at St Clair beach.'], ['i-compass', 'Sunday', 'Albatross and penguins out on the Otago Peninsula.'], ['i-mountain', 'Any day', 'Climb Baldwin Street, one of the world’s steepest streets.']],
-        facts: [['i-sun', 'Climate', '19° / 10°', 'Summer / winter highs, cool and fresh'], ['i-home', 'Room rent', 'NZ$180–260', 'Per week, shared flat'], ['i-users', 'Population', '135,000', 'About one in five are students'], ['i-briefcase', 'Part-time work', 'Steady', 'Hospitality, retail, campus jobs']],
+        facts: [['i-sun', 'Climate', '19° / 10°', 'Summer / winter highs, cool and fresh'], ['i-home', 'Room rent', 'Varies', 'By suburb and room type; we build your budget'], ['i-users', 'Population', '135,000', 'About one in five are students'], ['i-briefcase', 'Part-time work', 'Steady', 'Hospitality, retail, campus jobs']],
         unis: ['University of Otago', 'Otago Polytechnic'], known: ['Health sciences', 'Medicine', 'Dentistry', 'Research'], vibe: [3, 5, 5, 5] },
       { id: 'queenstown', code: 'ZQN', name: 'Queenstown', reo: 'Tāhuna', island: 'South', at: [21.2, 80], tag: 'The adventure capital: lake, mountains and a year-round hospitality and tourism industry.',
         week: { img: 'city-queenstown', pic: 'TSS Earnslaw on Lake Wakatipu', alt: 'The steamship TSS Earnslaw on Lake Wakatipu, Queenstown' },
         weekend: { img: 'weekend-queenstown', pic: 'The Remarkables, above the lake', alt: 'Snow on The Remarkables mountain range, Queenstown' },
         day: [['i-sunrise', '8:00 am', 'Hospitality classes with a view of Lake Wakatipu.'], ['i-sun', '1:00 pm', 'Lunch on the lakefront between classes.'], ['i-sunset', '6:00 pm', 'A shift at a hotel or restaurant: the town runs on tourism.']],
         end: [['i-mountain', 'Winter', 'Ski or snowboard at The Remarkables or Coronet Peak.'], ['i-landmark', 'Saturday', 'Gold-rush history and cafés in Arrowtown.'], ['i-waves', 'Summer', 'Jet boats, lake swims and hikes.']],
-        facts: [['i-sun', 'Climate', '22° / 8°', 'Summer / winter highs, snowy winters'], ['i-home', 'Room rent', 'NZ$300–450', 'Per week; book early'], ['i-users', 'Population', '50,000', 'Queenstown Lakes district'], ['i-briefcase', 'Part-time work', 'Plenty', 'Hotels, ski fields, tourism']],
+        facts: [['i-sun', 'Climate', '22° / 8°', 'Summer / winter highs, snowy winters'], ['i-home', 'Room rent', 'Varies', 'By suburb and season; book early'], ['i-users', 'Population', '50,000', 'Queenstown Lakes district'], ['i-briefcase', 'Part-time work', 'Plenty', 'Hotels, ski fields, tourism']],
         unis: ['Queenstown Resort College', 'SIT Queenstown'], known: ['Hospitality', 'Tourism', 'Event management'], vibe: [3, 5, 2, 1] }
     ]; (window.__TC_DATA = window.__TC_DATA || {}).cities = CITIES;   // read by Tutee AI
     const VIBE = ['City buzz', 'Nature on the doorstep', 'Student life', 'Easy on the budget'];
@@ -376,16 +375,10 @@
     return { sync: onScroll };
   })();
 
-  const FAQ = [
-    ['Is the first consultation really free?', 'Yes. Speaking to a counsellor costs nothing and there is no obligation. We call you in the slot you choose.'],
-    ['Do I need IELTS, PTE or TOEFL?', 'Most universities ask for an English test score. We coach you and book the test, and tell you the exact score each course needs.'],
-    ['Can I work while I study?', 'Most student visas allow part-time work during term and full-time work in scheduled breaks. We confirm the current limits for your visa.'],
-    ['Can I get an education loan?', 'Yes. Our twelve lending partners offer secured and unsecured loans covering tuition, flights and living costs. We compare offers for you.'],
-    ['Is there a pathway to work or residence?', 'Eligible graduates can apply for a post-study work visa of up to three years, and some go on to residence pathways. We assess your profile on the call.'],
-    ['Can my family come with me?', 'Partners and children apply for their own visas based on their relationship to you. We plan the right timing in the consultation.'],
-    ['Do you help after I land?', 'Yes. Airport pickup, SIM card, accommodation, bank account and part-time work support, and later your post-study work visa.']
-  ]; (window.__TC_DATA = window.__TC_DATA || {}).faq = FAQ;   // read by Tutee AI
-  $('#acc').innerHTML = FAQ.map((f, i) => '<div class="qa"><button type="button" aria-expanded="false" aria-controls="qa' + i + '"><span class="qa__n">' + String(i + 1).padStart(2, '0') + '</span><span class="qa__q">' + f[0] + '</span><span class="qa__x"><svg class="ic"><use href="#i-plus"/></svg></span></button><div class="qa__a" id="qa' + i + '" role="region"><div><p>' + f[1] + '</p></div></div></div>').join('');
+  // the FAQ is written in index.html (so it is in the page without JavaScript, and matches the FAQPage JSON-LD);
+  // Tutee AI gets it as [question, answer] pairs, with the official links turned into [text](url)
+  const FAQ = $$('#acc .qa').map(q => [$('.qa__q', q).textContent.trim(), $$('.qa__a p', q).map(p => [...p.childNodes].map(n => n.nodeName === 'A' && /^https:\/\//.test(n.getAttribute('href')) ? '[' + n.textContent + '](' + n.getAttribute('href') + ')' : n.textContent).join('').replace(/\s+/g, ' ').trim()).join('\n')]);
+  (window.__TC_DATA = window.__TC_DATA || {}).faq = FAQ;   // read by Tutee AI
   $$('.qa button').forEach(b => b.addEventListener('click', () => { const q = b.parentElement, open = !q.classList.contains('open'); $$('.qa.open').forEach(x => { x.classList.remove('open'); $('button', x).setAttribute('aria-expanded', 'false'); }); if (open) { q.classList.add('open'); b.setAttribute('aria-expanded', 'true'); } setTimeout(() => ST && ST.refresh(), 600); }));
 
   /* ---------- smooth scroll ---------- */
@@ -427,6 +420,9 @@
   function pickCC(iso, quiet) {
     ccSel = CC.find(c => c.iso === iso); $('#cc-flag').src = flag(iso); $('#cc-code').textContent = ccSel.dial;
     ccBtn.setAttribute('aria-label', 'Country code: ' + ccSel.name + ' ' + ccSel.dial); openCC(false);
+    // a +971 number (picked or pasted) moves the emirates to the top of "Where do you live?"; nothing is pre-selected
+    const stIn = $('#c-state-in'), stAe = $('#c-state-ae');
+    if (stIn && stAe) { if (iso === 'ae') stIn.before(stAe); else stAe.before(stIn); }
     if (quiet) return;
     ccBtn.focus();
     if ($('#c-phone').value.trim()) verifyPhone();   // re-check the number against the new country
@@ -441,9 +437,11 @@
   });
   document.addEventListener('click', e => { if (!ccEl.contains(e.target)) openCC(false); });
 
-  const panes = $$('#cform .cpane'), stepsUI = $$('#csteps li'); let step = 0;
+  const panes = $$('#cform .cpane'), stepsUI = $$('#csteps li'); let step = 0, step2Sent = false;
+  // form_start is fired by analytics.js (first focus or change inside the form)
   function go(n) {
     const back = n < step; step = n;
+    if (n === 1 && !back && !step2Sent) { step2Sent = true; pushEvent('form_step_2', { form_location: 'Counselling form' }); }
     panes.forEach((p, i) => { p.classList.toggle('on', i === n); p.classList.toggle('back-in', i === n && back); });
     stepsUI.forEach((s, i) => { s.classList.toggle('done', i < n); s.classList.toggle('now', i === n); });
     $('#c-back').hidden = n === 0; $('#c-n').textContent = 'Step ' + (n + 1) + ' of 2';
@@ -572,7 +570,7 @@
   // name and state: checked when the student leaves the field, then live
   const nmEl = $('#c-name'), stEl = $('#c-state');
   const nameIssue = () => nmEl.value.trim().replace(/[^A-Za-z\u00C0-\u024F]/g, '').length >= 2 ? '' : 'Please enter your full name.';
-  const stateIssue = () => stEl.value ? '' : 'Please select your state.';
+  const stateIssue = () => stEl.value ? '' : 'Please tell us where you live.';
   function verifySimple(el, issue) { const m = issue(); setState(el, m ? 'bad' : (el.value.trim() ? 'ok' : ''), m); return !m; }
   nmEl.addEventListener('blur', () => { if (nmEl.value.trim()) verifySimple(nmEl, nameIssue); });
   nmEl.addEventListener('input', () => { if (nmEl.parentElement.dataset.state) verifySimple(nmEl, nameIssue); });
@@ -618,8 +616,7 @@
       .then(r => r.json().catch(() => ({ success: false })))
       .then(res => {
         if (!res || !res.success) { $('#c-err').textContent = (res && res.message) || 'Something went wrong. Please try again, or WhatsApp us on +91 73583 64959.'; return; }
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'generate_lead', lead_source: 'Counselling form', country: 'new-zealand' });
+        pushEvent('generate_lead', { form_location: 'Counselling form', lead_id: res.lead_id || '' });   // only once /api/enquiry says success
         const d = { name: data.name, call_time: data.call_time || '', at: Date.now() };
         store.set(LEAD_DONE_KEY, JSON.stringify(d));
         showLeadDone(d, true);
@@ -664,21 +661,12 @@
     goTo('#consult'); setTimeout(formStart, 1700); });
 
   /* ---------- why NZ: expanding photo accordion ---------- */
-    const REASONS = [
-    ['All eight universities are globally ranked', 'QS World Rankings', 'Every New Zealand university features in the QS World University Rankings, so whichever you choose, your degree travels.', 'reason-01-otago', 'University of Otago, Dunedin', '40% 45%'],
-    ['Work while you study', 'Part-time work rights', 'Most student visas allow part-time work during term and full-time work in scheduled breaks, which helps with living costs.', 'reason-02-auckland', 'Auckland skyline', '50% 50%'],
-    ['Stay and work after you graduate', 'Post-study work visa', 'Eligible graduates can apply for a post-study work visa of up to three years to build real New Zealand experience.', 'reason-03-wellington', 'Wellington Harbour', '50% 60%'],
-    ['One of the world’s safest countries', 'Global Peace Index', 'New Zealand is consistently ranked among the most peaceful nations, with friendly cities that are easy to get around.', 'reason-04-tekapo', 'Lake Tekapo', '50% 55%'],
-    ['<span class="reo">Manaakitanga</span>, a culture of care', 'Pastoral Care Code', 'The Māori value of looking after guests shapes how universities and communities welcome international students.', 'reason-05-marae', 'Pukemokimoki Marae, Napier', '50% 50%'],
-    ['Competitive fees and scholarships', 'Scholarship support', 'Tuition compares well with the UK, US and Australia, and we help you find and apply for scholarships.', 'reason-06-hagley-park', 'Hagley Park, Christchurch', '50% 50%'],
-    ['Practical, industry-linked degrees', 'Hands-on learning', 'Small classes, real projects and placements in IT, engineering, health and business.', 'reason-07-unleash-space', 'University of Auckland', '50% 50%'],
-    ['Research that matters', 'Research culture', 'Modern labs and a hands-on research culture, from agritech and climate to earth sciences.', 'reason-08-biology', 'University of Auckland', '50% 50%'],
-    ['A clear, online visa process', 'Online application', 'Immigration New Zealand runs a straightforward online application, and we prepare the full file with you.', 'reason-09-beehive', 'Parliament, Wellington', '50% 50%'],
-    ['Fjords, lakes and mountains on your doorstep', 'Life beyond campus', 'Some of the world’s most dramatic landscapes are a weekend trip away from every campus.', 'reason-10-milford', 'Milford Sound · Piopiotahi', '45% 50%']
-  ]; (window.__TC_DATA = window.__TC_DATA || {}).reasons = REASONS;   // read by Tutee AI
+  // the ten reasons are written in index.html (so they are in the page without JavaScript); they are read back here as
+  // [title html, tag, text, photo slot, place, photo position] for the phone sheet and Tutee AI
+  const REASONS = $$('#acc10 .ap').map(b => { const im = $('img', b); return [$('h3', b).innerHTML, $('.ap__tag', b).textContent, $('.ap__body p', b).textContent, im.getAttribute('src').replace(/^.*\/|-1024\.webp$/g, ''), $('.ap__place', b).textContent, im.style.objectPosition]; });
+  (window.__TC_DATA = window.__TC_DATA || {}).reasons = REASONS;   // read by Tutee AI
   (() => {
     const box = $('#acc10');
-    box.innerHTML = REASONS.map((r, i) => '<button class="ap' + (i ? '' : ' on') + '" type="button" role="tab" aria-selected="' + !i + '" data-i="' + i + '"><img src="' + hdSrc(r[3]) + '" srcset="' + hdSet(r[3]) + '" sizes="(max-width: 700px) ' + (i === 0 || i === 9 ? '100vw' : '50vw') + ', (max-width: 899px) 100vw, min(36vw, 520px)" alt="" loading="lazy" decoding="async" style="object-position:' + r[5] + '"><span class="ap__n">' + String(i + 1).padStart(2, '0') + '</span><span class="ap__v">' + r[0].replace(/<[^>]+>/g, '').replace(/’/g, "'") + '</span><span class="ap__body"><span class="ap__tag">' + r[1] + '</span><h3>' + r[0] + '</h3><p>' + r[2] + '</p><span class="ap__place">' + r[4] + '</span></span></button>').join('');
     const panels = $$('.ap', box);
     const open = i => { panels.forEach((p, j) => { p.classList.toggle('on', j === i); p.setAttribute('aria-selected', j === i); }); $('#acc10-n').textContent = String(i + 1).padStart(2, '0'); $('#acc10-bar').style.transform = 'scaleX(' + (i + 1) / panels.length + ')'; };
     // a mouse opens a panel just by hovering it. Checked per event (not once at load), so it also works on
@@ -695,7 +683,7 @@
       const sheet = document.createElement('div');
       sheet.className = 'rs'; sheet.hidden = true;
       sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); sheet.setAttribute('aria-labelledby', 'rs-h');
-      sheet.innerHTML = '<div class="rs__back" data-close></div><div class="rs__panel" id="rs-panel"><span class="rs__grip" aria-hidden="true"></span><button type="button" class="rs__close" data-close aria-label="Close"><svg class="ic"><use href="#i-plus"/></svg></button><div class="rs__img"><img id="rs-img" alt=""><span class="rs__n" id="rs-n"></span></div><div class="rs__body"><span class="ap__tag" id="rs-tag"></span><h3 id="rs-h"></h3><p id="rs-p"></p><span class="rs__place" id="rs-place"></span><div class="rs__nav"><button type="button" class="rs__prev" id="rs-prev"><svg class="ic"><use href="#i-arrow"/></svg>Previous</button><button type="button" class="rs__next" id="rs-next">Next reason<svg class="ic"><use href="#i-arrow"/></svg></button></div></div></div>';
+      sheet.innerHTML = '<div class="rs__back" data-close></div><div class="rs__panel" id="rs-panel"><span class="rs__grip" aria-hidden="true"></span><button type="button" class="rs__close" data-close aria-label="Close"><svg class="ic"><use href="#i-plus"/></svg></button><div class="rs__img"><img id="rs-img" alt=""><span class="rs__n" id="rs-n"></span></div><div class="rs__body"><span class="ap__tag" id="rs-tag"></span><h3 id="rs-h">' + REASONS[0][0] + '</h3><p id="rs-p"></p><span class="rs__place" id="rs-place"></span><div class="rs__nav"><button type="button" class="rs__prev" id="rs-prev"><svg class="ic"><use href="#i-arrow"/></svg>Previous</button><button type="button" class="rs__next" id="rs-next">Next reason<svg class="ic"><use href="#i-arrow"/></svg></button></div></div></div>';
       document.body.appendChild(sheet);
       const panel = $('#rs-panel', sheet); let at = 0, lastFocus = null;
       const fill = i => {
@@ -741,15 +729,10 @@
   })();
 
   /* ---------- how it works: compass dial ---------- */
-  const STEPS = [
-    ['i-chat', 'Consult', 'Free consultation', 'One call to map your course, university options, budget and career goals, with your parents if you like.', ['Profile assessment', 'Course and country fit', 'Budget plan']],
-    ['i-lang', 'English test', 'English test preparation', 'IELTS, PTE or TOEFL coaching and test booking, so your score is ready before applications open.', ['Coaching classes', 'Mock tests', 'Test booking']],
-    ['i-compass', 'Apply', 'Shortlist and apply', 'A university shortlist that fits your marks and budget. We prepare and submit every application.', ['University shortlist', 'Application packs', 'Offer tracking']],
-    ['i-file', 'Documents', 'Documents and offer letter', 'Transcripts, financials and references assembled and checked before they go out.', ['Document checklist', 'Verification', 'Offer of place']],
-    ['i-cash', 'Loan', 'Education loan', 'Secured and unsecured offers compared across our twelve lending partners, so you choose with confidence.', ['Lender comparison', 'Paperwork support', 'Sanction letter']],
-    ['i-passport', 'Visa', 'Visa and statement of purpose', 'The right student visa for your plan, and an SOP that sounds like you.', ['Visa file', 'SOP review', 'Interview prep']],
-    ['i-plane', 'Arrive', 'Land and settle in', 'Airport pickup, SIM, accommodation, bank account and part-time work support. Later, your post-study work visa.', ['Pre-departure briefing', 'Arrival support', 'Post-study visa help']]
-  ]; (window.__TC_DATA = window.__TC_DATA || {}).steps = STEPS;   // read by Tutee AI
+  // the seven steps are written in index.html (so they are in the page without JavaScript); they are read back here as
+  // [icon, short label, title, text, chips] to build the dial and for Tutee AI
+  const STEPS = $$('#dial .dial__step').map(el => [el.dataset.icon, el.dataset.short, $('h3', el).textContent, $('p', el).textContent, $$('li', el).map(li => li.textContent)]);
+  (window.__TC_DATA = window.__TC_DATA || {}).steps = STEPS;   // read by Tutee AI
   (() => {
     const stage = $('#dial-stage'), dial = $('#dial'), CX = 500, CY = 510, R = 420, N = STEPS.length;
     // instrument ticks every 5°, longer every 30°
@@ -757,7 +740,8 @@
     $('#dial-ticks').innerHTML = ticks;
     stage.insertAdjacentHTML('beforeend', STEPS.map((s, i) => { const a = Math.PI - i * Math.PI / (N - 1), x = CX + R * Math.cos(a), y = CY - R * Math.sin(a); return '<button class="dnode" type="button" role="tab" data-i="' + i + '" style="left:' + (x / 10).toFixed(2) + '%;top:' + (y / 5.6).toFixed(2) + '%" aria-label="Step ' + (i + 1) + ': ' + s[2] + '"><span class="dnode__c"><svg class="ic"><use href="#' + s[0] + '"/></svg></span><b>' + s[1] + '</b></button>'; }).join(''));
     const nodes = $$('.dnode', stage); let at = 0, timer = null, inView = false, user = false;
-    const paint = i => { const s = STEPS[i]; $('#dl-n').textContent = 'Step ' + String(i + 1).padStart(2, '0') + ' of 07'; $('#dl-h').textContent = s[2]; $('#dl-p').textContent = s[3]; $('#dl-ul').innerHTML = s[4].map(d => '<li><svg class="ic"><use href="#i-check"/></svg>' + d + '</li>').join(''); };
+    const stepEls = $$('.dial__step', dial);
+    const paint = i => stepEls.forEach((el, j) => { el.hidden = j !== i; });
     function show(i, fromUser) {
       at = (i + N) % N; if (fromUser) user = true;
       nodes.forEach((n, j) => { n.classList.toggle('on', j === at); n.classList.toggle('done', j < at); n.setAttribute('aria-selected', j === at); });
@@ -794,18 +778,12 @@
   /* ---------- beyond your degree: four stages, one detail panel ---------- */
   (() => {
     const tabs = $$('.stg'); if (!tabs.length) return;
-    const STAGES = [
-      { tag: 'Stage 1 · While you study', h: 'Study, earn and bring your family', p: 'Your degree is the first step. You can work part-time while you study, and your family can come with you.',
-        list: ['<b>Part-time work</b> during term and full-time in scheduled holidays, on most student visas', '<b>Partners</b> of eligible students (for example postgraduate) can apply for a work visa', '<b>Children</b> can join you and attend school in New Zealand'] },
-      { tag: 'Stage 2 · After you graduate', h: 'Up to 3 years of open work rights', p: 'A post-study work visa lets you work for almost any employer, so you can build New Zealand experience in your field.',
-        list: ['<b>Up to 3 years</b>, depending on the level and length of your qualification', '<b>Open work rights:</b> not tied to one employer', '<b>Partners</b> may be eligible for their own work visa'] },
-      { tag: 'Stage 3 · Your career', h: 'A skilled job opens the fastest routes', p: 'Roles on New Zealand\u2019s Green List, in areas like engineering, IT, health and construction, lead straight to residence routes.',
-        list: ['<b>Green List roles</b> across engineering, IT, health, trades and more', '<b>Work to Residence</b> after time in an eligible Green List role', '<b>Skilled Migrant points</b> for other skilled jobs'] },
-      { tag: 'Stage 4 · Your PR', h: 'Residence, for you and your family', p: 'With the right job, residence can come quickly, and it covers your partner and dependent children too.',
-        list: ['<b>Straight to Residence</b> for eligible Green List Tier 1 roles', '<b>Family included:</b> partner and dependent children on your application', '<b>Citizenship</b> becomes possible after living in New Zealand as a resident'] }
-    ]; (window.__TC_DATA = window.__TC_DATA || {}).stages = STAGES;   // read by Tutee AI
+    // the four stages are written in index.html (so they are in the page without JavaScript); read back for Tutee AI
+    const stageEls = $$('#stg-panel .stg-panel__stage');
+    const STAGES = stageEls.map(el => ({ tag: $('.stg-panel__tag', el).textContent, h: $('h3', el).textContent, p: $('p', el).textContent, list: $$('li > span', el).map(l => l.innerHTML) }));
+    (window.__TC_DATA = window.__TC_DATA || {}).stages = STAGES;   // read by Tutee AI
     const panel = $('#stg-panel'); let cur = -1, t = 0;
-    const fill = i => { const s = STAGES[i]; $('#stg-tag').textContent = s.tag; $('#stg-h').textContent = s.h; $('#stg-p').textContent = s.p; $('#stg-list').innerHTML = s.list.map(l => '<li><span>' + l + '</span></li>').join(''); };
+    const fill = i => stageEls.forEach((el, j) => { el.hidden = j !== i; });
     const show = (i, focus) => {
       if (i === cur) return; const first = cur < 0; cur = i;
       tabs.forEach((b, j) => { b.setAttribute('aria-selected', j === i); b.tabIndex = j === i ? 0 : -1; });

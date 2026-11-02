@@ -442,6 +442,12 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .dial__arrow.prev .ic { transform: rotate(180deg); }
 .dial__body .swap { transition: opacity .3s var(--ease), transform .5s var(--ease); }
 .dial.is-swapping .swap { opacity: 0; transform: translateY(10px); }
+/* the seven steps are all in the HTML; nz.js shows one at a time. Without JavaScript they are listed in full under the ring */
+.dial__step { display: contents; }
+.dial__step[hidden] { display: none; }
+html:not(.go) .dial { aspect-ratio: auto; }
+html:not(.go) .dial__stage, html:not(.go) .dial__ctl { display: none; }
+html:not(.go) .dial__body { position: static; transform: none; width: 100%; margin: 0 auto; gap: 14px; }
 .process__cta { display: flex; justify-content: center; margin-top: clamp(30px, 4vw, 48px); }
 @media (max-width: 899px) {
   .dial { aspect-ratio: auto; }
@@ -487,6 +493,8 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .stg-panel__cta small { color: var(--on-2); font-size: .82rem; }
 .stg-panel > * { transition: opacity .25s, transform .35s var(--ease); }
 .stg-panel.is-swap .stg-panel__main, .stg-panel.is-swap .stg-panel__list { opacity: 0; transform: translateY(8px); }
+.stg-panel__stage { display: contents; }   /* all four stages are in the HTML; nz.js shows the selected one */
+.stg-panel__stage[hidden] { display: none; }
 @media (max-width: 899px) {
   .stg-panel { grid-template-columns: minmax(0, 1fr); }
 }
@@ -510,6 +518,20 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
   .stg-panel__cta { flex-direction: column; align-items: stretch; }
   .stg-panel__cta .btn { width: 100%; }
 }
+/* ================= 6a. PLAN: intakes, entry requirements, visa (FAQ-style side heading + text) ================= */
+.guide { background: var(--sand); color: var(--ink); }
+.guide .kick { color: var(--fjord); } .guide .h2 { color: var(--teal); font-size: clamp(1.9rem, 3.4vw, 3rem); } .guide .h2 .serif { color: var(--pohu); }
+.guide__blk { display: grid; gap: 18px 80px; padding-block: clamp(34px, 4vw, 56px); border-top: 1px solid var(--line); }
+.guide__blk:first-child { border-top: 0; padding-top: 0; }
+.guide__blk:last-child { padding-bottom: 0; }
+.guide__body { display: grid; gap: 14px; align-content: start; max-width: 66ch; color: var(--muted); }
+.guide__body h3 { margin-top: 10px; font: 700 1.25rem/1.25 var(--display); letter-spacing: -.015em; color: var(--teal); }
+.guide__body ul { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.guide__body b { color: var(--ink); font-weight: 700; }
+.guide__body a:not(.btn) { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
+.guide__src { font-size: .84rem; }
+@media (min-width: 980px) { .guide__blk { grid-template-columns: .8fr 1.2fr; } }
+@media (max-width: 560px) { .guide__body { font-size: .95rem; } }
 /* ================= 7. POSTCARDS ================= */
 .stories { background: var(--night); color: var(--on); }
 .stories .kick { color: var(--kowhai); } .stories .h2 .serif { color: var(--kowhai); }
@@ -588,10 +610,12 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .qa__x .ic { color: var(--teal); }
 .qa.open .qa__x { transform: rotate(45deg); background: var(--teal); border-color: var(--teal); }
 .qa.open .qa__x .ic { color: #fff; }
-.qa__a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .55s var(--ease); }
-.qa.open .qa__a { grid-template-rows: 1fr; }
+.qa__a { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows .55s var(--ease), visibility 0s .55s; }   /* hidden once closed, so its links are not tabbed to */
+.qa.open .qa__a { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows .55s var(--ease); }
 .qa__a > div { overflow: hidden; }
 .qa__a p { padding: 0 50px 26px 60px; color: var(--muted); max-width: 64ch; }
+.qa__a a { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
+.stg-panel__cta small a, .cfine a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 @media (min-width: 980px) { .faq__grid { grid-template-columns: .8fr 1.2fr; gap: 80px; } }
 @media (max-width: 560px) { .qa button { grid-template-columns: 34px 1fr 40px; } .qa__a p { padding: 0 0 22px 44px; } }
 
@@ -650,6 +674,9 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .ff label { position: absolute; left: 17px; top: 21px; font: 500 1rem/1 var(--sans); color: var(--muted); pointer-events: none; transition: transform .25s var(--ease), font-size .25s, color .25s; transform-origin: left; }
 .ff input:focus, .ff select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15,85,86,.12); }
 .ff input:focus + label, .ff input:not(:placeholder-shown) + label, .ff select + label { transform: translateY(-11px); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fjord); }
+/* an example shown inside the field only while it is focused (the label sits over it otherwise) */
+.ff input.ff__eg::placeholder { color: transparent; transition: color .2s; }
+.ff input.ff__eg:focus::placeholder { color: var(--muted); opacity: .8; }
 .ff--tel { display: grid; grid-template-columns: 92px 1fr; gap: 8px; }
 .ff--tel .ff { position: relative; }
 .ff.bad input, .ff.bad select { border-color: var(--pohu); }
@@ -758,15 +785,21 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .foot__links { list-style: none; margin: 0; padding: 0; display: grid; gap: 13px; }
 .foot__links a { color: var(--on); text-decoration: none; transition: color .25s; } .foot__links a:hover { color: var(--kowhai); }
 .foot__dest { display: flex; flex-wrap: wrap; gap: 8px; }
-.foot__dest span { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(245,239,228,.18); font-size: .82rem; font-weight: 600; color: var(--on); }
-.foot__dest span.on { background: var(--kowhai); border-color: var(--kowhai); color: var(--ink); }
+.foot__dest span, .foot__dest a { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(245,239,228,.18); font-size: .82rem; font-weight: 600; color: var(--on); }
+.foot__dest a { transition: border-color .25s, color .25s; }   /* the six Tutee Connect destination pages that are live */
+.foot__dest a:hover, .foot__dest a:focus-visible { border-color: var(--kowhai); color: var(--kowhai); }
+.foot__dest .on, .foot__dest .on:hover { background: var(--kowhai); border-color: var(--kowhai); color: var(--ink); }
 .foot__contact { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .foot__contact a { display: flex; align-items: center; gap: 12px; color: var(--on); text-decoration: none; font-weight: 700; }
 .foot__contact a:hover { color: var(--kowhai); }
 .foot__contact small { display: block; font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--on-2); margin-bottom: 2px; }
 .fi { width: 38px; height: 38px; border-radius: 10px; background: rgba(244,183,61,.12); display: grid; place-items: center; color: var(--kowhai); flex: none; box-shadow: inset 0 0 0 1px rgba(244,183,61,.25); }
 .foot__note { margin-top: 18px; display: flex; gap: 10px; align-items: center; font-size: .86rem; color: var(--on-2); }
-.foot__note .ic { color: var(--kowhai); }@media (min-width: 900px) { .foot__grid { grid-template-columns: 1.3fr .9fr 1.3fr 1.2fr; } .foot { padding-bottom: 60px; } }
+.foot__note .ic { color: var(--kowhai); }
+.foot__addr { margin-top: 12px; display: flex; gap: 10px; align-items: flex-start; font-size: .84rem; line-height: 1.45; color: var(--on-2); }
+.foot__addr .ic { color: var(--kowhai); margin-top: 2px; }
+.foot__addr b { display: block; color: var(--on); }
+@media (min-width: 900px) { .foot__grid { grid-template-columns: 1.3fr .9fr 1.3fr 1.2fr; } .foot { padding-bottom: 60px; } }
 
 /* toast */
 .toast { position: fixed; left: 50%; top: 92px; z-index: 160; transform: translate(-50%, -20px); background: var(--teal); color: var(--on); padding: 12px 18px; border-radius: 999px; font-weight: 600; font-size: .92rem; box-shadow: 0 20px 40px -16px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: .5s var(--ease); display: flex; gap: 8px; align-items: center; max-width: calc(100vw - 32px); }
@@ -947,7 +980,7 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
   .contact { order: 2; margin-top: 18px; max-width: none; padding: 18px; border-radius: 20px; grid-template-columns: 1fr 1fr; gap: 8px; }
   .contact h3 { grid-column: 1 / -1; font-size: 1.05rem; margin-bottom: 4px; }
   .contact a { justify-content: center; gap: 8px; min-height: 46px; padding: 0 10px; border-radius: 12px; background: rgba(245,239,228,.08); font-size: .86rem; font-weight: 600; }
-  .contact a[href^="mailto"] { grid-column: 1 / -1; }
+  .contact a[href^="mailto"], .contact a[href^="tel:+971"] { grid-column: 1 / -1; }
   .contact p { display: none; }
 
   /* 9 · counselling: slim header band, tighter form */
@@ -1430,7 +1463,7 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
   .foot__brand img { width: 200px; }
   .foot__brand p { max-width: none; }
   .foot__links { grid-template-columns: 1fr 1fr; gap: 12px 18px; }
-  .foot__dest span { padding: 7px 11px; font-size: .78rem; }
+  .foot__dest span, .foot__dest a { padding: 7px 11px; font-size: .78rem; }
   .foot__contact a { align-items: center; }
   .foot__credit { font-size: .74rem; word-break: break-word; }
 }
