@@ -217,15 +217,78 @@ export function leadSource(f, country, leadRef = '') {
     + (leadRef ? ` · ref ${leadRef}` : '');
 }
 
+/* ---- "does it look real" rules: keep in step with assets/js/checks.js (the page's copy) ---- */
+const letters = (s) => (String(s).match(/[A-Za-z\u00C0-\u024F]/g) || []).join('');
+const PLACEHOLDER = /^(test|testing|tester|name|full ?name|my ?name|abc|abcd|abcde|xyz|asdf\w*|qwert\w*|zxcv\w*|fake|user|admin|none|nil|null|na|n ?a|no ?name|unknown|anonymous|sample|demo|dummy|hello|hi|ok|okay|student|xxx+|aaa+)$/i;
+const MASH = /qwer|asdf|sdfg|dfgh|fghj|ghjk|hjkl|zxcv|xcvb|cvbn|vbnm|yuio|uiop|tyui|rtyu|abcd|bcde|cdef|wxyz|lkjh|hgfd|fdsa|rewq|poiu|mnbv|vcxz/;
+export function gibberish(s) {
+  const w = letters(s).toLowerCase();
+  if (!w || /^(.)\1+$/.test(w)) return true;
+  return String(s).split(/[^A-Za-z\u00C0-\u024F]+/).filter(Boolean).some((word) => {
+    const lw = word.toLowerCase();
+    if (/(.)\1{3,}/.test(lw) || MASH.test(lw)) return true;
+    if (word === word.toUpperCase() && word.length <= 6) return false;   // an acronym such as MBBS
+    return (lw.length >= 4 && !/[aeiouy\u00e0-\u00ff]/.test(lw)) || /[bcdfghjklmnpqrstvwxz]{5,}/.test(lw);
+  });
+}
+export function nameIssue(v) {
+  const s = String(v || '').trim().replace(/\s+/g, ' ');
+  if (letters(s).length < 2 || s.length > 80 || /\d/.test(s) || /[^A-Za-z\u00C0-\u024F .'\-]/.test(s)
+    || PLACEHOLDER.test(s) || gibberish(s)) return 'Please enter your full name.';
+  return '';
+}
+export function courseIssue(v) {
+  const s = String(v || '').trim();
+  if (!s) return '';
+  if (letters(s).length < 2 || /[^A-Za-z\u00C0-\u024F0-9 &,.'()\/+\-–]/.test(s) || PLACEHOLDER.test(s) || gibberish(s)) {
+    return 'Please enter a real course name, or leave it blank.';
+  }
+  return '';
+}
+// the counselling form's two drop-downs (index.html): only their own options are accepted
+const STATES = new Set(['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
+  'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand',
+  'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
+  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry', 'UAE - Abu Dhabi', 'UAE - Dubai', 'UAE - Sharjah', 'UAE - Ajman',
+  'UAE - Umm Al Quwain', 'UAE - Ras Al Khaimah', 'UAE - Fujairah', 'Other country']);
+const CALL_TIMES = new Set(['Morning (9 am – 12 pm)', 'Afternoon (12 – 4 pm)', 'Evening (4 – 8 pm)', 'Anytime']);
+// throwaway inboxes and placeholder domains (the page has a longer list and also checks the domain's mail server)
+const BAD_DOMAINS = /(^|\.)(mailinator\.(com|net)|guerrillamail\.(com|net)|sharklasers\.com|10minutemail\.(com|net)|temp-?mail\.(org|io|com)|tempmail\.(com|net)|yopmail\.(com|net)|trashmail\.(com|de)|getnada\.com|maildrop\.cc|dispostable\.com|throwawaymail\.com|fakeinbox\.com|mail\.tm|1secmail\.(com|org|net)|example\.(com|org|net)|test\.com)$/i;
+// 9999999999, 1234567890, 9876543210, 121212…
+const fakeDigits = (d) => { const n = d.replace(/^0+/, ''); return n.length >= 6 && (/^(\d)\1+$/.test(n) || '01234567890123456789'.includes(n) || '98765432109876543210'.includes(n) || /^(\d{2,3})\1{2,}$/.test(n)); };
+
 /** Mirror of the client-side rules. The browser check is for UX; this one is the
  * check that actually counts, because a client can always be bypassed. */
 export function validate(f) {
   if (f.botcheck) return 'Rejected.';                 // honeypot
-  if (f.name.length < 2) return 'Please enter your full name.';
-  if (!EMAIL_RE.test(f.email)) return 'Please enter a valid email address.';
+  if (nameIssue(f.name)) return 'Please enter your full name.';
+  if (!EMAIL_RE.test(f.email) || BAD_DOMAINS.test(f.email.split('@').pop())) return 'Please enter a valid email address.';
   const digits = f.phone.replace(/\D/g, '');
   if (digits.length < 7 || digits.length > 15) {
     return 'Please enter a valid phone number (7-15 digits).';
+  }
+  if (fakeDigits(digits.slice(-10))) return 'Please enter a real phone number.';
+  if (courseIssue(f.course)) return courseIssue(f.course);
+  // the shortlist: up to 20 institution names (the page only lets real NZ institutions in)
+  const picks = f.shortlist ? f.shortlist.split(/\s*,\s*/).filter(Boolean) : [];
+  if (picks.length > 20 || picks.some((n) => n.length > 120 || letters(n).length < 3 || gibberish(n))) {
+    return 'Please choose your universities from the list.';
+  }
+  // the counselling form also needs where they live and a call time, from its own lists
+  if (f.form_location === 'Counselling form') {
+    if (!STATES.has(f.state)) return 'Please tell us where you live.';
+    if (!CALL_TIMES.has(f.call_time)) return 'Please pick a time for our call.';
+  }
+  // The forms' own rules for the two main markets, so a number the page would
+  // refuse (for example "+91 12345") is not accepted when posted directly.
+  const national = (cc) => digits.slice(cc.length).replace(/^0/, '');
+  const intl = f.phone.trim();
+  if (intl.startsWith('+91') && !/^[2-9]\d{9}$/.test(national('91'))) {
+    return 'Indian numbers have 10 digits after +91.';
+  }
+  if (intl.startsWith('+971') && !/^\d{8,9}$/.test(national('971'))) {
+    return 'UAE numbers have 8 or 9 digits after +971.';
   }
   return null;
 }
@@ -323,7 +386,8 @@ async function sendViaResend(payload) {
     // revoked key, a rate limit. That detail belongs in the function log,
     // never in the browser response.
     let detail = '';
-    try { detail = (await res.text()).slice(0, 400); } catch { /* ignore */ }
+    // the error code only: provider messages can quote the submitted values
+    try { const j = await res.json(); detail = String(j.code || j.name || '').replace(/[^\w.-]/g, '').slice(0, 40); } catch { /* not JSON */ }
     throw new Error(`resend rejected the send: HTTP ${res.status} ${detail}`);
   }
   try {
@@ -357,7 +421,8 @@ async function storeInSupabase(f, country) {
 
   if (!res.ok) {
     let detail = '';
-    try { detail = (await res.text()).slice(0, 400); } catch { /* ignore */ }
+    // the error code only: provider messages can quote the submitted values
+    try { const j = await res.json(); detail = String(j.code || j.name || '').replace(/[^\w.-]/g, '').slice(0, 40); } catch { /* not JSON */ }
     throw new Error(`supabase rejected the insert: HTTP ${res.status} ${detail}`);
   }
   try {
@@ -395,7 +460,7 @@ async function sendToAppsScript(f, country, leadRef) {
   if (!res.ok || !parsed?.success) {
     throw new Error(`apps script refused the lead: HTTP ${res.status} ${parsed?.message || ''}`);
   }
-  if (parsed.mailed === false) console.error(`enquiry: apps script saved the lead but could not email it: ${parsed.mail_error || 'no detail'}`);
+  if (parsed.mailed === false) console.error(`enquiry: apps script saved the lead but could not email it: ${redact(parsed.mail_error || 'no detail')}`);
   return { saved: true, mailed: parsed.mailed !== false };
 }
 
@@ -487,6 +552,175 @@ function json(status, payload) {
   });
 }
 
+/* ---------------------------------------------------------------------------
+ * Phase 6 hardening (12 Nov 2026). The same block is in all six sites.
+ *
+ * - Content types: only JSON (what the page's script sends) and a plain HTML
+ *   form post (urlencoded, sent when the script did not run) are accepted.
+ *   Anything else gets 415. This also stops cross-site text/plain posts.
+ * - Origin: a browser request from another site (Sec-Fetch-Site: cross-site,
+ *   Origin: null, or an Origin whose host is not this site's) gets 403.
+ *   Requests with no Origin header (not a browser) go on to the other checks.
+ * - Rate limit: best effort only. Counted in memory, per function instance:
+ *   30 posts per 10 minutes per client IP (stored hashed). The limit is high
+ *   on purpose, so a shared university or office network is not blocked.
+ *   Instances do not share memory and are recycled, so this is not a reliable
+ *   limit; a platform-level limit needs the site owner's Netlify settings.
+ * - Duplicates: an identical submission (same fields) within 10 minutes of a
+ *   successful one gets the first reply and reference, and is not sent again.
+ *   Also per instance only.
+ * - A form posted without the page's script gets a short HTML page (no
+ *   submitted value is echoed) instead of JSON, so the visitor sees the result.
+ * ------------------------------------------------------------------------- */
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const DUP_WINDOW_MS = 10 * 60 * 1000;
+const MEMO_MAX = 2000;
+const recentPosts = new Map();      // hashed client IP -> times of its recent posts
+const recentLeads = new Map();      // hash of the submitted fields -> { at, result }
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function capSize(map) {
+  // a Map keeps insertion order, so the oldest entries go first
+  while (map.size > MEMO_MAX) map.delete(map.keys().next().value);
+}
+
+/** Log text without addresses or long numbers: provider errors can quote what was submitted. */
+function redact(text) {
+  return String(text ?? '')
+    .replace(/[^\s@<>"']+@[^\s@<>"']+/g, '<email>')
+    .replace(/\+?\d[\d\s().-]{5,}\d/g, '<number>')
+    .slice(0, 200);
+}
+
+function mediaType(req) {
+  return (req.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+}
+
+/** A plain HTML form post (the page's script did not run): answer with a page. */
+export function wantsPage(req) {
+  return mediaType(req) === 'application/x-www-form-urlencoded'
+    && !(req.headers.get('accept') || '').toLowerCase().includes('application/json');
+}
+
+/** False when a browser says the post comes from another site. */
+export function sameOrigin(req) {
+  if ((req.headers.get('sec-fetch-site') || '').toLowerCase() === 'cross-site') return false;
+  const origin = req.headers.get('origin');
+  if (!origin) return true;
+  let from;
+  try { from = new URL(origin).host.toLowerCase(); } catch { return false; }   // "null" lands here
+  const own = [req.headers.get('x-forwarded-host'), req.headers.get('host')];
+  try { own.push(new URL(req.url).host); } catch { /* no URL */ }
+  const hosts = own.filter(Boolean).map((h) => h.split(',')[0].trim().toLowerCase());
+  if (hosts.includes(from)) return true;
+  // local development only: a localhost page may post to a localhost server on another port
+  return LOCAL_HOST.test(from) && hosts.some((h) => LOCAL_HOST.test(h));
+}
+
+function clientIp(req) {
+  return (req.headers.get('x-nf-client-connection-ip')
+    || (req.headers.get('x-forwarded-for') || '').split(',')[0] || '').trim();
+}
+
+async function overLimit(req) {
+  const ip = clientIp(req);
+  if (!ip) return false;
+  const key = await sha256(`ip:${ip}`);
+  const now = Date.now();
+  const times = (recentPosts.get(key) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  times.push(now);
+  recentPosts.delete(key);
+  recentPosts.set(key, times);
+  capSize(recentPosts);
+  return times.length > RATE_LIMIT;
+}
+
+/** Checks made before the body is read. Returns { status, payload } to refuse, or null. */
+export async function guard(req) {
+  const type = mediaType(req);
+  if (type !== 'application/json' && type !== 'application/x-www-form-urlencoded') {
+    console.warn(`enquiry: refused content type ${type.replace(/[^\w/+.-]/g, '').slice(0, 40) || '(none)'}`);
+    return { status: 415, payload: { success: false, message: 'Unsupported submission format.' } };
+  }
+  if (!sameOrigin(req)) {
+    console.warn('enquiry: refused a post from another site');
+    return { status: 403, payload: { success: false, message: 'This form can only be sent from this website.' } };
+  }
+  if (await overLimit(req)) {
+    console.warn('enquiry: rate limit reached on this instance');
+    return {
+      status: 429,
+      payload: {
+        success: false,
+        message: 'Too many submissions from this network. Please wait a few minutes and try again, '
+          + 'or WhatsApp us on +91 73583 64959.',
+      },
+    };
+  }
+  return null;
+}
+
+async function leadKey(raw) {
+  let f;
+  try { f = parsePayload(raw); } catch { return null; }
+  if (validate(f)) return null;
+  return sha256(`lead:${JSON.stringify(f)}`);
+}
+
+/** handle(), but an identical submission shortly after a successful one is not sent twice. */
+export async function handleOnce(raw, headers) {
+  const key = await leadKey(raw);
+  const prior = key && recentLeads.get(key);
+  if (prior && Date.now() - prior.at < DUP_WINDOW_MS) {
+    const earlier = await prior.result;
+    if (earlier.status === 200) {
+      console.log(`enquiry: duplicate of ref=${earlier.payload.lead_id || '-'}, not sent again`);
+      return earlier;
+    }
+  }
+  const task = handle(raw, headers);
+  if (key) {
+    recentLeads.set(key, { at: Date.now(), result: task.catch(() => ({ status: 500 })) });
+    capSize(recentLeads);
+  }
+  const result = await task;                  // a throw here is answered with 500 by the caller
+  if (key && result.status !== 200) recentLeads.delete(key);
+  return result;
+}
+
+/** The reply to a no-JavaScript form post. Only fixed messages are shown, never a submitted value. */
+function page(status, payload) {
+  const ok = status === 200 && Boolean(payload && payload.success);
+  const title = ok ? 'Enquiry sent' : 'Enquiry not sent';
+  const text = (payload && payload.message) || 'Please try again.';
+  const next = ok
+    ? '<a href="/">Back to the page</a>'
+    : 'Use your browser’s Back button to return to the form, or <a href="https://wa.me/917358364959">WhatsApp us</a>.';
+  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">'
+    + `<title>${title} | Tutee Connect</title>`
+    + '<style>body{font:17px/1.6 system-ui,sans-serif;max-width:36rem;margin:12vh auto;padding:0 20px;'
+    + 'color:#1a1a1a;background:#fff}h1{font-size:1.6rem;line-height:1.2}a{color:#0b57d0}</style></head>'
+    + `<body><main><h1>${title}</h1><p>${esc(text)}</p><p>${next}</p></main></body></html>`;
+  return new Response(html, {
+    status,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
+      'X-Robots-Tag': 'noindex',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    },
+  });
+}
+
 /** Netlify Functions v2 entry point. */
 export default async function (req) {
   if (req.method === 'GET') return json(200, health());
@@ -495,19 +729,25 @@ export default async function (req) {
     return json(405, { success: false, message: 'Method not allowed.' });
   }
 
+  // a form posted without the page's script is answered with a page, not JSON
+  const asPage = wantsPage(req);
+  const reply = (status, payload) => (asPage ? page(status, payload) : json(status, payload));
+  const refused = await guard(req);
+  if (refused) return reply(refused.status, refused.payload);
+
   const declared = Number(req.headers.get('content-length') || 0);
   if (declared > MAX_BODY_BYTES) {
-    return json(413, { success: false, message: 'Submission too large.' });
+    return reply(413, { success: false, message: 'Submission too large.' });
   }
 
   let raw = '';
   try {
     raw = await req.text();
   } catch {
-    return json(400, { success: false, message: 'Could not read the submission.' });
+    return reply(400, { success: false, message: 'Could not read the submission.' });
   }
   if (raw.length > MAX_BODY_BYTES) {          // chunked requests declare no length
-    return json(413, { success: false, message: 'Submission too large.' });
+    return reply(413, { success: false, message: 'Submission too large.' });
   }
 
   const headers = {
@@ -516,12 +756,12 @@ export default async function (req) {
   };
 
   try {
-    const { status, payload } = await handle(raw, headers);
-    return json(status, payload);
+    const { status, payload } = await handleOnce(raw, headers);
+    return reply(status, payload);
   } catch (exc) {
     // never leak a key, an endpoint or provider detail to the browser
-    console.error(`enquiry: unhandled: ${exc?.name}: ${exc?.message}`);
-    return json(500, {
+    console.error(`enquiry: unhandled: ${exc?.name}: ${redact(exc?.message)}`);
+    return reply(500, {
       success: false,
       message: 'We could not send your enquiry right now. Please email '
         + 'info@tuteeconnect.com directly.',

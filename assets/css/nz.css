@@ -5,6 +5,7 @@
 :root {
   --paper: #FBF6EE; --sand: #F1E6D4; --line: #E6D9C4;
   --kowhai: #F4B73D; --kowhai-2: #FFD27A; --kowhai-d: #B07510;
+  --kowhai-ink: #8F5D08;   /* Phase 14: kowhai for small text, 4.5:1+ on paper, sand and white (--kowhai-d is 3.15-3.89:1) */
   --fjord: #0F5556; --teal: #0A3B3C; --night: #04191A; --abyss: #020D0E;
   --pohu: #8C0B0B; --pohu-2: #B3171A;
   --ink: #0D2324; --muted: #4B6564; --on: #F5EFE4; --on-2: #A9C2BF;
@@ -392,7 +393,7 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .ap__place { font: 400 .95rem/1 var(--serif); color: var(--kowhai); }
 .acc10__nav { margin-top: 22px; display: flex; align-items: center; gap: 16px; color: var(--on-2); font: 500 .82rem/1 var(--mono); letter-spacing: .1em; }
 .acc10__bar { flex: 1; height: 2px; background: rgba(245,239,228,.15); }
-.acc10__bar i { display: block; height: 100%; background: var(--kowhai); transform-origin: left; transform: scaleX(.1); transition: transform .8s var(--ease); }
+.acc10__bar i { display: block; height: 100%; background: var(--kowhai); transform-origin: left; transform: scaleX(.143); transition: transform .8s var(--ease); }
 @media (min-width: 980px) { .why__head { grid-template-columns: 1.2fr .8fr; } }
 @media (max-width: 899px) {
   .acc10 { flex-direction: column; height: auto; min-height: 0; gap: 8px; }
@@ -430,7 +431,7 @@ html.imm-lock, html.imm-lock body { overflow: hidden; }
 .dnode.on .dnode__c::after { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 1.5px solid rgba(140,11,11,.35); animation: pulseRing 2s var(--ease) infinite; }
 @keyframes pulseRing { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
 .dial__body { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 60%); text-align: center; display: grid; justify-items: center; gap: 12px; }
-.dial__n { font: 500 .78rem/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--kowhai-d); }
+.dial__n { font: 500 .78rem/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--kowhai-ink); }
 .dial__body h3 { font: 700 clamp(1.8rem, 3vw, 2.7rem)/1.04 var(--display); letter-spacing: -.035em; color: var(--teal); }
 .dial__body p { color: var(--muted); font-size: 1.04rem; max-width: 46ch; }
 .dial__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; list-style: none; margin: 4px 0 0; padding: 0; }
@@ -525,7 +526,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .guide__blk:first-child { border-top: 0; padding-top: 0; }
 .guide__blk:last-child { padding-bottom: 0; }
 .guide__body { display: grid; gap: 14px; align-content: start; max-width: 66ch; color: var(--muted); }
-.guide__body h3 { margin-top: 10px; font: 700 1.25rem/1.25 var(--display); letter-spacing: -.015em; color: var(--teal); }
+.guide__body h4 { margin-top: 10px; font: 700 1.25rem/1.25 var(--display); letter-spacing: -.015em; color: var(--teal); }
 .guide__body ul { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
 .guide__body b { color: var(--ink); font-weight: 700; }
 .guide__body a:not(.btn) { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
@@ -603,7 +604,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .acc { border-top: 1px solid var(--line); }
 .qa { border-bottom: 1px solid var(--line); }
 .qa button { width: 100%; display: grid; grid-template-columns: 50px 1fr 40px; align-items: center; gap: 10px; padding: 24px 0; background: none; border: 0; cursor: pointer; text-align: left; }
-.qa__n { font: 500 .82rem/1 var(--mono); color: var(--kowhai-d); letter-spacing: .1em; }
+.qa__n { font: 500 .82rem/1 var(--mono); color: var(--kowhai-ink); letter-spacing: .1em; }
 .qa__q { font: 700 clamp(1.15rem, 1.8vw, 1.4rem)/1.25 var(--display); letter-spacing: -.015em; color: var(--teal); transition: color .3s; }
 .qa button:hover .qa__q { color: var(--pohu); }
 .qa__x { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; transition: transform .5s var(--ease), background .3s, border-color .3s; }
@@ -632,7 +633,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .cside { position: relative; isolation: isolate; color: var(--on); padding: clamp(28px, 3.4vw, 44px); display: grid; align-content: space-between; gap: 34px; min-height: 100%; }
 .cside > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
 .cside::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10,59,60,.88) 0%, rgba(4,25,26,.78) 55%, rgba(4,25,26,.95) 100%); }
-.cside__badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(244,183,61,.14); color: var(--kowhai); font: 700 .74rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; justify-self: start; }
+.cside__badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(244,183,61,.14); color: var(--kowhai-2); font: 700 .74rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; justify-self: start; }
 .cside h3 { font: 700 clamp(1.7rem, 2.4vw, 2.2rem)/1.08 var(--display); letter-spacing: -.03em; margin-top: 16px; }
 .cside__meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
 .cside__meta span { font-size: .84rem; padding: 6px 10px; border-radius: 999px; background: rgba(245,239,228,.1); }
@@ -655,7 +656,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .csteps .bar { display: block; }
 .csteps .bar i { width: 100%; }
 .csteps span:not(.bar) { font: 600 .78rem/1.2 var(--sans); color: var(--muted); display: flex; gap: 6px; align-items: center; }
-.csteps span b { font: 500 .72rem/1 var(--mono); color: var(--kowhai-d); }
+.csteps span b { font: 500 .72rem/1 var(--mono); color: var(--kowhai-ink); }
 .csteps li.now span { color: var(--teal); }
 .cpanes { position: relative; }
 .cpane { border: 0; margin: 0; padding: 0; min-width: 0; display: none; }
@@ -684,7 +685,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .ff__msg { margin: 7px 4px 0; font-size: .82rem; font-weight: 600; line-height: 1.4; color: var(--muted); }
 .ff__msg:empty { display: none; }
 .ff[data-state="bad"] .ff__msg { color: var(--pohu); }
-.ff[data-state="warn"] .ff__msg { color: var(--kowhai-d); }
+.ff[data-state="warn"] .ff__msg { color: var(--kowhai-ink); }
 .ff[data-state="warn"] input { border-color: var(--kowhai); }
 .ff[data-state="ok"] input { border-color: #1F8F5F; }
 .ff[data-state="ok"] input, .ff[data-state="bad"] input, .ff[data-state="warn"] input, .ff[data-state="checking"] input { padding-right: 46px; }
@@ -835,7 +836,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .news.is-off .ticker__track { animation-play-state: paused; }
 .nc { flex: none; position: relative; padding: 0 26px; }
 .nc + .nc::before { content: ""; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--kowhai); }
-.nc a { display: flex; align-items: center; gap: 12px; color: var(--on); text-decoration: none; max-width: 440px; }
+.nc a, .nc__a { display: flex; align-items: center; gap: 12px; color: var(--on); text-decoration: none; max-width: 440px; }
 .nc__img { flex: none; width: 64px; height: 44px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.08); }
 .nc__img img { width: 100%; height: 100%; object-fit: cover; }
 .nc__img--tile { display: grid; place-items: center; color: var(--kowhai); } .nc__img--tile .ic { width: 20px; height: 20px; }
@@ -843,7 +844,7 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
 .nc__body { display: grid; gap: 3px; min-width: 0; }
 .nc__meta { font: 500 .66rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--kowhai); }
 .nc__t { font: 700 .95rem/1.3 var(--display); color: var(--on); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
-.nc a:hover .nc__t { color: var(--kowhai-2); text-decoration: underline; text-underline-offset: 3px; }
+.nc a:hover .nc__t, .nc__a:hover .nc__t, .nc__a:focus-visible .nc__t { color: var(--kowhai-2); text-decoration: underline; text-underline-offset: 3px; }
 .nc--sk .nc__t { display: block; width: 260px; height: 14px; border-radius: 4px; background: rgba(255,255,255,.1); }
 .nc--sk { display: flex; align-items: center; gap: 12px; }
 @media (max-width: 700px) {
@@ -855,9 +856,22 @@ html:not(.go) .dial__body { position: static; transform: none; width: 100%; marg
    - hero copy waits (hidden) for the intro to start, so it never flashes; a CSS fallback shows it if scripts fail
    - decorative loops pause while their section is off screen (#hero / .banks / #dial get .is-off from nz.js)
    - phones skip the blend-mode glint and the large blurred mist, the costliest layers to composite */
-html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animation: intro-fallback 0s 2s forwards; }
-@keyframes intro-fallback { to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 1; } }
+/* hero entrance: pure CSS, running from the first paint. The headline and intro are the page's largest paint
+   (LCP), so they must not wait for the deferred scripts to download and run (that cost up to 6s on a slow phone). */
+@keyframes hero-in { from { opacity: 0; transform: translate3d(0, 22px, 0); } }
+@keyframes hero-in-x { from { opacity: 0; transform: translate3d(24px, 0, 0); } }
+@keyframes hero-in-y { from { opacity: 0; transform: translate3d(0, -20px, 0); } }
+#hero-h, #hero [data-in], #qform { animation: hero-in .8s cubic-bezier(.16, 1, .3, 1) backwards; }
+/* the headline and the intro line rise without fading: an element that starts fully transparent only counts as
+   painted (LCP) once its fade ends, so a fade here made the page look slower to Chrome by the length of the fade */
+@keyframes hero-rise { from { transform: translate3d(0, 18px, 0); } }
+#hero-h, .hero__lead[data-in] { animation-name: hero-rise; }
+#hero-h { animation-duration: .9s; }
+#hero .kick[data-in] { animation-delay: 0s; } #hero-h { animation-delay: .04s; } .hero__lead[data-in] { animation-delay: .12s; }
+.hero__row[data-in] { animation-delay: .2s; } #qform { animation-delay: .3s; }
+#facts { animation: hero-in-x .8s .24s cubic-bezier(.16, 1, .3, 1) backwards; }
+.hdr__bar { animation: hero-in-y .6s .08s cubic-bezier(.16, 1, .3, 1) backwards; }
+@media (prefers-reduced-motion: reduce) { #hero-h, #hero [data-in], #qform, #facts, .hdr__bar { animation: none; } }
 .stories:not(.is-near) { --hand: "Segoe Print", "Bradley Hand", cursive; }
 #hero.is-off .slides img, #hero.is-off .slides::after, .banks.is-off .banks__track, .dial.is-off .dnode__c::after { animation-play-state: paused; }
 @media (max-width: 999px) { .track { will-change: auto; } }
@@ -922,18 +936,18 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
   .svc-panel__n { position: absolute; top: 18px; right: 18px; font: 500 .7rem/1 var(--mono); letter-spacing: .1em; color: var(--kowhai); }
   .banks { margin-top: 28px; }
 
-  /* 4 · ten reasons: a two-column grid of photo tiles; a tap opens the reason in a bottom sheet */
+  /* 4 · seven reasons: a two-column grid of photo tiles; a tap opens the reason in a bottom sheet */
   .why__head { margin-bottom: 20px; gap: 12px; }
   .why__head p { font-size: .93rem; }
   .acc10 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: auto; min-height: 0; }
   .ap, .ap.on { height: 110px; flex: none; border-radius: 16px; cursor: pointer; transition: transform .25s var(--ease); -webkit-tap-highlight-color: transparent; }
-  .ap:first-child, .ap:last-child { grid-column: 1 / -1; height: 136px; }
+  .ap:first-child { grid-column: 1 / -1; height: 136px; }   /* seven reasons: one wide tile, then three rows of two */
   .ap:active { transform: scale(.97); }
   .ap img, .ap.on img { transform: none; filter: saturate(.95) brightness(.92); transition: none; }
   .ap::after, .ap.on::after { background: linear-gradient(180deg, rgba(4,25,26,.1) 0%, rgba(4,25,26,.35) 40%, rgba(4,25,26,.9) 100%); }
   .ap__n, .ap.on .ap__n { top: 12px; left: 12px; transform: none; font-size: .7rem; padding: 4px 7px; border-radius: 7px; background: rgba(2,13,14,.62); }
   .ap__v, .ap.on .ap__v { opacity: 1; writing-mode: horizontal-tb; transform: none; left: 12px; right: 12px; bottom: 11px; top: auto; max-height: none; white-space: normal; font-size: .84rem; line-height: 1.22; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; }
-  .ap:first-child .ap__v, .ap:last-child .ap__v { font-size: 1.02rem; right: 22%; }
+  .ap:first-child .ap__v { font-size: 1.02rem; right: 22%; }
   .ap::before { content: ""; position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M12 6v12M6 12h12'/%3E%3C/svg%3E") center / 13px no-repeat; z-index: 1; }
   .ap__body { display: none; }
   .acc10__nav { display: none; }
@@ -1071,7 +1085,7 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
 .uc__open { position: absolute; inset: 0; z-index: 1; border: 0; background: none; border-radius: inherit; cursor: pointer; }
 .uc__top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .uc__mono, .um__mono { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--teal); color: var(--kowhai); font: 800 .95rem/1 var(--display); letter-spacing: .02em; flex: none; }
-.uc__rank { font: 500 .7rem/1 var(--mono); letter-spacing: .08em; color: var(--kowhai-d); }
+.uc__rank { font: 500 .7rem/1 var(--mono); letter-spacing: .08em; color: var(--kowhai-ink); }
 .uc h3 { font: 700 1.08rem/1.2 var(--display); color: var(--teal); letter-spacing: -.01em; }
 .uc__reo { font: 400 .84rem/1.3 var(--serif); color: var(--pohu); }
 .uc__city { display: flex; gap: 6px; align-items: center; font-size: .82rem; color: var(--muted); }
@@ -1195,7 +1209,7 @@ html:not(.go) :is(#hero-h, #hero [data-in], #facts, #qform) { opacity: 0; animat
 .dc:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--line), 0 16px 30px -24px rgba(10,59,60,.5); }
 .dc--empty { display: block; color: var(--muted); }
 .dc__open { position: absolute; inset: 0; z-index: 1; border: 0; background: none; border-radius: inherit; cursor: pointer; }
-.dc__type { font: 600 .68rem/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--kowhai-d); }
+.dc__type { font: 600 .68rem/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--kowhai-ink); }
 .dc h3 { margin-top: 4px; font: 700 1rem/1.25 var(--display); color: var(--teal); }
 .dc .uc__city { margin-top: 4px; }
 .dc__prog { margin-top: 6px; font-size: .82rem; color: var(--muted); line-height: 1.45; }
@@ -1561,3 +1575,439 @@ html.tai-lock, html.tai-lock body { overflow: hidden; }
   .nzm__list li > [data-uni] { flex: 1; min-width: 0; }
   .nzm__list .nzm__sl { width: 36px; height: 36px; margin-left: 4px; }
 }
+
+/* ------------------------------------------------------------------
+   Phase 5 (11 Nov 2026): the plan guide (#plan: intakes, entry, visa) was
+   three long text blocks beside empty side columns. Now: numbered blocks,
+   side headings that stay in view while you read (desktop), question
+   headings marked in kowhai, the visa checklist as ticked rows, and sources
+   set apart. Content unchanged.
+   ------------------------------------------------------------------ */
+#plan { counter-reset: guide; }
+#plan .guide__blk { counter-increment: guide; }
+#plan .guide__side::before { content: counter(guide, decimal-leading-zero); display: block; margin-bottom: 10px; font: 400 clamp(2.6rem, 5vw, 4.2rem)/1 var(--serif); color: var(--kowhai-d); opacity: .45; }
+#plan .guide__body h4 { display: flex; align-items: center; gap: 10px; }
+#plan .guide__body h4::before { content: ""; flex: 0 0 10px; height: 10px; border-radius: 50%; background: var(--kowhai); box-shadow: 0 0 0 4px rgba(244, 183, 61, .25); }
+#plan .guide__body ul { list-style: none; padding-left: 0; gap: 10px; }
+#plan .guide__body li { position: relative; padding: 12px 14px 12px 44px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); }
+#plan .guide__body li::before { content: ""; position: absolute; left: 17px; top: 15px; width: 6px; height: 11px; border: solid var(--fjord); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+#plan .guide__src { padding-top: 12px; border-top: 1px dashed var(--line); }
+@media (min-width: 980px) {
+  #plan .guide__side { position: sticky; top: 112px; align-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { #plan .guide__side { position: static; } }
+
+/* ==================================================================
+   Phase 10 (13 Nov 2026): "Aotearoa Awaits", second pass.
+   Motifs: topographic contour lines (assets/img/nz/topo-lines.svg, drawn for this page), walking-track routes,
+   and wide landscape photography. Content and facts unchanged; each block below says what it replaced.
+   ================================================================== */
+/* contour texture: a mask, so each section tints it in its own colour */
+.topo { position: relative; isolation: isolate; }
+.topo::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; background: var(--topo-c, var(--kowhai)); opacity: var(--topo-o, .07);
+  -webkit-mask: url("../img/nz/topo-lines.svg") center / var(--topo-s, 1200px) auto repeat; mask: url("../img/nz/topo-lines.svg") center / var(--topo-s, 1200px) auto repeat; }
+
+/* ---------- #plan 01 · intakes: the year at a glance under the heading (was: heading over an empty column) ---------- */
+.yr { margin: 28px 0 0; padding: 20px 18px 16px; border-radius: 20px; background: var(--paper); border: 1px solid var(--line); --topo-c: var(--fjord); --topo-o: .06; --topo-s: 900px; }
+.yr__flags, .yr__line, .yr__dues { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.yr__flag { grid-column: var(--m) / span 4; grid-row: 1; margin-left: calc(12.5% - 1px); padding: 0 0 12px 10px; border-left: 2px solid var(--kowhai); font: 600 .74rem/1.2 var(--sans); color: var(--muted); }
+.yr__flag b { display: block; font: 400 1.35rem/1.05 var(--serif); color: var(--teal); }
+.yr__line { list-style: none; margin: 0; padding: 0; position: relative; }
+.yr__line::before { content: ""; position: absolute; left: 4%; right: 4%; top: 8px; height: 2px; border-radius: 2px; background: var(--line); }
+.yr__line li { position: relative; display: grid; grid-template-rows: 18px auto; justify-items: center; gap: 6px; font: 500 .72rem/1 var(--mono); color: var(--muted); }
+.yr__line li::before { content: ""; align-self: center; width: 8px; height: 8px; border-radius: 50%; background: #CDBFA6; position: relative; z-index: 1; }
+.yr__line li.is-start, .yr__line li.is-due { color: var(--ink); font-weight: 700; }
+.yr__line li.is-start::before { width: 18px; height: 18px; background: var(--kowhai); box-shadow: 0 0 0 4px rgba(244,183,61,.28); }
+.yr__line li.is-due::before { width: 12px; height: 12px; background: var(--paper); box-shadow: inset 0 0 0 2px var(--pohu); }
+.yr__dues { margin-top: 2px; }
+.yr__due { grid-column: var(--m) / span 3; grid-row: 1; margin-left: calc(16.66% - 1px); padding: 10px 0 0 8px; border-left: 2px dashed var(--pohu); font: 700 .76rem/1.25 var(--sans); color: var(--pohu); }
+.yr__due b { display: block; font-size: .82rem; }
+.yr__due small { display: block; margin-top: 2px; font-weight: 500; line-height: 1.3; color: var(--muted); font-size: .68rem; }
+.yr figcaption { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: .78rem; line-height: 1.45; color: var(--muted); }
+
+/* ---------- #plan 02 · entry: the two things every programme checks; the IELTS answer as a feature card ---------- */
+.keys { margin-top: 28px; display: grid; gap: 10px; }
+.key { display: grid; grid-template-columns: 44px 1fr; gap: 2px 14px; align-items: center; padding: 16px 18px; border-radius: 18px; background: var(--paper); border: 1px solid var(--line); }
+.key__n { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font: 400 1.3rem/1 var(--serif); background: var(--teal); color: var(--kowhai); }
+.key b { font: 700 1.05rem/1.2 var(--display); letter-spacing: -.01em; color: var(--teal); align-self: end; }
+.key small { font-size: .86rem; line-height: 1.45; color: var(--muted); align-self: start; }
+.keys__by { margin-top: 4px; display: flex; align-items: center; gap: 10px; font: 600 .72rem/1.3 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--fjord); }
+.keys__by::before { content: ""; width: 24px; height: 1.5px; background: currentColor; flex: none; }
+.guide__ask { position: relative; display: grid; gap: 12px; margin-top: 6px; padding: 26px 28px; border-radius: 22px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line), 0 26px 44px -36px rgba(10,59,60,.55); --topo-c: var(--kowhai-d); --topo-o: .07; --topo-s: 760px; }
+#plan .guide__ask h4 { margin-top: 0; font-size: clamp(1.25rem, 2vw, 1.55rem); }
+.guide__yes { display: block; margin-bottom: 4px; font: 400 clamp(1.7rem, 3vw, 2.3rem)/1.05 var(--serif); color: var(--pohu); }
+.guide__note { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; padding: 16px 18px; border-left: 3px solid var(--kowhai); border-radius: 0 16px 16px 0; background: rgba(251,246,238,.6); }
+.guide__note .ic { width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--teal); color: var(--kowhai); }
+
+/* ---------- #plan 03 · visa: a full-width "visa file" (requirements as tickets, processing time, UAE route) ---------- */
+.docket { list-style: none; counter-reset: dk; }
+#plan .docket { margin: 6px 0 0; gap: 14px; }
+#plan .docket li { counter-increment: dk; padding: 58px 22px 22px; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 22px 40px -36px rgba(10,59,60,.5);
+  background: var(--paper) linear-gradient(var(--line), var(--line)) 22px 48px / calc(100% - 44px) 1px no-repeat; }
+#plan .docket li::before { content: counter(dk, decimal-leading-zero); left: 22px; top: 18px; width: auto; height: auto; border: 0; transform: none; font: 400 1.7rem/1 var(--serif); color: var(--pohu); }
+#plan .docket li::after { content: ""; position: absolute; right: 18px; top: 14px; width: 28px; height: 28px; border-radius: 50%; background: var(--teal) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4B73D' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat; }
+.guide__pair { display: grid; gap: 14px; }
+.guide__stat { display: grid; align-content: space-between; gap: 12px; padding: 24px 26px; border-radius: 20px; background: var(--kowhai); color: var(--ink); }
+.guide__stat b { font: 400 clamp(3rem, 5vw, 4.2rem)/.9 var(--serif); color: var(--teal); }
+.guide__stat b small { display: block; margin-top: 8px; font: 700 .76rem/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+.guide__stat span { font-size: .95rem; line-height: 1.55; }
+.guide__uae { position: relative; display: grid; gap: 10px; align-content: start; padding: 22px 26px 26px; border-radius: 20px; background: var(--teal); color: var(--on-2); overflow: hidden; --topo-c: var(--kowhai); --topo-o: .08; --topo-s: 700px; }
+#plan .guide__uae h4 { margin-top: 0; color: var(--on); }
+.guide__route { width: min(250px, 72%); height: auto; overflow: visible; margin-bottom: 4px; }
+.guide__route .r-arc { fill: none; stroke: var(--kowhai); stroke-width: 1.6; stroke-dasharray: 5 6; }
+.guide__route circle { fill: var(--kowhai); }
+.guide__route text { font: 500 11px var(--mono); fill: var(--on-2); letter-spacing: .12em; }
+.guide__route .r-plane { fill: none; stroke: var(--on); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.guide__cta { margin-top: 4px; }
+@media (min-width: 760px) {
+  #plan .docket { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .guide__pair { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+}
+@media (min-width: 980px) {
+  /* 02 mirrors 01 (text left, heading and keys right); 03 drops the side column for a full-width file */
+  #plan .guide__blk--keys { grid-template-columns: 1.2fr .8fr; }
+  #plan .guide__blk--keys .guide__side { order: 2; }
+  #plan .guide__blk--visa { grid-template-columns: .8fr 1.2fr; align-items: end; row-gap: 22px; }
+  #plan .guide__blk--visa .guide__side { position: static; }
+  #plan .guide__blk--visa .guide__body { display: contents; }
+  #plan .guide__blk--visa .guide__intro { max-width: 60ch; font-size: 1.08rem; }
+  #plan .guide__blk--visa .docket, #plan .guide__blk--visa .guide__pair, #plan .guide__blk--visa .guide__src, #plan .guide__blk--visa .guide__cta { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .yr { padding: 16px 12px 14px; }
+  .yr__flag { padding-left: 7px; font-size: .68rem; } .yr__flag b { font-size: 1.08rem; }
+  .yr__due { padding-left: 6px; font-size: .68rem; } .yr__due small { font-size: .64rem; }
+  .yr__line li { font-size: .64rem; }
+  .guide__ask { padding: 20px 18px; border-radius: 18px; }
+  .guide__note { grid-template-columns: 34px 1fr; gap: 12px; padding: 14px; } .guide__note .ic { width: 34px; height: 34px; padding: 8px; }
+  #plan .docket li { padding: 52px 18px 18px; background-position: 18px 44px; background-size: calc(100% - 36px) 1px; }
+  #plan .docket li::before { left: 18px; top: 16px; font-size: 1.5rem; }
+  .guide__stat, .guide__uae { padding: 20px; }
+}
+
+/* ---------- hero: where the photo was taken, set like a map caption up the right edge (desktop) ---------- */
+.hero__loc { display: none; }
+@media (min-width: 1000px) {
+  .hero__loc { position: absolute; z-index: 3; right: calc(var(--gut) * .45); top: 136px; display: flex; align-items: center; gap: 10px; writing-mode: vertical-rl; font: 500 .7rem/1 var(--mono); letter-spacing: .22em; text-transform: uppercase; color: rgba(245,239,228,.82); text-shadow: 0 1px 3px rgba(2,13,14,.7); }
+  .hero__loc .ic { width: 14px; height: 14px; color: var(--kowhai); transform: rotate(90deg); }
+  .hero__loc::after { content: ""; width: 1px; height: 64px; background: linear-gradient(rgba(245,239,228,.6), transparent); }
+}
+
+/* ---------- why Tutee Connect: the six services as a two-leg trail ledger (was: six equal boxed cards) ---------- */
+.trust { --topo-c: var(--kowhai); --topo-o: .045; --topo-s: 1400px; }
+.trust__go { margin-top: 28px; }
+@media (min-width: 701px) {
+  #services { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: 0 44px; }
+  #services .svc { display: block; position: relative; padding: 22px 0 26px 62px; border-radius: 0; background: none; box-shadow: none; border-top: 1px solid rgba(245,239,228,.14); }
+  #services .svc:nth-child(3), #services .svc:nth-child(6) { border-bottom: 1px solid rgba(245,239,228,.14); }
+  #services .svc__n { display: block; position: absolute; left: 0; top: 18px; font: 400 2.1rem/1 var(--serif); color: var(--kowhai); }
+  /* the walking track: a dashed line from each number down to the next, one leg per column */
+  #services .svc::after { content: ""; position: absolute; left: 17px; top: 62px; bottom: -16px; border-left: 1.5px dashed rgba(244,183,61,.4); }
+  #services .svc:nth-child(3)::after, #services .svc:nth-child(6)::after { display: none; }
+  #services .svc .ic { position: absolute; right: 0; top: 24px; width: 22px; height: 22px; padding: 0; border-radius: 0; background: none; color: rgba(244,183,61,.75); }
+  #services .svc h3 { padding-right: 34px; font-size: 1.22rem; transition: color .3s; }
+  #services .svc p { margin-top: 6px; font-size: .93rem; max-width: 34ch; }
+  #services .svc:hover { background: none; box-shadow: none; }
+  #services .svc:hover h3 { color: var(--kowhai); }
+}
+
+/* ---------- news: a dark band, so it no longer runs on from the sand-coloured guide above ---------- */
+.news { background: var(--night); color: var(--on); }
+.news .kick { color: var(--kowhai); }
+.news .h2 { color: var(--on); } .news .h2 .serif { color: var(--kowhai); }
+.news .ticker__label, .news .ticker__label::after { background: var(--abyss); }
+
+
+/* ---------- FAQ: the side (heading + contact card) stays in view while you read; the open answer is marked ---------- */
+@media (min-width: 980px) and (min-height: 860px) {
+  .faq__side { position: sticky; top: 112px; align-self: start; }
+}
+@media (min-width: 561px) {
+  .qa { transition: background .4s, box-shadow .4s; }
+  .qa.open { background: linear-gradient(90deg, rgba(244,183,61,.12), rgba(244,183,61,0) 70%); box-shadow: inset 3px 0 0 var(--kowhai); }
+}
+@media (max-width: 700px) { .trust__go { display: none; } }
+
+/* ---------- directory (nz-universities.html): intro as a dark contour-map panel ---------- */
+.dir__intro { display: grid; justify-items: start; padding: clamp(24px, 4vw, 48px); border-radius: 26px; background: var(--teal); color: var(--on); overflow: hidden; --topo-c: var(--kowhai); --topo-o: .1; --topo-s: 1100px; }
+.dir__intro .dir__back { color: var(--kowhai); margin-bottom: 18px; }
+.dir__intro .kick { color: var(--kowhai); }
+.dir__intro .h2 { color: var(--on); } .dir__intro .h2 .serif { color: var(--kowhai); }
+.dir__intro .dir__lede { color: var(--on-2); } .dir__intro .dir__lede b { color: var(--on); }
+@media (max-width: 560px) { .dir__intro { border-radius: 20px; } }
+.contact.topo { --topo-c: var(--kowhai); --topo-o: .09; --topo-s: 640px; }
+/* settle, tablets: the stage number no longer runs into a two-line stage name */
+@media (min-width: 701px) and (max-width: 1100px) { .stg { padding-right: 30px; } }
+
+/* ==================================================================
+   Phase 10 final visual QA (14 Nov 2026). Layout and spacing only: no text, facts, hooks or scripts changed here.
+   ================================================================== */
+/* #plan 01 and 02, desktop: each text column started level with its block's big numeral, so in the mirrored block 02
+   the first paragraph sat above and beside "Entry requirements" and read before its heading. Both text columns now
+   start on the heading's line: numeral (same clamp as above, line-height 1) + its 10px margin + the kicker's line
+   (one line of this text, 1lh; 1.6em where lh is unsupported) + the heading's 16px top margin. */
+@media (min-width: 980px) {
+  #plan .guide__blk--year .guide__body, #plan .guide__blk--keys .guide__body { padding-top: calc(clamp(2.6rem, 5vw, 4.2rem) + 26px + 1.6em); padding-top: calc(clamp(2.6rem, 5vw, 4.2rem) + 26px + 1lh); }
+}
+
+/* cities, desktop: the heading block shrank to its own text (auto margins in a grid), so it sat off the page's left
+   edge (148px instead of 116px at 1440) while the city cards started at the gutter, 60 to 300px further left; at 1920
+   "there." also fell onto a line of its own. The heading now spans the page column, the rail starts on that same edge
+   (and still runs off to the right), and the heading stops growing at a size that keeps it on one line. */
+.cities__head { width: 100%; }
+@media (min-width: 1000px) {
+  .cities .track { padding-left: max(var(--gut), calc((100% - var(--max)) / 2 + var(--gut))); }
+}
+@media (min-width: 1000px) and (min-height: 821px) { .cities .h2 { font-size: clamp(2.4rem, 5.6vw, 5rem); } }
+/* the thin kowhai te reo name on each city card ("Tamaki Makaurau") lost its edges over pale buildings and sky; a soft
+   dark halo keeps it legible on any photo */
+.city__reo { text-shadow: 0 1px 2px rgba(4, 25, 26, .6), 0 0 16px rgba(4, 25, 26, .55); }
+
+/* trust, desktop: the numbered service track ended about 200px above the intro column (stats and button), leaving an
+   empty block over the lender strip. The track's three rows now share the intro's height down to the stats, so the
+   track's last rule continues the stats' bottom rule and the dashed legs between the stops get longer. The bottom
+   margin is the button below the stats: .trust__go's 28px top margin + the 46px .btn--sm height. */
+@media (min-width: 980px) {
+  #services { align-self: stretch; grid-template-rows: repeat(3, 1fr); margin-bottom: calc(28px + 46px); }
+}
+
+/* process dial: the current step's circle is scaled up (1.18) and its ring pulses out, so both ran into the step's
+   name ("Consult"). The name moves 8px down while its step is current; under reduced motion the ring cannot pulse,
+   so it sat still across the name: there it is not drawn. */
+.dnode.on b { transform: translateY(8px); }
+@media (prefers-reduced-motion: reduce) { .dnode.on .dnode__c::after { display: none; } }
+
+/* FAQ contact card, phones under 390px: the two "+91 73583 64959" buttons were too narrow side by side and broke the
+   number over two lines. Below 390px every contact button takes the full width, one number per line. */
+@media (max-width: 389px) {
+  .contact { grid-template-columns: 1fr; }
+  .contact a { white-space: nowrap; }
+}
+
+/* ==================================================================
+   Phase 13 (20 Nov 2026): compact page. Content and facts unchanged.
+   1. #plan (intakes, entry requirements, student visa) is no longer its own section: it ends Universities, after the
+      map (#nzm, so the pinned map keeps its scroll distance), as a walking track of three closed rows (native
+      <details>). Each summary is a trail stop: a numbered marker (the entry keys' teal disc), the heading (was an H2)
+      with its eyebrow above it, and the FAQ's +/- ring. A dashed leg joins the stops. Inside each row the Phase 5 / 10
+      compositions are unchanged; the two question headings in them are now H4 (selectors above changed from h3).
+   2. FAQ: 08-10 behind "More questions (3)" (#acc.is-short in the markup; nz.js reveals them; a <noscript> style in
+      <head> shows them without JavaScript).
+   ================================================================== */
+#plan.trail { margin-top: clamp(22px, 3vw, 40px); padding: 4px clamp(16px, 3.2vw, 44px) clamp(22px, 3vw, 36px); border-radius: 28px; box-shadow: inset 0 0 0 1px var(--line); --topo-c: var(--fjord); --topo-o: .06; --topo-s: 1000px; }
+#plan .guide__blk { counter-increment: none; }
+#plan .guide__side::before { content: none; }   /* the block number now sits on the row's trail marker */
+#plan .trail__row { position: relative; counter-increment: guide; }
+#plan .trail__row + .trail__row { border-top: 1px solid var(--line); }
+#plan .trail__sum { display: grid; grid-template-columns: 44px minmax(0, 1fr) 40px; align-items: center; gap: 16px; padding: 20px 0; list-style: none; cursor: pointer; }
+#plan .trail__sum::-webkit-details-marker { display: none; }
+#plan .trail__sum::before { content: counter(guide, decimal-leading-zero); align-self: start; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font: 400 1.2rem/1 var(--serif); background: var(--teal); color: var(--kowhai); }
+#plan .trail__t { display: grid; gap: 6px; justify-items: start; }
+#plan .trail__t .kick { order: -1; }   /* the eyebrow follows the heading in the markup (heard after it) and shows above it */
+#plan .trail__t h3 { font: 700 clamp(1.2rem, 2.1vw, 1.7rem)/1.18 var(--display); letter-spacing: -.02em; color: var(--teal); transition: color .3s; }
+#plan .trail__t h3 .serif { font-family: var(--serif); font-weight: 400; letter-spacing: -.01em; color: var(--pohu); }
+#plan .trail__sum:hover h3 { color: var(--pohu); }
+#plan .trail__sum .qa__x { background: var(--paper); }
+#plan .trail__row[open] .qa__x { transform: rotate(45deg); background: var(--teal); border-color: var(--teal); }
+#plan .trail__row[open] .qa__x .ic { color: #fff; }
+/* the walking track: a dashed leg from each stop's marker down to the next one */
+#plan .trail__row:not(:last-of-type)::after { content: ""; position: absolute; left: 21px; top: 70px; bottom: -14px; border-left: 2px dashed rgba(176, 117, 16, .4); pointer-events: none; }
+#plan .trail__row > .guide__blk { padding: 2px 0 30px; border-top: 0; }
+#plan .trail__row .yr, #plan .trail__row .keys { margin-top: 0; }
+#plan .guide__body h4 { text-wrap: balance; }
+#plan > .guide__cta { margin-top: 10px; }
+@media (max-width: 979px) {
+  #plan .trail__row[open]::after { display: none; }   /* phones and tablets: an open row's content uses the full width */
+}
+/* from 900px, "View all universities in New Zealand" hangs 18px below the map stage (absolute, 54px tall), into what
+   used to be the section's bottom padding: the track starts clear of it */
+@media (min-width: 900px) { #plan.trail { margin-top: calc(18px + 54px + 32px); } }
+@media (min-width: 980px) {
+  #plan .trail__sum { gap: 22px; padding: 24px 0; }
+  #plan .trail__row:not(:last-of-type)::after { top: 74px; }
+  /* open rows sit to the right of the track, so the leg runs on beside them to the next stop */
+  #plan .trail__row > .guide__blk { padding-left: 66px; }
+  #plan .trail__row > .guide__blk--visa { grid-template-columns: minmax(0, 1fr); }
+  /* the text columns no longer wait for a numeral and heading beside them (Phase 10 QA offset): both are in the summary */
+  #plan .trail__row .guide__blk--year .guide__body, #plan .trail__row .guide__blk--keys .guide__body { padding-top: 0; }
+  #plan > .guide__cta { padding-left: 66px; }
+}
+@media (max-width: 560px) {
+  #plan.trail { border-radius: 22px; }
+  #plan .trail__sum { gap: 12px; padding: 16px 0; grid-template-columns: 40px minmax(0, 1fr) 30px; }
+  #plan .trail__sum::before { width: 40px; height: 40px; font-size: 1.08rem; }
+  #plan .trail__row:not(:last-of-type)::after { left: 19px; top: 62px; bottom: -10px; }
+  #plan .trail__t .kick { font-size: .68rem; letter-spacing: .16em; }
+}
+
+/* FAQ: the questions behind "More questions (3)"; the button is a row in the FAQ's own style */
+#acc.is-short .qa--more { display: none; }
+.faq__more { width: 100%; display: grid; grid-template-columns: 50px 1fr 40px; align-items: center; gap: 10px; padding: 22px 0; border: 0; border-bottom: 1px solid var(--line); background: none; cursor: pointer; text-align: left; font: 700 1rem/1.25 var(--sans); letter-spacing: .01em; color: var(--fjord); }
+.faq__more > span:first-child { grid-column: 2; }
+.faq__more:hover > span:first-child { color: var(--pohu); }
+.faq__more[hidden] { display: none; }
+@media (max-width: 700px) {
+  .faq__more { grid-template-columns: 1fr 30px; gap: 12px; padding: 15px 14px 15px 16px; border: 1.5px dashed var(--line); border-radius: 16px; font-size: .95rem; }
+  .faq__more > span:first-child { grid-column: 1; }
+}
+
+/* ------------------------------------------------------------------
+   Phase 14 (25 Nov 2026)
+   ------------------------------------------------------------------ */
+/* universities map: the outline SVG (z-index 1) lay over the list, so the "+" shortlist buttons could not be clicked.
+   The SVG is decoration only (aria-hidden), so it no longer takes the pointer, and the list sits above it. */
+.nzm__svg { pointer-events: none; }
+.nzm__list li, .nzm__all { z-index: 4; }
+
+/* news: a slim band (heading on one line, smaller crawl) instead of a full section */
+.news { padding-block: clamp(22px, 2.6vw, 34px); }
+.news__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; margin-bottom: 14px; }
+.news .h2 { margin-top: 0; font-size: clamp(1.2rem, 1.8vw, 1.5rem); }
+.ticker__label { font-size: .74rem; }
+.ticker__track { padding: 8px 0; }
+.nc { padding: 0 20px; }
+.nc__img { width: 46px; height: 32px; border-radius: 6px; }
+.nc__meta { font-size: .6rem; }
+.nc__t { font-size: .86rem; }
+
+/* how it works: the whole section fits one screen. Spacing and type follow the viewport height, and on desktop the
+   dial is sized from the height that is left, with its text scaled to the dial (container units) so it always fits
+   inside the arc. */
+.process { padding-block: clamp(40px, 7svh, 84px); }
+.process__head { max-width: 900px; margin-bottom: clamp(12px, 2.4svh, 28px); gap: 0; }
+.process .h2 { font-size: clamp(1.75rem, min(3.6vw, 5.4svh), 3rem); }
+.process__head .lede { font-size: clamp(.9rem, 2svh, 1.05rem); margin-top: clamp(6px, 1.2svh, 14px); }
+.process__cta { margin-top: clamp(12px, 2.4svh, 28px); }
+@media (min-width: 900px) {
+  .dial { container-type: inline-size; max-width: none; width: min(940px, 100%, max(540px, (100svh - 340px) * 1.786)); }
+  .dial__body { width: 62%; gap: clamp(5px, 1.2cqi, 12px); }
+  .dial__n { font-size: clamp(.64rem, 1.3cqi, .78rem); }
+  .dial__body h3 { font-size: clamp(1.25rem, 4cqi, 2.6rem); }
+  .dial__body p { font-size: clamp(.84rem, 1.75cqi, 1.04rem); line-height: 1.45; }
+  .dial__chips { gap: 6px; margin-top: 0; }
+  .dial__chips li { padding: clamp(5px, .8cqi, 8px) clamp(8px, 1.2cqi, 12px); font-size: clamp(.7rem, 1.4cqi, .82rem); }
+  .dial__ctl { margin-top: clamp(0px, .6cqi, 10px); }
+  .dial__arrow { width: clamp(36px, 5cqi, 48px); height: clamp(36px, 5cqi, 48px); }
+  .dnode__c { width: clamp(42px, 6.2cqi, 58px); height: clamp(42px, 6.2cqi, 58px); }
+  .dnode__c .ic { width: clamp(17px, 2.3cqi, 22px); height: clamp(17px, 2.3cqi, 22px); }
+  .dnode b { font-size: clamp(.72rem, 1.4cqi, .82rem); }
+}
+@media (max-width: 899px) {
+  .dial__stage { width: min(100%, 560px); margin-inline: auto; }
+  .dial__body { margin-top: 10px; gap: 10px; }
+  .dial__body h3 { font-size: clamp(1.35rem, 5.6vw, 1.8rem); }
+  .dial__body p { font-size: .94rem; }
+  .dial__chips li { padding: 6px 10px; font-size: .76rem; }
+  .dial__arrow { width: 42px; height: 42px; }
+}
+
+/* beyond your degree: one dark band (no landscape photo or trail line), the four stages as equal cards in a row and
+   the selected stage's detail in the panel below */
+.settle { padding-block: clamp(56px, 7vw, 96px);
+  background: radial-gradient(80% 70% at 90% 0%, rgba(21,98,92,.42), transparent 62%), linear-gradient(170deg, #0B3D3A 0%, #072C2D 100%); }
+.settle__head { align-items: center; }
+.settle .lede { max-width: 46ch; }
+.stages { gap: 12px; margin-top: clamp(26px, 3vw, 38px); }
+.stg { min-height: 72px; padding: 14px 18px; }
+.stg-panel { margin-top: 18px; padding: clamp(22px, 2.6vw, 30px) clamp(20px, 2.8vw, 32px); background: rgba(2,13,14,.34); }
+.stg-panel h3 { font-size: clamp(1.3rem, 2vw, 1.6rem); }
+@media (max-width: 700px) { .stg { min-height: 0; } }
+
+/* counselling form: one step, only the sheet's fields; tighter so it fits on short and narrow screens */
+.cform { gap: 16px; padding: clamp(20px, 3vw, 40px); }
+.cpane.on { gap: 12px; }
+.cpane legend { margin-bottom: 2px; }
+.cform .err:empty { min-height: 0; margin-top: -16px; }
+.cnav { padding-top: 0; border-top: 0; }
+.cnav .btn--go { width: 100%; min-width: 0; justify-content: center; }
+.cfine { margin-top: -6px; }
+.slbox { gap: 10px; padding: 12px 14px; }
+.slbox__empty { font-size: .84rem; }
+@media (max-width: 560px) {
+  .cform { padding: 20px 16px 22px; }
+  .ff input, .ff select, .cc__btn { height: 56px; }
+  .ff label { top: 19px; }
+  .ff input, .ff select { padding-top: 21px; }
+  .ff[data-state]:not([data-state=""])::after { top: 17px; }
+  .slbox__add input, .slbox__add button { height: 42px; }
+}
+/* how it works, phones: the arrows sit beside "Step 0X of 07" instead of on their own row, the chips stay on one
+   row (swipe for more), the subtitle is left out and the dial is smaller, so the section fits a phone screen */
+@media (max-width: 560px) {
+  .process__head .lede { display: none; }
+  .dial__stage { width: min(100%, 300px); }
+  .dial__body { position: relative; left: auto; transform: none; grid-template-columns: minmax(0, 1fr); }
+  .dial__n { min-height: 36px; display: grid; place-items: center; }
+  .dial__ctl { position: absolute; top: 0; left: 0; right: 0; margin: 0; justify-content: space-between; pointer-events: none; }
+  .dial__arrow { width: 36px; height: 36px; pointer-events: auto; }
+  .dial__body p { font-size: .9rem; line-height: 1.45; }
+  .dial__chips { flex-wrap: nowrap; justify-content: flex-start; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .dial__chips::-webkit-scrollbar { display: none; }
+  .dial__chips li { flex: none; }
+}
+
+/* news: each headline is a button that opens the in-page reader (.nr) instead of linking to the news site */
+.nc__a { padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.nc__a:focus-visible { outline: 2px solid var(--kowhai); outline-offset: 4px; border-radius: 8px; }
+.nr .um__card { width: min(600px, 100%); }
+.nr__img { margin: -28px -28px 20px; aspect-ratio: 16 / 8; overflow: hidden; border-radius: 24px 24px 0 0; background: var(--sand); }
+.nr__img img { width: 100%; height: 100%; object-fit: cover; }
+.nr__img--logo { display: grid; place-items: center; background: #fff; aspect-ratio: 16 / 5; }
+.nr__img--logo img { width: auto; height: 56%; object-fit: contain; }
+.nr h3 { padding-right: 34px; }
+.nr__src { margin-top: 12px; font-size: .8rem; color: var(--muted); }
+@media (max-width: 560px) { .nr__img { margin: -22px -18px 18px; } }
+
+/* university details: "Ask Tutee AI about it" sits beside "Add to shortlist" */
+.um__ai .ic { width: 18px; height: 18px; }
+
+/* form suggestion dropdowns (course, shortlist add box): our own list instead of the browser's datalist pop-up */
+.slbox__add { position: relative; }
+.cbx { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30; margin: 0; padding: 6px; list-style: none; background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 24px 48px -22px rgba(4,25,26,.38), 0 2px 8px rgba(4,25,26,.06); max-height: 280px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; animation: popIn .18s var(--ease); }
+.cbx[hidden] { display: none; }
+.cbx--up { top: auto; bottom: calc(100% + 6px); }
+.cbx__o { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border-radius: 10px; cursor: pointer; font: 600 .95rem/1.25 var(--sans); color: var(--ink); transition: background .15s; }
+.cbx__o + .cbx__o { margin-top: 2px; }
+.cbx__o small { flex: none; padding: 4px 8px; border-radius: 999px; background: var(--paper); font: 600 .72rem/1 var(--sans); color: var(--fjord); }
+.cbx__o mark { background: none; color: var(--pohu); }
+.cbx__o:hover, .cbx__o.hl { background: var(--paper); }
+.cbx__o.hl { box-shadow: inset 3px 0 0 var(--teal); }
+.cbx__o.hl small, .cbx__o:hover small { background: #fff; }
+@media (prefers-reduced-motion: reduce) { .cbx { animation: none; } }
+.cbx__o.is-on { color: var(--muted); }
+.cbx__o.is-on small { background: rgba(31,143,95,.12); color: #1F8F5F; }
+
+/* shortlist box: a typed entry that isn't a real New Zealand institution stays in the box with a message */
+.slbox__msg { margin: -2px 2px 0; color: var(--pohu); }
+.slbox.bad { border-color: var(--pohu); }
+.slbox.bad .slbox__add input { border-color: var(--pohu); }
+
+/* ------------------------------------------------------------------
+   Phase 15 (25 Nov 2026): performance pass. Measured on a throttled phone and laptop (scroll frame times, paint
+   and raster traces); each rule below removes a cost that showed up there.
+   ------------------------------------------------------------------ */
+/* hero: the facts card and the "WhatsApp us" button sat over the drifting photo with a live backdrop blur, so the
+   blur was recomputed on every frame of the drift. A slightly stronger tint reads the same without it. */
+.facts { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(4,25,26,.62); }
+.btn--ghost { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(2,13,14,.34); }
+/* seven reasons: the closed panels were dimmed with a CSS filter (saturate + brightness), which is re-rastered
+   for every photo and was the page's largest single paint on phones. The panels' own dark background shows
+   through a lower opacity instead: the same dimming, done by the compositor. */
+.ap img { filter: none; opacity: .74; transition: transform 1.4s var(--ease), opacity .8s var(--ease); }
+.ap.on img { filter: none; opacity: 1; }
+.ap:not(.on):hover img { filter: none; opacity: .9; }
+@media (max-width: 700px) { .ap img, .ap.on img { filter: none; opacity: .94; } }
+/* hero on large screens: the drifting photo carried a colour filter, re-applied by the GPU to a 2560 px layer on
+   every frame of the drift, and the warm "glint" is a gradient layer 40% larger than the screen moving on top of it.
+   The filter goes everywhere (the shade gradients above set the mood); the glint stays only up to 1700 px wide. */
+.slides img { filter: none; }
+@media (min-width: 1700px) { .slides::after { display: none; } }
+
+/* reveals: headings rise word by word and intro lines fade up as they reach the screen. nz.js adds .rv (only when
+   it runs, and not for reduced motion) and .is-in when the element comes into view; the motion is plain CSS. */
+.rv[data-in] { opacity: 0; transform: translate3d(0, 40px, 0); transition: opacity 1.1s cubic-bezier(.16, 1, .3, 1), transform 1.1s cubic-bezier(.16, 1, .3, 1); }
+.rv[data-in].is-in { opacity: 1; transform: none; }
+.rv[data-split] .w > span { transform: translate3d(0, 125%, 0); transition: transform 1.1s cubic-bezier(.16, 1, .3, 1); transition-delay: calc(var(--i, 0) * 45ms); }
+.rv[data-split].is-in .w > span { transform: none; }
+@media (prefers-reduced-motion: reduce) { .rv[data-in], .rv[data-split] .w > span { opacity: 1; transform: none; transition: none; } }

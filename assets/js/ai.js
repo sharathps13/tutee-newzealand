@@ -5,7 +5,7 @@
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const KEY = 'tc_ai_chat';
   const WELCOME = 'Kia ora! I’m **Tutee AI**. Ask me anything about studying in New Zealand: universities, cities, costs, work rights, visas or the route to residence.';
-  const CHIPS = ['Request a callback', 'Which university is best for IT?', 'Can I work while I study?', 'How can I get PR in New Zealand?', 'What does it cost to live in Auckland?', 'Can my family come with me?'];
+  const CHIPS = ['Request a callback', 'Which university is best for IT?', 'Can I work while I study?', 'What is the route to residence?', 'What does it cost to live in Auckland?', 'Can my family come with me?'];
 
   const root = document.createElement('div');
   root.className = 'tai';
@@ -25,11 +25,13 @@
   let history = []; try { history = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) { history = []; }
   const persist = () => { try { sessionStorage.setItem(KEY, JSON.stringify(history.slice(-20))); } catch (e) { /* ignore */ } };
 
-  // minimal, safe markdown: **bold**, [text](#anchor | page.html | https://), "- " lists, paragraphs
+  // minimal, safe markdown: **bold**, [text](#anchor | page.html), "- " lists, paragraphs. Links never leave the site:
+  // a link to anywhere else is shown as its text only.
   function md(text) {
     const inline = s => esc(s)
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-      .replace(/\[([^\]]+)\]\((#[\w-]+|[\w-]+\.html(?:#[\w-]+)?|https:\/\/[^\s)]+)\)/g, (m, t, h) => '<a href="' + h + '"' + (/^https:/.test(h) || /\.html/.test(h) ? ' target="_blank" rel="noopener"' : ' data-ai-jump') + '>' + t + '</a>');
+      .replace(/\[([^\]]+)\]\((#[\w-]+|[\w-]+\.html(?:#[\w-]+)?)\)/g, (m, t, h) => '<a href="' + h + '"' + (/\.html/.test(h) ? '' : ' data-ai-jump') + '>' + t + '</a>')
+      .replace(/\[([^\]]+)\]\([^)\s]+\)/g, '$1');
     const out = []; let ul = null;
     const sug = [];
     String(text).split('\n').forEach(line => {
@@ -52,7 +54,7 @@
   }
 
   /* ---------- the model: built from this page, runs in the browser ----------
-     On first use it reads the page (FAQ, 10 reasons, cities, universities, steps, residence stages, services, loan
+     On first use it reads the page (FAQ, reasons, cities, universities, steps, residence stages, services, loan
      partners, contact details) into a small search index. A question is normalised (accents, plurals, typos and
      synonyms such as "PR" → residence, "IT" → computing), then routed: small talk, a university, a city fact, a
      comparison, "which university is best for…", a follow-up to the last answer, or the best-ranked passage (BM25). */
@@ -94,7 +96,7 @@
     const d = window.__TC_DATA || {}, U = (window.TCUnis && window.TCUnis.TOP) || [], docs = [];
     const add = (title, body, answer, ask, extra) => docs.push({ title, body, answer, ask, ...extra });
     (d.faq || []).forEach(f => add(f[0], f[1], f[1] + '\nMore in the [FAQ](#faq), or [ask a counsellor](#consult) about your case.', f[0]));
-    (d.reasons || []).forEach(r => add(strip(r[0]), r[1] + ' ' + r[2] + ' ' + r[4], '**' + strip(r[0]) + '.** ' + r[2] + '\nSee [10 reasons to study in New Zealand](#why).', 'Tell me more: ' + strip(r[0]).toLowerCase()));
+    (d.reasons || []).forEach(r => add(strip(r[0]), r[1] + ' ' + r[2] + ' ' + r[4], '**' + strip(r[0]) + '.** ' + r[2] + '\nSee [' + d.reasons.length + ' reasons to study in New Zealand](#why).', 'Tell me more: ' + strip(r[0]).toLowerCase()));
     (d.stages || []).forEach((s, i) => add(s.h + ' ' + s.tag, s.p + ' ' + s.list.map(strip).join(' ') + ' ' + ['part time work family partner children while studying', 'post study work visa after graduating', 'skilled job green list career employer', 'permanent residence pr residency resident visa'][i],
       '**' + s.h + '.** ' + s.p + '\n' + s.list.map(l => '- ' + strip(l)).join('\n') + '\nRules change, so a counsellor checks your exact route. See [study to residence](#settle).', s.h));
     (d.steps || []).forEach((s, i) => add('Step ' + (i + 1) + ' ' + s[2] + ' ' + s[1], s[3] + ' ' + s[4].join(' ') + ' process how it works',
@@ -139,9 +141,61 @@
     if (facet === 'weekend') return '**A weekend in ' + c.name + ':**\n' + c.end.map(e => '- ' + e[1] + ': ' + e[2]).join('\n');
     return '**' + c.name + '** (' + c.reo + ', ' + c.island + ' Island). ' + c.tag + '\n' + F.map(line).join('\n') + '\n- **Study at:** ' + c.unis.join(', ') + '\nOpen it in [Pick a city](#cities) to step inside.';
   }
+  // a university: one of the eight (with campus and facts, from unis.js) or any provider from the directory
+  // (name, type, location, quality rating and subjects only). No fees, scores, ranking positions or links.
+  const topOf = u => ((window.TCUnis && window.TCUnis.TOP) || []).find(t => t.name === u.name) || null;
+  const isUni = u => /universit/i.test(u.type || 'University');
   function uniAnswer(u) {
-    return '**' + u.name + '** (' + u.reo + '), ' + u.city + ', founded ' + u.est + '. ' + u.blurb + '\n- **Known for:** ' + u.known.join(', ') + '\n- [Official website](' + u.web + ')\nYou can shortlist it in [Universities](#unis), and the shortlist goes straight into your counselling form.';
+    const t = topOf(u);
+    if (t) return '**' + t.name + '** (' + t.reo + '), ' + t.city + ', founded ' + t.est + '. ' + t.blurb +
+      '\n- **Campus:** ' + t.campus + '\n- **Known for:** ' + t.known.join(', ') + '\n' + t.facts.slice(0, 2).map(f => '- ' + f).join('\n') +
+      '\nShortlist it in [Universities](#unis); the shortlist goes straight into your counselling form.';
+    const subj = String(u.programs || '').split(/,\s*/).filter(Boolean);
+    return '**' + u.name + '** is ' + (/^[aeiou]/i.test(u.type || 'p') ? 'an ' : 'a ') + String(u.type || 'provider').toLowerCase() + ' in ' + (u.location || 'New Zealand') + '.' +
+      (subj.length ? '\n- **Subjects:** ' + subj.join(', ') : '') + (u.assurance ? '\n- **Quality rating:** ' + u.assurance : '') +
+      '\n- It can enrol international students (it has signed the Code of Practice for international learners).' +
+      '\nThat is all this page holds about it. A counsellor can check its programmes, fees and entry requirements for you: [book a free counselling call](#consult).';
   }
+  const UNI_FACETS = [
+    ['campus', /\b(campus\w*|where is|where are|wheres|located|location|which city|address)\b/],
+    ['stay', /\b(accommodation|hostels?|halls?( of residence)?|dorms?|dormitor\w*|on.campus housing|live on campus|student housing)\b/],
+    ['scholar', /\b(scholarships?|bursar\w*|grants?|discounts?|financial aid)\b/],
+    ['intake', /\b(intakes?|semesters?|trimesters?|deadlines?|start dates?|when (can|do|does|should|will) (i|classes|it|the course) (apply|join|start|begin))\b/],
+    ['english', /\b(ielts|pte|toefl|duolingo|english (test|requirement\w*|proficiency|language))\b/],
+    ['rent', /\b(rent|cost of living|cost to live|live there|living (costs?|expenses)|expenses)\b/],
+    ['fees', /\b(fees?|tuition|cost of (the )?(course|degree|programm?e?|study\w*)|how (much|expensive))\b/],
+    ['rank', /\b(rank\w*|qs|times higher|world ranking|reputation|prestig\w*|recogni[sz]ed|accredit\w*)\b/],
+    ['est', /\b(founded|established|history|how old|oldest|old is)\b/],
+    ['entry', /\b(entry|requirements?|eligib\w*|admissions?|criteria|apply|application|get in|get into)\b/],
+    ['work', /\b(work|jobs?|part ?time|internships?|placements?|employ\w*|careers?)\b/],
+    ['known', /\b(known for|famous|good for|strong (in|for)|best (for|at|in)|courses?|programm?e?s?|subjects?|degrees?|faculty|faculties|majors?|what can i study)\b/],
+    ['life', /\b(student life|city|life (like|there)|clubs|safe|safety|weather|climate)\b/]
+  ];
+  const uniFacetOf = q => { const hit = UNI_FACETS.find(([, re]) => re.test(q)); return hit ? hit[0] : null; };
+  function uniFacet(u, f) {
+    const t = topOf(u), n = '**' + u.name + '**', uni = isUni(u);
+    const city = t ? t.city : String(u.location || '').split(',')[0];
+    const c = M.cities.map(x => x.c).find(x => city.indexOf(x.name) > -1);
+    const call = ' Your counsellor checks it for your course on a [free counselling call](#consult).';
+    switch (f) {
+      case 'campus': return t ? n + ': ' + t.campus + '.' : n + ' is in ' + (u.location || 'New Zealand') + '. This page doesn’t list its campuses.' + call;
+      case 'known': return t ? n + ' is known for ' + t.known.join(', ') + '.\n' + t.facts.map(x => '- ' + x).join('\n') + '\nThe right programme depends on your background and goals.' + call
+        : (u.programs ? n + ' teaches subjects including ' + u.programs + ' (indicative, from the register).' : 'This page doesn’t list ' + n + '’s programmes.') + call;
+      case 'est': return t ? n + ' was founded in ' + t.est + '.' + (t.facts.filter(x => /founded|oldest|roots|second-oldest/i.test(x)).map(x => ' ' + x + '.').join('')) : 'This page doesn’t hold ' + n + '’s history.' + call;
+      case 'rank': return 'Rankings change every year, so I don’t quote positions. ' + (t ? t.facts.filter(x => /QS|largest|accreditation/i.test(x)).map(x => x + '. ').join('') : '') +
+        (uni ? 'All eight New Zealand universities are quality-audited by the Academic Quality Agency (AQA), and New Zealand degrees are recognised worldwide.' : n + '’s quality rating from NZQA is: ' + (u.assurance || 'not listed here') + '.') + call;
+      case 'fees': return 'Tuition at ' + n + ' depends on the programme and level, and this page doesn’t list fees, so I won’t quote a figure.' + call;
+      case 'scholar': return (uni ? n + ', like New Zealand’s other universities, offers some scholarships for international students' : n + ' may offer scholarships for international students') + '; who qualifies, the amounts and the deadlines change each year.' + ' We help you find the ones you may be eligible for and apply.' + call;
+      case 'intake': return 'Most programmes at New Zealand universities start in **Semester 1 (late February or early March)**, and many also in **Semester 2 (July)**. Start dates and application deadlines at ' + n + ' differ by programme, and not every programme takes a mid-year start.' + call;
+      case 'english': return n + ' sets the English requirement for each programme. New Zealand universities commonly accept IELTS (Academic), TOEFL and PTE Academic, and some accept other evidence such as English-medium study. The minimum score depends on the course, so I won’t quote one.' + call;
+      case 'entry': return 'You apply to ' + n + ' directly, usually online, for the programme you choose. Entry requirements are set for each programme: your Class 12 results for a bachelor’s, your degree for a master’s, plus English evidence. Your counsellor checks them for every course on your shortlist and prepares the application with you: [book a free counselling call](#consult).';
+      case 'stay': return uni ? n + ', like New Zealand’s other universities, has student accommodation (halls of residence), popular with first-year and international students. Places are limited and fill early, so apply as soon as you have your offer. Your counsellor helps with accommodation after your offer.' : 'This page doesn’t hold accommodation details for ' + n + '.' + call;
+      case 'rent': case 'life': if (c) return cityAnswer(c, f === 'rent' ? 'rent' : undefined); return 'This page doesn’t hold ' + (f === 'rent' ? 'living costs' : 'city details') + ' for ' + city + '.' + call;
+      case 'work': return 'On a student visa you may be able to work up to **25 hours a week** while you study, and full-time in scheduled holidays, depending on your course and visa conditions.' + (t && /placements/.test(t.facts.join(' ')) ? ' ' + n + ' is known for degrees with industry placements.' : '') + ' After you graduate, a post-study work visa can follow: see [study to residence](#settle).';
+    }
+    return uniAnswer(u);
+  }
+  const uniSugg = u => sugg(['Where are the campuses of ' + u.name + '?', 'Does ' + u.name + ' offer scholarships?', 'Is there student accommodation at ' + u.name + '?', 'What are the entry requirements for ' + u.name + '?']);
   const FACETS = [['rent', /\b(rent|room|flat|accommodation|housing|hostel|stay)\b/], ['cost', /\b(cost|costs|expensive|cheap|afford|budget|price|living)\b/], ['weather', /\b(weather|climate|cold|warm|hot|rain|temperature|winter|summer)\b/],
     ['population', /\b(population|people|big|size|crowded)\b/], ['work', /\b(work|job|jobs|part ?time|earn)\b/], ['university', /\b(uni|unis|university|universities|study|college)\b/], ['weekend', /\b(weekend|fun|things to do|do there|visit|activities|beach)\b/]];
   const FACET_TOK = { rent: 'rent', cost: 'cost', weather: 'weather', population: 'population', work: 'work', university: 'university' };
@@ -216,6 +270,45 @@
   // "How do I apply?" (to a university, not for a visa, loan or scholarship): how applying works here, then hand over
   var APPLY_Q = /\b(how (do|can|should|would|will) (i|we|one|students?) apply|how to apply|application process|admission process|applying (to|for) (a |an |the )?(universit\w*|unis?|college\w*|courses?|programm?e?s?|admissions?)|apply (to|for) (a |an |the )?(universit\w*|unis?|college\w*|courses?|programm?e?s?|admissions?))\b/;
   function asksHowToApply(q) { return APPLY_Q.test(q) && !/\b(visa|pass|permit|stamp|loans?|scholarships?|bursar\w*|grants?|jobs?|work)\b/.test(q); }
+  // "Can you guarantee…?" / "Will I definitely…?": no one can promise these outcomes, so the answer says so plainly
+  // before any topic answer (a topic answer that opens "Yes." would read as a promise).
+  function guaranteeReply(text) {
+    var s = String(text || '').toLowerCase();
+    if (!/\b(guarantee[ds]?|guaranteeing|assured?|promise[ds]?)\b|100 ?%|\b(definitely|surely|certainly)\s+(get|be|receive|land|obtain|secure|win)\b|\bfor sure\b/.test(s)) return null;
+    var topics = [
+      [/\b(settle\w*|pr|permanent(ly)?|citizenship|resident|residence|long.term resid\w*)\b/, 'residence', 'Residence depends on your job, your skills and the rules at the time you apply, and Immigration New Zealand decides each application.'],
+      [/\b(scholarships?|bursar(y|ies)|grants?|stipends?)\b/, 'a scholarship', 'Scholarships are awarded by universities and funding bodies, usually in competition with other applicants.'],
+      [/\b(jobs?|employment|employed|placements?|hired|career)\b/, 'a job', 'Jobs depend on employers, your skills and the job market; we help with your CV and job search.'],
+      [/\b(admissions?|admit\w*|offers?|get into|accepted|acceptance|seats?|a place)\b/, 'admission', 'Each university decides who it admits.'],
+      [/\b(loans?)\b/, 'a loan', 'Each lender makes its own decision on a loan.'],
+      [/\b(visas?|permits?|approv\w*|refus\w*)\b/, 'a visa', 'Immigration New Zealand decides every visa application, not Tutee Connect or any other agent.']
+    ];
+    for (var i = 0; i < topics.length; i++) if (topics[i][0].test(s))
+      return 'No, and no one can honestly guarantee ' + topics[i][1] + '. ' + topics[i][2] + ' What we do is help you prepare a strong, honest application, and your counsellor tells you plainly where your profile stands on your free call.';
+    return null;
+  }
+  // "Which universities do you partner with?" ("partner" is not a spouse here) and review questions
+  // (the student postcards on the page are illustrative placeholders, so they are never quoted).
+  function extraReply(text) {
+    var s = String(text || '').toLowerCase();
+    // Phase 14: questions this page cannot answer (our own numbers, how details are shared, what our services cost,
+    // off-topic): say so and route to a counsellor, never a guessed passage. No figures, no new claims.
+    if ((/\bhow many\b/.test(s) && /\b(you|you've|tutee)\b/.test(s) && /\b(students?|people|clients|applicants|families|placed|helped|sent|guided|counsell?ed|admissions?|visas?)\b/.test(s) && !/\b(family|spouse|partner|wife|husband|children|kids|dependants?|bring|come with|join)\b/.test(s)) || (/\b(success|approval|acceptance|placement|visa|admission) (rates?|ratios?|percentages?|records?)\b|\btrack record\b/.test(s) && /\b(your|you|tutee)\b/.test(s) && !/\b(universit\w*|colleges?|institut\w*|schools?)\b/.test(s)))
+      return 'We don\'t publish student numbers or success rates on this page, so I won\'t guess at them. A counsellor can tell you honestly how we work and what to expect for your profile on a [free counselling call](#consult).';
+    if ((/\b(share|sell|pass|give|send|disclose|hand|forward)\w*\b[^?.]*\b(my|our)\s+(personal\s+)?(details|data|information|info|number|phone|email|contacts?)\b/.test(s) && /\b(you|tutee|your (company|team))\b/.test(s) && !/\b(counsell?or|advisor|adviser|callback|call back|call me|contact me)\b/.test(s)) || /\b(privacy (policy|notice)|personal data|data protection|gdpr|dpdp)\b/.test(s) || (/\bprivacy\b/.test(s) && /\b(my|data|details|information)\b/.test(s)) || /\bmy (personal )?(data|details|information|info)\b[^?.]*\b(safe|secure|protected|stored|kept|used|deleted|delete|removed?)\b/.test(s) || /\bwho (sees|can see|gets|will see|has access to) my\b/.test(s))
+      return 'I can\'t answer questions about how your details are used or shared reliably from this page, so I won\'t guess. Please ask a counsellor directly: [book a free counselling call](#consult) or WhatsApp **+91 73583 64959**.';
+    if (/\bhow much (do|does|will|would) (you|you guys|tutee( connect)?|your (company|team|service|agency|consultancy)) (charge|cost|take)\b|\bdo you (charge|take (a )?(fee|commission))\b|\b(service|consultancy|consultant|agency|agent|counsell?ing|counsell?or) (fees?|charges?)\b/.test(s) || (/\b(your|tutee( connect)?'?s?) (fees?|charges?|price|pricing)\b/.test(s) && !/\b(tuition|visa|universit\w*|colleges?|living|rent|accommodation|insurance|application)\b/.test(s)))
+      return 'This page doesn\'t list what our services cost, so I won\'t guess. Your first [counselling call](#consult) is free, and a counsellor can explain any costs then. If you meant the cost of studying in New Zealand, ask me about tuition or living costs.';
+    if (/\b(mars|jupiter|saturn|venus|pluto|outer space|world cup|ipl|premier league|bitcoin|crypto|cryptocurrenc\w*|stock market|share price|lottery|horoscope|recipes?|tell me a joke)\b/.test(s))
+      return 'That\'s outside what I can help with. I answer questions about studying in New Zealand, such as universities, courses, visas and working while you study, using what\'s on this page.';
+    if (/\b(talk|speak|chat) (to|with) (a |an |some )?(human|person|real person|someone|somebody)\b|\b(real|actual) (human|person)\b/.test(s))
+      return 'Happy to put you in touch. [Book a free counselling call](#consult) and a counsellor calls you in the slot you choose, or WhatsApp **+91 73583 64959**.';
+    if (/\b(partner\w*|tie.?ups?|affiliat\w*|official representatives?|collaborat\w*)\b/.test(s) && /\b(universit\w*|colleges?|institutions?|institutes?|schools?|polytechnics?|unis?|providers?)\b/.test(s) && !/\b(spouse|wife|husband|children|kids|family|visa)\b/.test(s))
+      return 'Our directory lists New Zealand education providers that have signed the Pastoral Care Code for international learners. Being on it doesn\'t mean a provider is a Tutee Connect partner. Your counsellor can answer questions about any university on your shortlist.';
+    if (/\b(reviews?|testimonials?|ratings?|feedback|scam|legit\w*)\b|students say|\b(do|did) (your )?(past |former )?students (say|think)\b/.test(s))
+      return 'We\'re still collecting verified reviews from our students, and we\'ll only publish ones they\'ve agreed to share. Until then, the fastest way to judge us is a [free counselling call](#consult): a counsellor will tell you honestly what New Zealand would take for your profile.';
+    return null;
+  }
   function needsCounsellor(q) {
     for (var i = 0; i < NEEDS_COUNSELLOR.length; i++) { var n = NEEDS_COUNSELLOR[i]; if (n[0].test(q) && (!n[1] || n[1].test(q))) return n[2]; }
     return '';
@@ -230,14 +323,41 @@
     M = M || build();
     const q = fold(raw).replace(/[?!.]+$/g, '').trim();
     for (const [re, fn] of SMALL) if (re.test(q)) return fn();
+    const guar = guaranteeReply(raw);
+    if (guar) { ctx = { city: null, uni: null, facet: null }; return guar + ' [Book a free counselling call](#consult).' + sugg(['Request a callback']); }
+    const extra = extraReply(raw);
+    if (extra) { ctx = { city: null, uni: null, facet: null }; return extra + sugg(['Request a callback']); }
+    // "Can my family join me?": the FAQ answer on family, with its official link
+    if (/\b(family|spouse|partner|wife|husband|children|kids|dependants?)\b/.test(q) && /\b(join|come|bring|accompany|with me)\b/.test(q)) {
+      const F = M.docs.find(x => /family come with me/i.test(x.title));
+      if (F) { ctx = { city: null, uni: null, facet: null }; return F.answer + sugg(['Can my partner work in New Zealand?', 'Request a callback']); }
+    }
     // entities and facet
     const unisHit = M.unis.filter(x => x.re.test(q)).map(x => x.u);
     const qNoUni = unisHit.reduce((s, u) => s.replace(new RegExp(fold(u.name), 'g'), ' '), q);
     const citiesHit = M.cities.filter(x => x.re.test(unisHit.length ? qNoUni : q)).map(x => x.c);
     const qt = toks(raw).map(fix);
+    // the university this question is about: named in it, or (for a follow-up such as "does it have halls?") the one
+    // the chat is about, e.g. after "Ask Tutee AI about it" in a university's details
+    const uFacet = uniFacetOf(ctx.uni ? qNoUni.split(fold(ctx.uni.name)).join(' ') : qNoUni);   // the name itself never counts as the question
+    const named = ctx.uni && q.indexOf(fold(ctx.uni.name)) > -1;
+    const pronoun = /\b(it|its|there|they|their|this (uni|university|one|college|institute)|that (uni|university|one)|the (uni|university|campus|college))\b/.test(q);
+    // the chat's own provider, named in full, wins over a short name inside it ("Waikato Institute of Technology" is not
+    // the University of Waikato)
+    let uniQ = named ? ctx.uni : unisHit.length === 1 ? unisHit[0] : null;
+    if (!unisHit.length && !citiesHit.length && ctx.uni && (named || (uFacet && (pronoun || !['work', 'rent', 'life'].includes(uFacet))))) uniQ = ctx.uni;
     // course fees aren't on this page: never let a fee question land on a university's profile
-    const unsure = !namesLandmark(q) && (needsCounsellor(q) || (/\b(fees?|tuition)\b/.test(q) && !citiesHit.length ? 'Tuition depends on the university and the programme, and this page doesn’t list course fees, so I won’t quote a figure.' : ''));
+    const unsure = !namesLandmark(q) && (needsCounsellor(q) || (/\b(fees?|tuition)\b/.test(q) && !citiesHit.length && !uniQ ? 'Tuition depends on the university and the programme, and this page doesn’t list course fees, so I won’t quote a figure.' : ''));
     if (unsure) { ctx = { city: null, uni: null, facet: null }; return unsure + ' A counsellor can check it for you: [book a free counselling call](#consult), or WhatsApp **+91 73583 64959**.' + sugg(['What does it cost to live in Auckland?', 'Request a callback']); }
+    if (uniQ) {
+      // "Tell me about Otago" or just the name: the profile. A specific question: its answer. Anything else (a visa
+      // question that mentions a university, say) goes on to the topic answers below.
+      const rest = toks(raw).filter(x => !toks(uniQ.name + ' ' + (uniQ.reo || '') + ' tell about info information detail details more overview know').includes(x) && !/^(uoa|aut|vuw|uc|vic|otago|massey|lincoln|waikato|canterbury|victoria)$/.test(x));
+      if (uFacet || !rest.length) {
+        ctx = { city: null, uni: uniQ, facet: null };
+        return (uFacet ? uniFacet(uniQ, uFacet) : uniAnswer(uniQ)) + uniSugg(uniQ);
+      }
+    }
     if (asksHowToApply(q)) {
       ctx = { city: null, uni: null, facet: null };
       const S = (window.__TC_DATA || {}).steps || [];
@@ -274,7 +394,7 @@
       ctx = { city: citiesHit[citiesHit.length - 1], uni: null, facet: f };
       return '**' + citiesHit.map(c => c.name).join(' vs ') + ':**\n' + citiesHit.map(c => { const F = c.facts; const w = F.find(x => /climate/i.test(x[1])); return '- **' + c.name + ':** ' + w[2] + ' (' + w[3].toLowerCase() + '), study at ' + c.unis[0]; }).join('\n') + '\nCompare them side by side in [Pick a city](#cities).';
     }
-    if (unisHit.length === 1 && !(facet && facet !== 'university' && citiesHit.length)) { ctx = { city: null, uni: unisHit[0], facet: null }; return uniAnswer(unisHit[0]) + sugg(['What does it cost to live in ' + unisHit[0].city.replace(/ \(.*/, '') + '?']); }
+    if (unisHit.length === 1 && !(facet && facet !== 'university' && citiesHit.length) && !/\bvisas?\b/.test(q)) { ctx = { city: null, uni: unisHit[0], facet: null }; return uniAnswer(unisHit[0]) + uniSugg(unisHit[0]); }
     if (unisHit.length > 1) { ctx = { city: null, uni: null, facet: null }; return unisHit.map(u => '- **' + u.name + '** (' + u.city + '): known for ' + u.known.join(', ')).join('\n') + '\nTap any of them in [Universities](#unis) for details.'; }
     // follow-ups: "what about Dunedin?" (keep the topic) / "and the rent?" (keep the city)
     let city = citiesHit[0] || null;
@@ -286,7 +406,8 @@
     if (!qt.length) return 'Could you tell me a little more? For example: “How much is rent in Dunedin?” or “Can my family come with me?”';
     const k1 = 1.2, b = .75;
     // FAQ answers are written as answers, so they win ties against descriptive passages
-    const scored = M.docs.map(x => { let s = 0, hit = 0; qt.forEach(t => { const f = x.tf[t]; if (f) { hit++; s += M.idf(t) * (f * (k1 + 1)) / (f + k1 * (1 - b + b * x.t.length / M.avg)); } }); if (x.ask === x.title && /\?$/.test(x.title)) s *= 1.3; return { x, s, cover: hit / qt.length }; })
+    const visaQ = /\bvisas?\b/.test(q);   // a visa question is never answered with a university's profile
+    const scored = M.docs.filter(x => !(visaQ && (x.uni || !x.tf.visa))).map(x => { let s = 0, hit = 0; qt.forEach(t => { const f = x.tf[t]; if (f) { hit++; s += M.idf(t) * (f * (k1 + 1)) / (f + k1 * (1 - b + b * x.t.length / M.avg)); } }); if (x.ask === x.title && /\?$/.test(x.title)) s *= 1.3; return { x, s, cover: hit / qt.length }; })
       .filter(r => r.s > 0).sort((a, z) => z.s - a.s);
     const top = scored[0];
     // a question about something this page never mentions ("capital of France") is not forced onto a weak match
@@ -297,7 +418,7 @@
       return top.x.answer + sugg(more);
     }
     const near = scored.slice(0, 3).map(r => r.x.ask).filter(Boolean);
-    return 'I couldn’t find that on this page, so a counsellor is the best person to answer it: [book a free counselling call](#consult), or WhatsApp **+91 73583 64959**.' + (near.length ? sugg(near) : sugg(['Can I work while I study?', 'How can I get PR in New Zealand?']));
+    return 'I couldn’t find that on this page, so a counsellor is the best person to answer it: [book a free counselling call](#consult), or WhatsApp **+91 73583 64959**.' + (near.length ? sugg(near) : sugg(['Can I work while I study?', 'What is the route to residence?']));
   }
 
   /* ---------- ask ---------- */
@@ -327,13 +448,17 @@
     if (stage !== 'idle' && /^(cancel|stop|no thanks|never ?mind|skip)\b/i.test(q)) { stage = 'idle'; return 'No problem, I’ve stopped. What else would you like to know?'; }
     if (stage !== 'idle' && /\?$/.test(q)) stage = 'idle';             // a question mid-flow: answer it instead
     if (stage === 'name') {
-      if (q.replace(/[^A-Za-z\u00C0-\u024F]/g, '').length < 2) return 'Could you type your **full name**? (Or type *cancel*.)';
-      lead.name = q.slice(0, 120); stage = 'phone';
+      // the same name rules as the counselling form (checks.js), so the server accepts what the chat collects
+      const bad = window.TCChecks ? window.TCChecks.nameIssue(q) : (q.replace(/[^A-Za-z\u00C0-\u024F]/g, '').length < 2 ? 'x' : '');
+      if (bad) return 'That doesn\u2019t look like a full name. Could you type your **full name**, using letters only? (Or type *cancel*.)';
+      lead.name = q.trim().replace(/\s+/g, ' ').slice(0, 80); stage = 'phone';
       return 'Thanks ' + q.split(/\s+/)[0] + '! What’s the best **phone number** to reach you on? Please include the country code, e.g. +91 98765 43210.';
     }
     if (stage === 'phone') {
       const d = q.replace(/\D/g, '');
-      if (d.length < 7 || d.length > 15) return 'That doesn’t look like a valid phone number. Please enter it with the country code, e.g. +91 98765 43210, or type *cancel*.';
+      const n = d.slice(-10).replace(/^0+/, '');
+      const fake = n.length >= 6 && (/^(\d)\1+$/.test(n) || '01234567890123456789'.includes(n) || '98765432109876543210'.includes(n) || /^(\d{2,3})\1{2,}$/.test(n));   // 9999999999, 1234567890…
+      if (d.length < 7 || d.length > 15 || fake) return 'That doesn’t look like a real phone number. Please enter it with the country code, e.g. +91 98401 23456, or type *cancel*.';
       lead.phone = q.slice(0, 40); stage = 'email';
       return 'Got it. Lastly, what’s your **email address**?';
     }
@@ -384,7 +509,16 @@
     const sg = e.target.closest('[data-ask]'); if (sg) { ask(sg.dataset.ask); return; }
     const a = e.target.closest('[data-ai-jump]'); if (!a) return;
     e.preventDefault(); if (matchMedia('(max-width: 700px)').matches) setOpen(false);
-    const h = a.getAttribute('href'); if (window.__goTo) window.__goTo(h); else location.hash = h;
+    const h = a.getAttribute('href');
+    if (!document.querySelector(h)) { location.href = './index.html' + h; return; }   // a section of the main page, from the directory
+    if (window.__goTo) window.__goTo(h); else location.hash = h;
   });
-  window.TCAI = { ask, answer, open: () => setOpen(true) };   // answer(q): the reply text without the chat window, for checks
+  // opens the chat on one university (from its details pop-up): later questions such as "does it have halls?" are about it
+  function askAbout(u) {
+    if (!u || !u.name) return;
+    setOpen(true); stage = 'idle';
+    ctx = { city: null, uni: u, facet: null };
+    ask('Tell me about ' + u.name);
+  }
+  window.TCAI = { ask, answer, askAbout, open: () => setOpen(true) };   // answer(q): the reply text without the chat window, for checks
 })();

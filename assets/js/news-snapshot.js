@@ -6,7 +6,7 @@ window.NEWS_SNAPSHOT = [
   "url": "https://www.universitiesnz.ac.nz/latest-news-and-publications/universities-new-zealand-sector-ai-position-statement",
   "summary": "The Universities New Zealand Sector AI Position Statement outlines the New Zealand universities’ common approach to the responsible use of artificial intelligence noting that each university is an autonomous institution ",
   "date": "2026-08-27T07:01:15.000Z",
-  "image": "./assets/img/news/story-1.png",
+  "image": "./assets/img/news/logo-unz.webp",
   "logo": true
  },
  {
@@ -16,6 +16,7 @@ window.NEWS_SNAPSHOT = [
   "summary": "There's been sharp improvement in primary school children's maths and vocabulary skills but their understanding of what they read is in a serious dip.",
   "date": "2026-10-13T21:06:26.000Z",
   "image": "./assets/img/news/story-2.jpg",
+  "thumb": "./assets/img/news/story-2-sm.webp",
   "logo": false
  },
  {
@@ -25,6 +26,7 @@ window.NEWS_SNAPSHOT = [
   "summary": "Pakaraka School in Northland is now run by the Society of Holistic Learners - a charitable trust led by the school parents.",
   "date": "2026-10-12T01:14:47.000Z",
   "image": "./assets/img/news/story-3.jpg",
+  "thumb": "./assets/img/news/story-3-sm.webp",
   "logo": false
  }
 ];

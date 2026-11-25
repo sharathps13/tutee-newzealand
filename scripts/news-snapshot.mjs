@@ -13,7 +13,8 @@ const items = await latest();
 const out = [];
 for (const [n, i] of items.entries()) {
   let image = '';
-  if (i.image) {
+  if (i.image && i.image.startsWith('./assets/')) image = i.image;   // the site's own copy (the Universities NZ logo)
+  else if (i.image) {
     const src = decodeURIComponent(i.image.replace('/api/news-img?u=', ''));
     try {
       const r = await fetch(src, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TuteeConnectNews/1.0)' } });

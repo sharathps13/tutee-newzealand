@@ -23,13 +23,13 @@
   const readUtm = () => { try { const s = JSON.parse(store.get('tc_utm') || 'null'); if (s && Date.now() - s.at < 2592e6) return s.v; } catch (e) { /* corrupt */ } return null; };
   if (!readUtm()) { const p = new URLSearchParams(location.search), f = {}; UTM_KEYS.forEach(k => { const v = p.get(k); if (v) f[k] = v.slice(0, 150); }); if (Object.keys(f).length) store.set('tc_utm', JSON.stringify({ at: Date.now(), v: f })); }
   // universities.html and older campaigns link to the previous page's section ids
-  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'why', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', visas: 'visa', documents: 'visa', universities: 'unis', loans: 'trust' };
+  const LEGACY = { top: 'hero', home: 'hero', contact: 'consult', services: 'process', testimonials: 'stories', scholarships: 'process', 'financial-aid': 'trust', 'earn-while-you-learn': 'why', relocate: 'process', reasons: 'why', visas: 'faq', documents: 'faq', universities: 'unis', plan: 'unis', intakes: 'unis', entry: 'unis', visa: 'faq', loans: 'trust' };
   const legacyId = LEGACY[location.hash.slice(1)];
   if (legacyId) history.replaceState(null, '', '#' + legacyId);
 
   /* ---------- analytics events ----------
      All events go through tcTrack() from analytics.js (GA4 after consent; otherwise only window.dataLayer). analytics.js
-     itself fires page_view, whatsapp_click, phone_click and form_start; this file adds form_step_2 and generate_lead.
+     itself fires page_view, whatsapp_click, phone_click and form_start; this file adds generate_lead.
      Never any personal detail (no name, email, phone or free text). */
   const pushEvent = (event, params) => { if (window.tcTrack) window.tcTrack(event, params); };
 
@@ -45,7 +45,9 @@
     });
     walk(el);
   }
-  $$('[data-split]').forEach(splitWords);
+  // the hero headline is not split: it animates as one block in CSS (nz.css, hero entrance), and re-wrapping its words
+  // after the first paint made the browser count it as a new, later largest paint
+  $$('[data-split]').filter(h => h.id !== 'hero-h').forEach(splitWords);
 
   /* ---------- content built from data ---------- */
   const banks = [['icici.png', 'ICICI Bank'], ['hdfc-credila.jpg', 'HDFC Credila'], ['axis.jpg', 'Axis Bank'], ['avanse.jpg', 'Avanse'], ['auxilo.jpg', 'Auxilo'], ['idfc.jpg', 'IDFC FIRST Bank'], ['incred.jpg', 'InCred'], ['mpower.jpg', 'MPOWER'], ['prodigy.jpg', 'Prodigy Finance'], ['union.jpg', 'Union Bank of India'], ['tata-capital.jpg', 'Tata Capital'], ['poonawalla-fincorp.jpg', 'Poonawalla Fincorp']];
@@ -75,7 +77,7 @@
 
   // the map's satellite render isn't fetched with the hero: it loads as the universities section approaches
   // (it only shows after the outline has drawn, so there is plenty of time)
-  (() => { const imgs = $$('#nzm img[data-src]'); const go = () => imgs.forEach(i => { i.src = i.dataset.src; i.removeAttribute('data-src'); if (i.decode) i.decode().catch(() => {}); });   // decoded before it's attached, so the fade-in frame doesn't stall
+  (() => { const imgs = $$('#nzm img[data-src]'); const go = () => imgs.forEach(i => { if (i.dataset.srcset) { i.sizes = i.dataset.sizes || '100vw'; i.srcset = i.dataset.srcset; } i.src = i.dataset.src; i.removeAttribute('data-src'); if (i.decode) i.decode().catch(() => {}); });   // decoded before it's attached, so the fade-in frame doesn't stall
     if (!('IntersectionObserver' in window)) { go(); return; }
     const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { go(); io.disconnect(); } }, { rootMargin: '1500px 0px' }); io.observe($('#nzm')); })();
   // photos are decoded ahead of time, a screen or so before they scroll into view, so the first frame that shows
@@ -93,6 +95,28 @@
     const ago = d => { const s = (Date.now() - Date.parse(d)) / 1000; if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min ago'; if (s < 86400) return Math.round(s / 3600) + ' h ago'; if (s < 6048e2) { const n = Math.round(s / 86400); return n + (n === 1 ? ' day ago' : ' days ago'); } const t = new Date(d); return t.getDate() + ' ' + 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[t.getMonth()]; };   // no Intl: its first use costs ~100ms on a phone
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const tile = '<svg class="ic" aria-hidden="true"><use href="#i-book"/></svg>';
+    let shown = [];
+    // the reader: a dialog on this page, in the same style as the university details
+    const rd = document.createElement('div');
+    rd.className = 'um nr'; rd.hidden = true; rd.setAttribute('role', 'dialog'); rd.setAttribute('aria-modal', 'true'); rd.setAttribute('aria-labelledby', 'nr-h');
+    rd.innerHTML = '<div class="um__back" data-nr-close></div><div class="um__card"><button type="button" class="um__x" data-nr-close aria-label="Close"><svg class="ic"><use href="#i-plus"/></svg></button><div id="nr-body"></div></div>';
+    document.body.appendChild(rd);
+    let rdFrom = null;
+    const rdClose = () => { if (rd.hidden) return; rd.classList.remove('on'); setTimeout(() => { rd.hidden = true; document.documentElement.classList.remove('imm-lock'); if (rdFrom) rdFrom.focus({ preventScroll: true }); }, 220); };
+    $$('[data-nr-close]', rd).forEach(b => b.addEventListener('click', rdClose));
+    rd.addEventListener('keydown', e => { if (e.key === 'Escape') rdClose(); });
+    list.addEventListener('click', e => {
+      const b = e.target.closest('.nc__a'); if (!b) return; const i = shown[+b.dataset.n]; if (!i) return;
+      const img = i.image && (i.image.indexOf('/api/news-img?') === 0 || i.image.indexOf('./assets/img/news/') === 0) ? i.image : '';
+      const d = new Date(i.date), when = isNaN(d) ? '' : d.getDate() + ' ' + 'January February March April May June July August September October November December'.split(' ')[d.getMonth()] + ' ' + d.getFullYear();
+      $('#nr-body', rd).innerHTML = (img ? '<div class="nr__img' + (i.logo ? ' nr__img--logo' : '') + '"><img src="' + esc(img) + '" alt=""></div>' : '') +
+        '<p class="um__type">' + esc(i.source) + (when ? ' · ' + when : '') + '</p><h3 id="nr-h">' + esc(i.title) + '</h3>' +
+        (i.summary ? '<p class="um__blurb">' + esc(i.summary.replace(/\s+\S*$/, '').trim()) + '…</p>' : '') +
+        '<p class="nr__src">Headline and summary from ' + esc(i.source) + '’s public news feed.</p>' +
+        '<div class="um__acts"><a class="btn btn--go" href="#consult" data-nr-go>Talk to a counsellor <svg class="ic"><use href="#i-arrow"/></svg></a></div>';
+      $('[data-nr-go]', rd).addEventListener('click', ev => { ev.preventDefault(); rdFrom = null; rdClose(); goTo('#consult'); });
+      rdFrom = b; rd.hidden = false; document.documentElement.classList.add('imm-lock'); void rd.offsetWidth; rd.classList.add('on'); $('.um__x', rd).focus({ preventScroll: true });
+    });
     const hide = () => { sec.hidden = true; if (ST) ST.refresh(); };
     // live from /api/news; the saved snapshot (assets/js/news-snapshot.js) stands in when that isn't reachable,
     // e.g. index.html opened straight from disk or a static preview
@@ -102,14 +126,16 @@
         const live = ((j && j.items) || []);
         const items = (live.length ? live : snapshot()).filter(i => /^https:\/\//.test(i.url)).slice(0, 4);
         if (!items.length) { hide(); return; }
-        list.innerHTML = items.map(i => '<li class="nc"><a href="' + esc(i.url) + '" target="_blank" rel="noopener">' +
-          (i.image && (i.image.indexOf('/api/news-img?') === 0 || i.image.indexOf('./assets/img/news/') === 0) ? '<span class="nc__img' + (i.logo ? ' nc__img--logo' : '') + '"><img src="' + esc(i.image) + '" alt="" loading="lazy" decoding="async"></span>' : '<span class="nc__img nc__img--tile">' + tile + '</span>') +
-          '<span class="nc__body"><span class="nc__meta">' + esc(i.source) + ' · ' + ago(i.date) + '</span><span class="nc__t">' + esc(i.title) + '</span></span></a></li>').join('');
+        shown = items;
+        // each story opens in a reader on this page (headline, source, date and the feed's summary); nothing links out
+        list.innerHTML = items.map((i, n) => '<li class="nc"><button type="button" class="nc__a" data-n="' + n + '">' +
+          (i.image && (i.image.indexOf('/api/news-img?') === 0 || i.image.indexOf('./assets/img/news/') === 0) ? '<span class="nc__img' + (i.logo ? ' nc__img--logo' : '') + '"><img src="' + esc(i.thumb || i.image) + '" alt="" width="46" height="32" loading="lazy" decoding="async"></span>' : '<span class="nc__img nc__img--tile">' + tile + '</span>') +
+          '<span class="nc__body"><span class="nc__meta">' + esc(i.source) + ' · ' + ago(i.date) + '</span><span class="nc__t">' + esc(i.title) + '</span></span></button></li>').join('');
         // running ticker: repeat the stories until one copy is wider than the screen, then double it so the loop is seamless
         const one = list.innerHTML; let set = one;
         list.innerHTML = set; while (list.scrollWidth < innerWidth * 1.1 && set.length < one.length * 8) { set += one; list.innerHTML = set; }
         const w = list.scrollWidth;
-        list.innerHTML = set + set.replace(/<li class="nc">/g, '<li class="nc" aria-hidden="true">').replace(/<a /g, '<a tabindex="-1" ');
+        list.innerHTML = set + set.replace(/<li class="nc">/g, '<li class="nc" aria-hidden="true">').replace(/<button /g, '<button tabindex="-1" ');
         list.style.setProperty('--dur', Math.max(25, Math.round(w / 45)) + 's');   // about 45px per second
         list.classList.add('is-running');
         list.removeAttribute('aria-busy');
@@ -181,7 +207,7 @@
       { id: 'wellington', code: 'WLG', name: 'Wellington', reo: 'Te Whanganui-a-Tara', island: 'North', at: [67.4, 53.3], tag: 'The capital: compact, creative and walkable, with the harbour at the end of every street.',
         week: { img: 'city-wellington', pic: 'The Wellington Cable Car, up to Kelburn campus', alt: 'The red Wellington Cable Car above the city and harbour' },
         weekend: { img: 'weekend-wellington', pic: 'Harbourside on the city waterfront', alt: 'Wellington waterfront buildings on a sunny day' },
-        day: [['i-sunrise', '8:00 am', 'Ride the red cable car up the hill to Kelburn campus.'], ['i-sun', '1:00 pm', 'Lunch and vintage shops on Cuba Street.'], ['i-sunset', '6:00 pm', 'A walk along the waterfront, then Te Papa museum (free entry).']],
+        day: [['i-sunrise', '8:00 am', 'Ride the red cable car up the hill to Kelburn campus.'], ['i-sun', '1:00 pm', 'Lunch and vintage shops on Cuba Street.'], ['i-sunset', '6:00 pm', 'A walk along the waterfront, then Te Papa museum (free entry if you live in New Zealand, students included; some exhibitions and tours are paid).']],
         end: [['i-cash', 'Sunday', 'Harbourside Market for cheap fruit, veg and street food.'], ['i-mountain', 'Morning', 'Climb Mt Victoria for the view over the harbour.'], ['i-waves', 'Afternoon', 'Ferry out to Matiu / Somes Island.']],
         facts: [['i-sun', 'Climate', '20° / 11°', 'Summer / winter highs, famously windy'], ['i-home', 'Room rent', 'Varies', 'By suburb and room type; we build your budget'], ['i-users', 'Population', '215,000', 'City; about 440,000 in the region'], ['i-briefcase', 'Part-time work', 'Good', 'Hospitality, government, creative']],
         unis: ['Victoria University of Wellington', 'Massey (Wellington)'], known: ['Law', 'Public policy', 'Design', 'Film & screen'], vibe: [4, 4, 4, 3] },
@@ -339,22 +365,33 @@
       if (citiesPin) return Math.min(1, Math.max(0, (centre - innerWidth / 2) / citiesPin.dist()));
       return Math.min(track.scrollWidth - track.clientWidth, Math.max(0, centre - track.clientWidth / 2));
     });
+    // the card positions are measured once and kept until the layout changes (resize, ScrollTrigger refresh):
+    // measuring them on every scroll frame forced a layout per frame
+    let P = null; const stopsC = () => P || (P = stops());
+    addEventListener('resize', () => { P = null; }, { passive: true }); if (ST) ST.addEventListener('refresh', () => { P = null; });
     const now = () => citiesPin ? citiesPin.st.progress : track.scrollLeft;
     const set = s => {
       if (citiesPin) { const st = citiesPin.st, y = st.start + s * (st.end - st.start); scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
       else track.scrollTo({ left: s, behavior: reduce ? 'auto' : 'smooth' });
     };
-    const toValue = s => { const P = stops(); if (s <= P[0]) return 0; for (let i = 0; i < last; i++) if (s <= P[i + 1]) return i + (P[i + 1] > P[i] ? (s - P[i]) / (P[i + 1] - P[i]) : 1); return last; };
+    const toValue = s => { const P = stopsC(); if (s <= P[0]) return 0; for (let i = 0; i < last; i++) if (s <= P[i + 1]) return i + (P[i + 1] > P[i] ? (s - P[i]) / (P[i + 1] - P[i]) : 1); return last; };
+    let lastI = -1, lastF = -1, lastRot = '';
+    const nEl = $('#cjour-n'), nameEl = $('#cjour-name');
     const ui = v => {
-      const i = Math.round(v), f = v / last;
-      box.style.setProperty('--pf', f.toFixed(4)); fill.parentElement.style.setProperty('--p', (f * 100).toFixed(2) + '%');
-      if (Math.abs(v - lastV) > .01) plane.style.setProperty('--rot', v < lastV ? '225deg' : '45deg'); lastV = v;   // the plane faces the way you're travelling
+      const i = Math.round(v), f = +(v / last).toFixed(4);
+      if (f !== lastF) { lastF = f; box.style.setProperty('--pf', f); fill.parentElement.style.setProperty('--p', (f * 100).toFixed(2) + '%'); }
+      if (Math.abs(v - lastV) > .01) { const rot = v < lastV ? '225deg' : '45deg'; if (rot !== lastRot) { lastRot = rot; plane.style.setProperty('--rot', rot); } } lastV = v;   // the plane faces the way you're travelling
+      if (i === lastI) return; lastI = i;   // the stops and the labels only change when another city becomes current
       stopsEls.forEach((s, k) => { s.classList.toggle('is-on', k === i); s.classList.toggle('is-past', k < i); });
-      $('#cjour-n').textContent = String(Math.min(i, nCities - 1) + 1).padStart(2, '0'); $('#cjour-name').textContent = i < nCities ? names[i] : 'Not sure? We’ll help you choose';
+      nEl.textContent = String(Math.min(i, nCities - 1) + 1).padStart(2, '0'); nameEl.textContent = i < nCities ? names[i] : 'Not sure? We’ll help you choose';
     };
+    // only while the cities section is on or near the screen: elsewhere on the page this did a layout read and a
+    // round of style writes on every scroll frame for nothing
+    let near = !('IntersectionObserver' in window);
+    if (!near) new IntersectionObserver(([e]) => { near = e.isIntersecting; if (near) onScroll(); }, { rootMargin: '300px 0px' }).observe(box.closest('section') || box);
     const sync = () => { queued = false; ui(toValue(now())); };
-    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(sync); } };
-    function go(i) { i = Math.max(0, Math.min(last, i)); set(stops()[i]); }
+    const onScroll = () => { if (near && !queued) { queued = true; requestAnimationFrame(sync); } };
+    function go(i) { i = Math.max(0, Math.min(last, i)); P = null; set(stopsC()[i]); }
     list.addEventListener('click', e => { const b = e.target.closest('button'); if (b) go(+b.dataset.i); });
     list.addEventListener('keydown', e => { const k = e.key; if (k !== 'ArrowRight' && k !== 'ArrowLeft') return; e.preventDefault(); const i = Math.round(toValue(now())) + (k === 'ArrowRight' ? 1 : -1); go(i); const b = $$('button', list)[Math.max(0, Math.min(last, i))]; if (b) b.focus({ preventScroll: true }); });
     // leave the section either way, without scrolling through every city
@@ -380,6 +417,37 @@
   const FAQ = $$('#acc .qa').map(q => [$('.qa__q', q).textContent.trim(), $$('.qa__a p', q).map(p => [...p.childNodes].map(n => n.nodeName === 'A' && /^https:\/\//.test(n.getAttribute('href')) ? '[' + n.textContent + '](' + n.getAttribute('href') + ')' : n.textContent).join('').replace(/\s+/g, ' ').trim()).join('\n')]);
   (window.__TC_DATA = window.__TC_DATA || {}).faq = FAQ;   // read by Tutee AI
   $$('.qa button').forEach(b => b.addEventListener('click', () => { const q = b.parentElement, open = !q.classList.contains('open'); $$('.qa.open').forEach(x => { x.classList.remove('open'); $('button', x).setAttribute('aria-expanded', 'false'); }); if (open) { q.classList.add('open'); b.setAttribute('aria-expanded', 'true'); } setTimeout(() => ST && ST.refresh(), 600); }));
+  // Phase 13 (20 Nov 2026): FAQ 08-10 sit behind "More questions (3)" (hidden by #acc.is-short in the markup, so nothing
+  // shifts on load; a <noscript> style in <head> shows them without JavaScript). They are still in the page, in the
+  // FAQPage JSON-LD and in Tutee AI's list above. The intakes / entry / visa guide (#plan) was removed on 25 Nov 2026;
+  // its old anchors now land on Universities or the FAQ (LEGACY above).
+  const acc = $('#acc'), more = $('[data-faq-more]');
+  const remeasure = () => { if (G && ST) ST.refresh(); };   // the content below moved: re-measure the scroll triggers
+  const showMore = focus => {
+    if (!acc || !acc.classList.contains('is-short')) return false;
+    acc.classList.remove('is-short');
+    if (more) { more.setAttribute('aria-expanded', 'true'); more.hidden = true; }
+    const first = $('.qa--more button', acc); if (focus && first) first.focus();
+    return true;
+  };
+  if (more) more.addEventListener('click', () => { showMore(true); setTimeout(remeasure, 100); });
+  // a link or URL hash that points into folded content opens it first: a closed #plan row, or a question behind the button.
+  // With now = true (links, hash changes) the triggers are re-measured at once, before the caller scrolls: a refresh
+  // that came later would stop the smooth scroll half way (it puts the scroll position back). The row's own toggle
+  // event then skips its refresh. On first load (now = false) the load handler further down re-measures.
+  const opened = new WeakSet();
+  const unfold = (t, now) => {
+    let changed = false;
+    if (t && t.closest) {
+      if (t.closest('.qa--more')) changed = showMore(false);
+      const d = t.closest('details'); if (d && !d.open) { opened.add(d); d.open = true; changed = true; }
+    }
+    if (changed && now) remeasure();
+    return changed;
+  };
+  $$('#plan details').forEach(d => d.addEventListener('toggle', () => { if (!opened.delete(d)) setTimeout(remeasure, 100); }));
+  if (location.hash) unfold(document.getElementById(location.hash.slice(1)), false);
+  addEventListener('hashchange', () => { const t = location.hash && document.getElementById(location.hash.slice(1)); if (unfold(t, true)) t.scrollIntoView(); });
 
   /* ---------- smooth scroll ---------- */
   // ScrollTrigger measures the page when it starts, so it is started further down (startScroll), once every section
@@ -391,7 +459,7 @@
     // the phone address bar showing / hiding must not re-measure every trigger
     if (ST) ST.config({ ignoreMobileResize: true });
   };
-  const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
+  const goTo = sel => { const t = typeof sel === 'string' ? $(sel) : sel; if (!t) return; unfold(t, true); t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); };
   window.__goTo = goTo;   // used by unis.js and ai.js
   $$('[data-scroll]').forEach(a => a.addEventListener('click', e => { const h = a.getAttribute('href'); if (h && h[0] === '#') { e.preventDefault(); goTo(h === '#top' ? '#hero' : h); } }));
   let tt; function toast(m) { const t = $('#toast'); $('span', t).textContent = m; t.classList.add('is-on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('is-on'), 2400); }
@@ -437,24 +505,67 @@
   });
   document.addEventListener('click', e => { if (!ccEl.contains(e.target)) openCC(false); });
 
-  const panes = $$('#cform .cpane'), stepsUI = $$('#csteps li'); let step = 0, step2Sent = false;
-  // form_start is fired by analytics.js (first focus or change inside the form)
-  function go(n) {
-    const back = n < step; step = n;
-    if (n === 1 && !back && !step2Sent) { step2Sent = true; pushEvent('form_step_2', { form_location: 'Counselling form' }); }
-    panes.forEach((p, i) => { p.classList.toggle('on', i === n); p.classList.toggle('back-in', i === n && back); });
-    stepsUI.forEach((s, i) => { s.classList.toggle('done', i < n); s.classList.toggle('now', i === n); });
-    $('#c-back').hidden = n === 0; $('#c-n').textContent = 'Step ' + (n + 1) + ' of 2';
-    $('#c-next').innerHTML = n === 1 ? 'Request my call <svg class="ic"><use href="#i-arrow"/></svg>' : 'Continue <svg class="ic"><use href="#i-arrow"/></svg>';
-    $('#c-fine').hidden = n === 0;   // the consent line sits with the details it covers
-    $('#c-err').textContent = '';
-    // focus moves to the new step's heading (keyboard and screen-reader users start there), and the form's top
-    // scrolls back into view if it has gone off-screen
-    $('legend', panes[n]).focus({ preventScroll: true });
-    const top = $('#cform').getBoundingClientRect().top; if (top < 0 || top > innerHeight) goTo('#cform');
+  /* ---------- after the page: the chat and the full institution list ----------
+     Tutee AI (ai.js) and the 195-provider list (universities-data.js, used by the shortlist) aren't needed to show the
+     page, so they load once it has finished and the browser is idle, or straight away when the form is touched. */
+  const lazyScript = src => new Promise(res => { const s = document.createElement('script'); s.src = src; s.onload = s.onerror = () => res(); document.body.appendChild(s); });
+  let extras = null;
+  const loadExtras = () => extras || (extras = lazyScript('./assets/js/universities-data.js').then(() => { dispatchEvent(new Event('tc-unis-data')); return lazyScript('./assets/js/ai.js'); }));
+  const whenIdle = f => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 2500 }) : setTimeout(f, 600));
+  if (document.readyState === 'complete') whenIdle(loadExtras); else addEventListener('load', () => whenIdle(loadExtras));
+  $('#cform').addEventListener('focusin', loadExtras, { once: true });
+
+  // one step since 25 Nov 2026: the form asks only for what the Website Leads sheet stores
+  // where a "go to the form" link leaves the cursor: the name field
+  function formStart() { $('#c-name').focus({ preventScroll: true }); }
+
+  /* ---------- suggestion dropdowns (course, shortlist "add" box) ----------
+     Our own list instead of the browser's <datalist> pop-up: it matches the form, highlights what you typed, works
+     with the arrow keys, Enter and Escape, and opens upwards when there's no room below. Typing anything else is
+     still allowed; the list only suggests. */
+  const cbxEsc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function combo(input, listEl, getOpts, onPick) {
+    let opts = [], hl = -1;
+    const mark = (label, q) => { const i = q ? label.toLowerCase().indexOf(q) : -1; return i < 0 ? cbxEsc(label) : cbxEsc(label.slice(0, i)) + '<mark>' + cbxEsc(label.slice(i, i + q.length)) + '</mark>' + cbxEsc(label.slice(i + q.length)); };
+    const close = () => { listEl.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); hl = -1; };
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      const words = q.split(/\s+/).filter(Boolean);
+      opts = getOpts().filter(o => !q || o.label.toLowerCase().includes(q) || words.every(w => (o.label + ' ' + (o.alt || '')).toLowerCase().includes(w))).slice(0, 8);
+      if (!opts.length || document.activeElement !== input || (opts.length === 1 && opts[0].label.toLowerCase() === q)) { close(); return; }
+      if (hl >= opts.length) hl = opts.length - 1;
+      listEl.innerHTML = opts.map((o, i) => '<li role="option" id="' + listEl.id + '-' + i + '" class="cbx__o' + (i === hl ? ' hl' : '') + (o.on ? ' is-on' : '') + '" aria-selected="' + (i === hl) + '" data-i="' + i + '"><span>' + mark(o.label, q) + '</span>' + (o.sub ? '<small>' + cbxEsc(o.sub) + '</small>' : '') + '</li>').join('');
+      const r = input.getBoundingClientRect();
+      listEl.classList.toggle('cbx--up', innerHeight - r.bottom < 260 && r.top > innerHeight - r.bottom);
+      listEl.hidden = false; input.setAttribute('aria-expanded', 'true');
+      if (hl > -1) { input.setAttribute('aria-activedescendant', listEl.id + '-' + hl); const li = listEl.children[hl]; if (li) li.scrollIntoView({ block: 'nearest' }); } else input.removeAttribute('aria-activedescendant');
+    };
+    const pick = i => { const o = opts[i]; if (!o) return; input.value = o.value || o.label; close(); onPick(o); };
+    input.addEventListener('focus', render);
+    input.addEventListener('input', () => { hl = -1; render(); });
+    input.addEventListener('blur', close);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); if (listEl.hidden) render(); if (!opts.length || listEl.hidden) return;
+        hl = (hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length + (hl < 0 && e.key === 'ArrowUp' ? 1 : 0)) % opts.length; render();
+      } else if (e.key === 'Enter' && !listEl.hidden && hl > -1) { e.preventDefault(); e.stopImmediatePropagation(); pick(hl); }
+      else if (e.key === 'Escape' && !listEl.hidden) { e.preventDefault(); e.stopPropagation(); close(); }
+    });
+    // pointerdown (not click) so the field keeps focus while an option is picked
+    listEl.addEventListener('pointerdown', e => { e.preventDefault(); const li = e.target.closest('[data-i]'); if (li) pick(+li.dataset.i); });
   }
-  // where a "go to the form" link leaves the cursor: the study-level choice on step 1, the name on step 2
-  function formStart() { (step === 0 ? $('#cform input[name="study_level"]:checked') || $('#lvls input') : $('#c-name')).focus({ preventScroll: true }); }
+  const COURSES = ['IT & Computer Science', 'Data Science', 'Cyber Security', 'Business & Management', 'MBA', 'Accounting & Finance', 'Engineering', 'Civil Engineering', 'Mechanical Engineering', 'Health & Nursing', 'Medicine & Health Sciences', 'Psychology', 'Law', 'Architecture', 'Hospitality & Tourism', 'Design & Media', 'Agriculture & Environment', 'Education & Teaching'];
+  combo($('#c-course'), $('#cbx-course'), () => COURSES.map(c => ({ label: c })), () => {});
+  // universities: the eight, with their city, minus the ones already shortlisted; picking one adds it (unis.js)
+  // the eight first; once something is typed, every institution in the NZQA list (universities-data.js) too,
+  // matched on its name or its everyday short names ("uoa", "vic uni")
+  combo($('#c-unis-add'), $('#cbx-unis'), () => {
+    const U = (window.TCUnis && window.TCUnis.TOP) || [], have = window.TCShortlist ? window.TCShortlist.get() : [];
+    const q = $('#c-unis-add').value.trim().toLowerCase();
+    const top = U.map(u => ({ label: u.name, sub: u.city.split(' · ')[0].replace(/ \(.*/, ''), alt: u.reo }));
+    const rest = q.length < 2 ? [] : (window.NZ_UNIVERSITIES || []).filter(u => !U.some(t => t.name === u.name)).map(u => ({ label: u.name, sub: String(u.location || '').split(',')[0], alt: u.alt || '' }));
+    return top.concat(rest).map(o => Object.assign(o, have.includes(o.label) ? { sub: '✓ Added', on: true } : {}));
+  }, () => { $('#c-unis-add').dispatchEvent(new CustomEvent('tc-pick')); });
   /* ---------- email + phone verification ----------
      Not a code sent to the student: checks that the address and number are real.
      Email: strict format, typo suggestions (gmial.com → gmail.com), throwaway inboxes and
@@ -530,9 +641,9 @@
   // phone: libphonenumber-js (MIT, mobile metadata) is ~190 KB, so it loads only when the form is near
   let LP = null, lpP = null;
   const loadLP = () => lpP || (lpP = new Promise(res => { const s = document.createElement('script'); s.src = './assets/vendor/libphonenumber-mobile.js'; s.onload = () => { LP = window.libphonenumber || null; res(LP); }; s.onerror = () => res(null); document.head.appendChild(s); }));
-  // loaded when the form is close AND the main thread is idle (never in the middle of a scroll), or at once when a field is focused
-  const idleLP = () => ('requestIdleCallback' in window ? requestIdleCallback(() => loadLP()) : setTimeout(loadLP, 200));
-  if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { idleLP(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe($('#consult')); } else loadLP();
+  // (it used to start loading as the form scrolled near: parsing ~190 KB then could stall a scroll on a phone, so it now
+  // waits for the form itself; the phone check waits up to 2.5s for it, and it is usually ready long before that)
+  if (!('IntersectionObserver' in window)) loadLP();
   $('#cform').addEventListener('focusin', loadLP, { once: true });
   const looksFake = d => { const n = d.replace(/^0+/, ''); return n.length >= 6 && (/^(\d)\1+$/.test(n) || '01234567890123456789'.includes(n) || '98765432109876543210'.includes(n) || /^(\d{2,3})\1{2,}$/.test(n)); };
   function parsePhone() {
@@ -567,34 +678,43 @@
     const r = parsePhone(); setState(phEl, r.bad ? 'bad' : 'ok', r.bad || '');
   });
 
-  // name and state: checked when the student leaves the field, then live
-  const nmEl = $('#c-name'), stEl = $('#c-state');
-  const nameIssue = () => nmEl.value.trim().replace(/[^A-Za-z\u00C0-\u024F]/g, '').length >= 2 ? '' : 'Please enter your full name.';
-  const stateIssue = () => stEl.value ? '' : 'Please tell us where you live.';
+  // name, where they live, call time and course: checked when the student leaves the field, then live.
+  // Name and course use the shared rules in checks.js (letters only, no placeholders, no keyboard mashing);
+  // the two drop-downs must hold one of their own options (a value edited in the page's code is refused).
+  const nmEl = $('#c-name'), stEl = $('#c-state'), tmEl = $('#c-time'), coEl = $('#c-course');
+  const CK = window.TCChecks || { nameIssue: v => (String(v).replace(/[^A-Za-z\u00C0-\u024F]/g, '').length >= 2 ? '' : 'Please enter your full name.'), courseIssue: () => '' };
+  const isOption = sel => !!sel.value && [...sel.options].some(o => !o.disabled && o.value === sel.value);
+  const nameIssue = () => CK.nameIssue(nmEl.value);
+  const stateIssue = () => isOption(stEl) ? '' : 'Please tell us where you live.';
+  const timeIssue = () => isOption(tmEl) ? '' : 'Please pick a time for our call.';
+  const courseIssue = () => CK.courseIssue(coEl.value);
   function verifySimple(el, issue) { const m = issue(); setState(el, m ? 'bad' : (el.value.trim() ? 'ok' : ''), m); return !m; }
-  nmEl.addEventListener('blur', () => { if (nmEl.value.trim()) verifySimple(nmEl, nameIssue); });
+  const tidy = el => { el.value = el.value.trim().replace(/\s+/g, ' '); };
+  nmEl.addEventListener('blur', () => { tidy(nmEl); if (nmEl.value) verifySimple(nmEl, nameIssue); });
   nmEl.addEventListener('input', () => { if (nmEl.parentElement.dataset.state) verifySimple(nmEl, nameIssue); });
+  coEl.addEventListener('blur', () => { tidy(coEl); verifySimple(coEl, courseIssue); });
+  coEl.addEventListener('input', () => { if (coEl.parentElement.dataset.state) verifySimple(coEl, courseIssue); });
   stEl.addEventListener('change', () => verifySimple(stEl, stateIssue));
+  tmEl.addEventListener('change', () => verifySimple(tmEl, timeIssue));
 
   async function check() {
     $$('#cform .ff').forEach(f => f.classList.remove('bad'));
-    if (step === 0) {
-      const ok = !!$('#cform input[name="study_level"]:checked');
-      $('#lvls').classList.toggle('bad', !ok); $('#c-level-msg').textContent = ok ? '' : 'Choose what you’re aiming for to continue.';
-      if (!ok) { $('#lvls input').focus(); return 'Choose what you’re aiming for above.'; }
-      return '';
-    }
+    tidy(nmEl); tidy(coEl);
     const nmOk = verifySimple(nmEl, nameIssue);
     const [emOk, phOk] = await Promise.all([verifyEmail(true), verifyPhone()]);
-    const stOk = verifySimple(stEl, stateIssue);
+    const stOk = verifySimple(stEl, stateIssue), tmOk = verifySimple(tmEl, timeIssue), coOk = verifySimple(coEl, courseIssue);
+    // anything still typed in the shortlist box is added now, or stops the form if it isn't a real institution
+    const slOk = !window.TCShortlistBox || window.TCShortlistBox.flush();
     const fix = 'Please fix the highlighted fields above.';
     if (!nmOk) { nmEl.focus(); return fix; }
     if (!emOk) { emEl.focus(); return emEl.parentElement.dataset.state === 'warn' ? 'Check your email address above, then continue.' : fix; }
     if (!phOk) { phEl.focus(); return fix; }
     if (!stOk) { stEl.focus(); return fix; }
+    if (!tmOk) { tmEl.focus(); return fix; }
+    if (!coOk) { coEl.focus(); return fix; }
+    if (!slOk) { $('#c-unis-add').focus(); return 'Check your shortlist above: pick each university from the list.'; }
     return '';
   }
-  $('#c-back').addEventListener('click', () => go(step - 1));
   let checking = false;
   $('#cform').addEventListener('submit', async e => {
     e.preventDefault();
@@ -602,7 +722,6 @@
     checking = true; const nb = $('#c-next'); nb.disabled = true;
     let err = ''; try { err = await check(); } finally { checking = false; nb.disabled = false; }
     if (err) { $('#c-err').textContent = err; return; }
-    if (step < 1) { go(step + 1); return; }
     if (leadDone()) return;
     // the same fields the Finland form sends; the function forwards them to the Website Leads sheet + email
     const fd = new FormData($('#cform')), data = {};
@@ -644,24 +763,22 @@
     store.del(LEAD_DONE_KEY);
     const form = $('#cform'); form.reset(); phoneE164 = '';
     $$('#cform .ff').forEach(x => { x.dataset.state = ''; x.classList.remove('bad'); const m = $('.ff__msg', x); if (m) m.textContent = ''; });
-    $('#lvls').classList.remove('bad'); $('#c-level-msg').textContent = '';
     const sl = window.TCShortlist ? window.TCShortlist.get() : []; $('#c-unis').value = sl.join(', ');
-    $('#sent').hidden = true; $('#sent').classList.remove('on', 'is-enter'); form.hidden = false;
-    go(0);
+    $('#sent').hidden = true; $('#sent').classList.remove('on', 'is-enter'); form.hidden = false; $('#c-err').textContent = '';
+    formStart();
   });
   { const d = leadDone(); if (d) showLeadDone(d, false); }
 
-  // the hero quick-start bar carries its choices into the lead as hidden fields
-  const LEVEL_FROM_QUICK = { "Master's level": "Master's", "Bachelor's level": "Bachelor's", 'Diploma level': 'Diploma', 'PhD level': 'PhD' };
+  // the hero quick-start bar fills the form's Course field ("Master's – Engineering"), which the student can still edit
   $('#qform').addEventListener('submit', e => {
     e.preventDefault();
-    if ($('#q-course').value !== 'Not sure yet') $('#c-course').value = $('#q-course').value;
-    const lv = $('#cform input[name="study_level"][value="' + (LEVEL_FROM_QUICK[$('#q-level').value] || '') + '"]'); if (lv) lv.checked = true;
+    const level = $('#q-level').value.replace(/ level$/, ''), subj = $('#q-course').value;
+    $('#c-course').value = level + ' – ' + (subj === 'Not sure yet' ? 'subject not decided' : subj);
     const city = $('#q-city').value; $('#h-dest').value = /^any/i.test(city) ? 'General New Zealand Inquiry' : 'New Zealand – ' + city;
     goTo('#consult'); setTimeout(formStart, 1700); });
 
   /* ---------- why NZ: expanding photo accordion ---------- */
-  // the ten reasons are written in index.html (so they are in the page without JavaScript); they are read back here as
+  // the reasons (seven) are written in index.html (so they are in the page without JavaScript); they are read back here as
   // [title html, tag, text, photo slot, place, photo position] for the phone sheet and Tutee AI
   const REASONS = $$('#acc10 .ap').map(b => { const im = $('img', b); return [$('h3', b).innerHTML, $('.ap__tag', b).textContent, $('.ap__body p', b).textContent, im.getAttribute('src').replace(/^.*\/|-1024\.webp$/g, ''), $('.ap__place', b).textContent, im.style.objectPosition]; });
   (window.__TC_DATA = window.__TC_DATA || {}).reasons = REASONS;   // read by Tutee AI
@@ -689,7 +806,7 @@
       const fill = i => {
         at = (i + REASONS.length) % REASONS.length; const r = REASONS[at];
         const img = $('#rs-img'); img.srcset = hdSet(r[3]); img.sizes = '100vw'; img.src = hdSrc(r[3]); img.style.objectPosition = r[5];
-        $('#rs-n').textContent = String(at + 1).padStart(2, '0') + ' / 10'; $('#rs-tag').textContent = r[1]; $('#rs-h').innerHTML = r[0]; $('#rs-p').textContent = r[2]; $('#rs-place').textContent = r[4];
+        $('#rs-n').textContent = String(at + 1).padStart(2, '0') + ' / ' + String(REASONS.length).padStart(2, '0'); $('#rs-tag').textContent = r[1]; $('#rs-h').innerHTML = r[0]; $('#rs-p').textContent = r[2]; $('#rs-place').textContent = r[4];
         $('#rs-next').lastChild.previousSibling.textContent = at === REASONS.length - 1 ? 'Back to the first' : 'Next reason';
         open(at);
       };
@@ -725,7 +842,7 @@
       }, { passive: true });
       if (phone.matches) { const hp = $('.why__head > p'); if (hp) hp.textContent = hp.textContent.replace('Open each reason to see it.', 'Tap any reason to read it.'); }
     })();
-    box.addEventListener('keydown', e => { const i = panels.findIndex(p => p.classList.contains('on')); if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); panels[Math.min(9, i + 1)].focus(); } if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); panels[Math.max(0, i - 1)].focus(); } });
+    box.addEventListener('keydown', e => { const i = panels.findIndex(p => p.classList.contains('on')); if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); panels[Math.min(panels.length - 1, i + 1)].focus(); } if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); panels[Math.max(0, i - 1)].focus(); } });
   })();
 
   /* ---------- how it works: compass dial ---------- */
@@ -836,7 +953,8 @@
 
   /* ---------- GSAP choreography ---------- */
   const pre = $('#pre') || document.createElement('div');
-  const counters = () => $$('[data-count]').forEach(el => { const end = +el.dataset.count; if (!G || reduce) { el.textContent = end.toLocaleString('en-IN'); return; } const o = { v: 0 }; G.to(o, { v: end, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' }, onUpdate: () => el.textContent = Math.round(o.v).toLocaleString('en-IN') }); });
+  const fmtIN = n => { const s = String(Math.round(n)); if (s.length <= 3) return s; const h = s.slice(0, -3); return h.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + s.slice(-3); };   // 1,23,456 (Indian grouping), without Intl
+  const counters = () => $$('[data-count]').forEach(el => { const end = +el.dataset.count; if (!G || reduce) { el.textContent = fmtIN(end); return; } const o = { v: 0 }; let shownV = ''; G.to(o, { v: end, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' }, onUpdate: () => { const t = fmtIN(o.v); if (t !== shownV) el.textContent = shownV = t; } }); });
   document.documentElement.classList.add('go');   // hero copy is held hidden by CSS until this point, so it never flashes before animating
   startScroll();
   const shown = h => h.classList.add('is-shown');
@@ -844,17 +962,29 @@
 
   const mist = $$('.mist');
   const intro = G.timeline({ defaults: { ease: 'expo.out' } });
-  // no loading curtain: the hero photo paints immediately and the copy rises in over it
-  intro.from(mist, { opacity: 0, duration: 1.6, ease: 'power1.out' }, 0)
-    .from('#hero-h .w > span', { yPercent: 125, duration: .95, stagger: .035, onComplete: () => shown($('#hero-h')) }, .05)
-    .from('#hero [data-in]', { y: 20, opacity: 0, duration: .85, stagger: .07 }, .2)
-    .from('#facts > div', { x: 24, opacity: 0, duration: .85, stagger: .07 }, .3)
-    .from('#qform', { y: 30, opacity: 0, duration: .9 }, .35)
-    .from('.hdr__bar', { y: -24, opacity: 0, duration: .7 }, .15);
+  // no loading curtain: the hero photo paints immediately and the copy rises in over it. The copy, the facts, the
+  // quick-start bar and the header animate in pure CSS from the first paint (nz.css, "hero entrance"), so the
+  // headline never waits for these scripts to download and run; only the drifting mist is left to GSAP.
+  shown($('#hero-h'));
+  intro.from(mist, { opacity: 0, duration: 1.6, ease: 'power1.out' }, 0);
   setTimeout(() => { if (intro.progress() < 1) intro.progress(1); }, 2500);
   mist.forEach((m, i) => mistTweens.push(G.to(m, { x: (i % 2 ? -1 : 1) * (40 + i * 20), duration: 14 + i * 4, yoyo: true, repeat: -1, ease: 'sine.inOut' })));
 
-  // scroll-driven work (pins, parallax, ~40 reveal tweens) is set up just after first paint, not before it:
+  // headings and intro lines rise in as they reach the screen: an IntersectionObserver adds a class and CSS does the
+  // motion (nz.css, "reveals"). Each used to be its own ScrollTrigger; about 17 fewer triggers make every
+  // ScrollTrigger refresh, and the set-up just after load, much cheaper (a refresh measured ~1s on a slow laptop).
+  (() => {
+    const els = [...$$('[data-split]').filter(h => h.id !== 'hero-h' && h.id !== 'unis-h'), ...$$('[data-in]').filter(el => !el.closest('#hero') && !el.closest('.unis__head'))];
+    if (!('IntersectionObserver' in window)) { els.forEach(shown); return; }
+    els.forEach(el => { el.classList.add('rv'); if (el.hasAttribute('data-split')) $$('.w > span', el).forEach((s, i) => s.style.setProperty('--i', i)); });
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return; const el = e.target; io.unobserve(el); el.classList.add('is-in');
+      if (el.hasAttribute('data-split')) setTimeout(() => shown(el), 1200 + $$('.w', el).length * 45);   // then lift the word masks
+    }), { rootMargin: '0px 0px -12% 0px' });
+    els.forEach(el => io.observe(el));
+  })();
+
+  // scroll-driven work (pins, parallax, reveal tweens) is set up just after first paint, not before it:
   // it reads computed styles for every element it animates, which forces layout on the critical path
   const T = (sel, from, trig, start, extra) => () => G.from(sel, Object.assign({ duration: 1.1, ease: 'expo.out', scrollTrigger: { trigger: trig, start } }, from, extra));
   const tasks = [
@@ -909,18 +1039,15 @@
       track.addEventListener('pointerup', end); track.addEventListener('pointercancel', end);
       track.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);   // a drag isn't a tap on "step inside"
     },
-    // headings + reveals, one task per element so no single slice runs long
-    ...$$('[data-split]').filter(h => h.id !== 'hero-h' && h.id !== 'unis-h').map(h => () => G.from(h.querySelectorAll('.w > span'), { yPercent: 125, duration: 1.1, stagger: .045, ease: 'expo.out', onComplete: () => shown(h), scrollTrigger: { trigger: h, start: 'top 86%' } })),
-    ...$$('[data-in]').filter(el => !el.closest('#hero') && !el.closest('.unis__head')).map(el => T(el, { y: 40, opacity: 0 }, el, 'top 88%')),
+    // (the headings and intro lines rise in through the IntersectionObserver reveals above, not ScrollTrigger)
     counters,
     T('.svc', { y: 50, opacity: 0, duration: 1, stagger: .08 }, '#services', 'top 82%', { clearProps: 'transform,opacity' }),
     T('.stat', { y: 30, opacity: 0, duration: 1, stagger: .1 }, '.stats', 'top 85%'),
     // reasons + process
-    T('#acc10', { y: 60, opacity: 0 }, '#acc10', 'top 85%', { clearProps: 'transform,opacity' }),   // the row of 10 photo panels rises as one piece: one layer to draw instead of ten
+    T('#acc10', { y: 60, opacity: 0 }, '#acc10', 'top 85%', { clearProps: 'transform,opacity' }),   // the row of photo panels rises as one piece: one layer to draw instead of one per panel
     () => G.from('#dial-prog', { strokeDashoffset: 1, duration: 1.4, ease: 'power2.out', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     () => G.from('.dnode', { scale: 0, opacity: 0, duration: .8, stagger: .08, ease: 'back.out(2)', clearProps: 'transform,opacity', scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
     () => G.from('.dial__tick', { opacity: 0, duration: .6, stagger: .01, scrollTrigger: { trigger: '#dial', start: 'top 80%' } }),
-    // postcards drop in like they've been dealt onto a table
     // universities: the NZ coastline draws itself as you scroll (pinned on desktop), then pins and the list appear
     () => G.matchMedia().add({ big: '(min-width: 900px)', small: '(max-width: 899px)' }, ctx => {
       const nzm = $('#nzm'); if (!nzm) return;
@@ -962,25 +1089,12 @@
           .fromTo(items, { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: .18, stagger: .1 }, 1.14)
           .fromTo('.nzm__all', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .2 }, 1.95)
           .to({}, { duration: .3 });
-        // once scrolled past: finish the drawing for good and drop the tall scroll space it needed, keeping the view still
-        // once scrolled past: lock the drawing in its finished state straight away (cheap), then remove the tall scroll
-        // space it needed the moment scrolling pauses, keeping the view still. Doing that collapse mid-scroll would make
-        // the browser repaint the whole screen in the middle of a scroll, which shows as a hitch.
-        let pending = false;
-        const collapse = () => {
-          if (!pending) return; pending = false; removeEventListener('scroll', onScrollIdle);
-          // keep the section after the map exactly where it is on screen (measured, so it also holds when the browser's
-          // own scroll anchoring has already compensated part of the change)
-          const ref = nzm.parentElement.closest('section').nextElementSibling || document.body, before = ref.getBoundingClientRect().top;
-          nzm.classList.remove('is-pinned');
-          const y = scrollY + (ref.getBoundingClientRect().top - before);
-          scrollTo({ top: y, behavior: 'instant' });
-          (window.requestIdleCallback || setTimeout)(() => ST.refresh(), { timeout: 400 });   // re-measure the triggers below once idle
-        };
-        let idleT; const onScrollIdle = () => { clearTimeout(idleT); idleT = setTimeout(collapse, 180); };
+        // once scrolled past: lock the drawing in its finished state for good. The tall scroll space it needed stays.
+        // Phase 6 (12 Nov 2026): this used to remove that space (about 1,100 px) once scrolling paused and scroll back
+        // by the same amount. The view looked still, but everything below moved up, which Chrome counts as a layout
+        // shift: CLS 0.898 on desktop after a full scroll. Keeping the space measured CLS 0 (report 05, Phase 6).
         function finish() {
           if (tl.scrollTrigger) tl.scrollTrigger.kill(); tl.progress(1);
-          pending = true; addEventListener('scroll', onScrollIdle, { passive: true }); onScrollIdle();
         }
         if (seen) tl.progress(1);
         // 3D tilt toward the pointer (mouse only; the CSS keeps it off for reduced motion)

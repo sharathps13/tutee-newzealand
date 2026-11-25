@@ -33,7 +33,7 @@ scripts/build-nz-map.mjs        (earlier flat version; still provides nz-sat-eas
                                 shading; ocean: NASA Blue Marble bathymetry (public domain) → assets/img/nz/nz-sat.webp + nz-sat-east.webp
 assets/js/ai.js                 the Tutee AI chat widget; answers in the browser from the page's own FAQ/data (no API, no key)
 assets/js/unis.js, unis-dir.js  top-8 universities section, details pop-up, shortlist (localStorage) → form
-nz-universities.html            directory of all 195 institutions (opens in a new tab)
+nz-universities.html            directory of all 195 institutions (each one's details can be asked of Tutee AI; the only outside links are Tutee Connect's own: its website, sister country sites, privacy policy, terms, WhatsApp, phone and email)
 netlify/functions/enquiry.mjs   the form's endpoint: POST /api/enquiry → the shared Apps Script (New Zealand Leads tab + email),
                                 Resend only as a fallback. Same file as the Finland site; env vars in apps-script/README.md
 apps-script/                    reference copy of the shared Apps Script (already deployed) + README with the Netlify settings
@@ -58,12 +58,12 @@ alone.
 | 1 | Hero (HD Queenstown, slow drift) | "Book a free consultation" + a quick-start bar (subject · level · city) that carries into the form |
 | 2 | Why Tutee Connect | Stats, six services, loan-partner logos |
 | 3 | City gallery (horizontal scroll, 5 cities). Each card opens a full-screen "step inside" view: weekday / weekend photo, a day in your life, live NZ time, climate, rent, universities, the feel of the city; arrows / swipe between cities | "Plan my move to {city}" pre-fills the city into the form; end card → "Talk to a counsellor" |
-| 4 | 10 reasons (photo accordion) | — |
+| 4 | 7 reasons (photo accordion) | — |
 | 4b | In the news: up to 4 live NZ education stories with their images (hides itself if the feeds are down) | — |
 | 5 | How it works (compass dial, 7 steps) | "Start with step one" |
 | 6 | Postcards home | — |
 | 7 | FAQ | Contact card |
-| 8 | Counselling form (2 steps) | Name, email, WhatsApp (searchable dial codes with flags), state/region; then course, shortlisted universities and call time. Saved to Google Sheets + emailed (apps-script/SETUP.md) |
+| 8 | Counselling form (one step) | Only the sheet's columns: name, phone (searchable dial codes with flags), email, where they live, course, shortlisted universities and call time. Saved to Google Sheets + emailed (apps-script/SETUP.md) |
 | 9 | Footer | Offices; the "Kia ora" letters react to the pointer |
 
 Always on: the header "Talk to a counsellor" button and, on phones, a sticky WhatsApp / Call / Free

@@ -4,6 +4,7 @@
 # local preview
 .netlify/
 node_modules/
+.playwright-mcp/
 
 # working files that are not part of the deployed site
 scratch/

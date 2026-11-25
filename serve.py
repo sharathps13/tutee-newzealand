@@ -39,6 +39,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
 
+    def translate_path(self, path):
+        # like Netlify: /nz-universities serves nz-universities.html
+        local = super().translate_path(path)
+        if not os.path.exists(local) and os.path.isfile(local + '.html'):
+            return local + '.html'
+        return local
+
     def end_headers(self):
         # always serve fresh files while editing
         self.send_header('Cache-Control', 'no-store, must-revalidate')
@@ -87,7 +94,7 @@ if __name__ == '__main__':
     print('Tutee Connect New Zealand — serving %s' % ROOT)
     print('')
     print('  Home page:    %s' % url)
-    print('  Universities: %suniversities.html' % url)
+    print('  Universities: %snz-universities' % url)
     print('')
     if PORT != (int(sys.argv[1]) if len(sys.argv) > 1 else 8000):
         print('  (port %d was busy, used %d instead)' % (

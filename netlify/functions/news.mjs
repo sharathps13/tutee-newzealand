@@ -21,7 +21,8 @@ const FEEDS = [
 ];
 export const IMAGE_HOSTS = ['www.nzherald.co.nz', 'media.rnztools.nz', 'www.universitiesnz.ac.nz'];
 // Universities NZ posts carry no photos; their stories show the publisher's logo instead
-const LOGOS = { 'Universities NZ': 'https://www.universitiesnz.ac.nz/sites/all/themes/uninz/images/universities-logo-blue.png' };
+// a small copy of the logo kept in the site (the original PNG is 4765 px wide: decoding it cost more than the page's photos)
+const LOGOS = { 'Universities NZ': './assets/img/news/logo-unz.webp' };
 const UA = 'Mozilla/5.0 (compatible; TuteeConnectNews/1.0; +https://www.tuteeconnect.com)';
 const TTL = 20 * 60 * 1000, MAX_AGE_DAYS = 45, COUNT = 4;
 
@@ -83,7 +84,7 @@ export async function latest() {
   const pick = [];
   for (const i of ranked) { if (pick.length >= COUNT) break; if (pick.filter(p => p.source === i.source).length < 2) pick.push(i); }
   await Promise.all(pick.map(async i => { if (!i.image) i.image = await ogImage(i.url); if (!i.image && LOGOS[i.source]) { i.image = LOGOS[i.source]; i.logo = true; } }));
-  const items = pick.map(({ source, title, url, summary, date, image, logo }) => ({ source, title, url, summary, date, image: proxied(image), logo: !!logo }));
+  const items = pick.map(({ source, title, url, summary, date, image, logo }) => ({ source, title, url, summary, date, image: logo && image.startsWith('./assets/') ? image : proxied(image), logo: !!logo }));
   if (items.length) cache = { at: Date.now(), items };
   return items;
 }

@@ -479,7 +479,7 @@
     if (/cost|fee|tuition|money|expense/.test(q))
       return 'Tuition depends on the provider and course, so a counsellor builds your budget with you. Immigration New Zealand also wants to see **NZ$20,000 of living costs for each year** on top of it. We help students compare **education loans** and plan for living expenses.';
     if (/job|work|earn|part.?time|post.?study|pswv/.test(q))
-      return "Depending on your visa conditions, on a New Zealand student visa you may be able to work up to **25 hours a week while you study** and full time in the holidays. After you graduate, the **Post Study Work Visa** can let you work for up to three years, depending on what you studied. We also help you look for part-time work once you arrive.";
+      return "Depending on your visa conditions, on a New Zealand student visa you may be able to work up to **25 hours a week while you study**, and full-time in scheduled holidays if your course qualifies. After you graduate, the **Post Study Work Visa** can let you work for up to three years after an eligible master's or doctoral degree; other qualifications usually match the length of your study. We also help you look for part-time work once you arrive.";
     if (/ielts|pte|duolingo|gmat|exam|english/.test(q))
       return 'Providers ask for an English language test \u2014 **IELTS Academic, TOEFL iBT, PTE Academic or NZCEL** \u2014 typically 6.0 overall for a bachelor\u2019s and 6.5 for postgraduate study, and some postgraduate courses such as MBAs also ask for a GMAT score. We can help you shortlist providers that perfectly match your current scores.';
     if (/tutee|connect|service|help/.test(q))

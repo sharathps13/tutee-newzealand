@@ -1,5 +1,7 @@
 # Website Leads — Google Sheets + email
 
+> **Master copy (12 Nov 2026).** `Code.gs` in this folder is generated from the one master script for all six sites, kept at `Landing Pages/_shared/apps-script/Code.gs` (setup, tests and deployment guide in `_shared/apps-script/README.md`). Edit the master and run `sync.py`; do not edit this copy on its own. Where the steps below differ from the master guide, the master guide applies.
+
 Every enquiry from the New Zealand page's counselling form is added as a row
 to the **New Zealand Leads** tab of the **Website Leads** spreadsheet. It is
 also emailed, formatted as a table, to business@tuteeconnect.com with

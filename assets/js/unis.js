@@ -6,22 +6,67 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // The eight universities (the only institutions allowed to use the title in NZ), in QS order as in the dataset.
+  // campus and facts feed the pop-up and Tutee AI. Only long-standing, well-known facts: no fees, scores, ranking
+  // positions or dates that change each year (those go to a counsellor). Nothing here links off the page.
   const TOP = [
-    { name: 'University of Auckland', reo: 'Waipapa Taumata Rau', city: 'Auckland', est: 1883, web: 'https://www.auckland.ac.nz', known: ['Medicine', 'Engineering', 'Business', 'Law'], blurb: 'New Zealand’s largest university, in the heart of its biggest city and job market.' },
-    { name: 'University of Otago', reo: 'Ōtākou Whakaihu Waka', city: 'Dunedin', est: 1869, web: 'https://www.otago.ac.nz', known: ['Medicine', 'Dentistry', 'Health Sciences', 'Law'], blurb: 'The country’s oldest university and its classic student city, strong in health and research.' },
-    { name: 'Massey University', reo: 'Te Kunenga ki Pūrehuroa', city: 'Palmerston North · Auckland · Wellington', est: 1927, web: 'https://www.massey.ac.nz', known: ['Agriculture', 'Veterinary Science', 'Aviation', 'Design'], blurb: 'Three campuses, and home of New Zealand’s only veterinary school.' },
-    { name: 'Victoria University of Wellington', reo: 'Te Herenga Waka', city: 'Wellington', est: 1897, web: 'https://www.wgtn.ac.nz', known: ['Law', 'Public Policy', 'Architecture', 'Computer Science'], blurb: 'In the capital, close to government, the creative industries and the tech scene.' },
-    { name: 'University of Canterbury', reo: 'Te Whare Wānanga o Waitaha', city: 'Christchurch', est: 1873, web: 'https://www.canterbury.ac.nz', known: ['Engineering', 'Sciences', 'Forestry', 'Education'], blurb: 'Renowned for engineering, on a green campus in the Garden City.' },
-    { name: 'University of Waikato', reo: 'Te Whare Wānanga o Waikato', city: 'Hamilton · Tauranga', est: 1964, web: 'https://www.waikato.ac.nz', known: ['Computer Science', 'Management', 'Law', 'Environmental Science'], blurb: 'Strong in computing and management, with campuses in Hamilton and Tauranga.' },
-    { name: 'Lincoln University', reo: 'Te Whare Wānaka o Aoraki', city: 'Lincoln (near Christchurch)', est: 1878, web: 'https://www.lincoln.ac.nz', known: ['Agriculture', 'Agribusiness', 'Viticulture', 'Environment'], blurb: 'A specialist land-based university: farming, food, wine and the environment.' },
-    { name: 'Auckland University of Technology', reo: 'Te Wānanga Aronui o Tāmaki Makau Rau', city: 'Auckland', est: 2000, web: 'https://www.aut.ac.nz', known: ['Health Sciences', 'Engineering', 'Design', 'Business'], blurb: 'Career-focused degrees with industry placements, in central Auckland.' }
+    { name: 'University of Auckland', reo: 'Waipapa Taumata Rau', city: 'Auckland', est: 1883, known: ['Medicine', 'Engineering', 'Business', 'Law'], blurb: 'New Zealand’s largest university, in the heart of its biggest city and job market.',
+      campus: 'City Campus in central Auckland, with the Grafton Campus for medical and health sciences',
+      facts: ['New Zealand’s largest university', 'Usually New Zealand’s highest-placed university in the QS World University Rankings', 'Faculties cover arts, business, creative arts, education, engineering, law, medical and health sciences, and science', 'Close to Auckland’s CBD, the country’s biggest job market'] },
+    { name: 'University of Otago', reo: 'Ōtākou Whakaihu Waka', city: 'Dunedin', est: 1869, known: ['Medicine', 'Dentistry', 'Health Sciences', 'Law'], blurb: 'The country’s oldest university and its classic student city, strong in health and research.',
+      campus: 'Main campus in Dunedin, with health sciences teaching in Christchurch and Wellington',
+      facts: ['New Zealand’s oldest university, founded in 1869', 'Home of New Zealand’s only dental school', 'Four academic divisions: Commerce (Otago Business School), Health Sciences, Humanities and Sciences', 'Dunedin is a compact student city: much of student life is within walking distance of campus'] },
+    { name: 'Massey University', reo: 'Te Kunenga ki Pūrehuroa', city: 'Palmerston North · Auckland · Wellington', est: 1927, known: ['Agriculture', 'Veterinary Science', 'Aviation', 'Design'], blurb: 'Three campuses, and home of New Zealand’s only veterinary school.',
+      campus: 'Three campuses: Manawatū (Palmerston North), Auckland (Albany) and Wellington',
+      facts: ['Home of New Zealand’s only veterinary school', 'Its School of Aviation trains commercial pilots', 'The Wellington campus is home to its College of Creative Arts (design, fine arts and music)', 'Strong in agriculture and food science'] },
+    { name: 'Victoria University of Wellington', reo: 'Te Herenga Waka', city: 'Wellington', est: 1897, known: ['Law', 'Public Policy', 'Architecture', 'Computer Science'], blurb: 'In the capital, close to government, the creative industries and the tech scene.',
+      campus: 'Kelburn (main campus), Pipitea (law, government and business, beside Parliament) and Te Aro (architecture and design), all in Wellington',
+      facts: ['In New Zealand’s capital, close to government, embassies and the creative and tech industries', 'Its Law School is in the historic Old Government Buildings at Pipitea', 'Known for law, public policy, architecture and design, and computer science'] },
+    { name: 'University of Canterbury', reo: 'Te Whare Wānanga o Waitaha', city: 'Christchurch', est: 1873, known: ['Engineering', 'Sciences', 'Forestry', 'Education'], blurb: 'Renowned for engineering, on a green campus in the Garden City.',
+      campus: 'Ilam campus in Christchurch, a green, park-like campus',
+      facts: ['New Zealand’s second-oldest university, founded in 1873', 'Best known for engineering, with one of the country’s largest engineering schools', 'Christchurch is the South Island’s largest city'] },
+    { name: 'University of Waikato', reo: 'Te Whare Wānanga o Waikato', city: 'Hamilton · Tauranga', est: 1964, known: ['Computer Science', 'Management', 'Law', 'Environmental Science'], blurb: 'Strong in computing and management, with campuses in Hamilton and Tauranga.',
+      campus: 'Main campus in Hamilton, and a city-centre campus in Tauranga',
+      facts: ['Its Waikato Management School holds triple-crown accreditation (AACSB, EQUIS and AMBA)', 'Strong in computer science and management', 'Hamilton is in the Waikato region, south of Auckland'] },
+    { name: 'Lincoln University', reo: 'Te Whare Wānaka o Aoraki', city: 'Lincoln (near Christchurch)', est: 1878, known: ['Agriculture', 'Agribusiness', 'Viticulture', 'Environment'], blurb: 'A specialist land-based university: farming, food, wine and the environment.',
+      campus: 'One campus in the town of Lincoln, about 20 km from central Christchurch',
+      facts: ['New Zealand’s specialist land-based university', 'The smallest of New Zealand’s eight universities, so classes are smaller', 'Founded in 1878 as a school of agriculture'] },
+    { name: 'Auckland University of Technology', reo: 'Te Wānanga Aronui o Tāmaki Makau Rau', city: 'Auckland', est: 2000, known: ['Health Sciences', 'Engineering', 'Design', 'Business'], blurb: 'Career-focused degrees with industry placements, in central Auckland.',
+      campus: 'City Campus (central Auckland), North Campus (Northcote) and South Campus (Manukau)',
+      facts: ['Became a university in 2000; its roots go back to 1895', 'Known for practical, career-focused degrees, many with industry placements', 'Its City Campus is in central Auckland'] }
   ];
   const byName = n => TOP.find(t => t.name === n);
-  const initials = n => n.replace(/\b(of|and|the)\b/gi, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 3).toUpperCase();
+  // monogram: first letters of the words (a lone "&" is kept between them); words that start with "(" or a digit, such
+  // as "(i)" or "1)" in multi-school register names, are skipped so they never show as "(F(" or "1NZ"
+  const initials = n => { const s = n.replace(/\b(of|and|the)\b/gi, '').split(/\s+/).filter(w => /^[A-Za-zÀ-ɏ&]/.test(w)).map(w => w[0]).join(''); return (s.slice(0, 3).endsWith('&') ? s.replace('&', '') : s).slice(0, 3).toUpperCase(); };
 
-  /* ---------------- shortlist store ---------------- */
+  /* ---------------- shortlist store ----------------
+     Only real New Zealand institutions can be shortlisted: the eight universities and the 195 providers in
+     universities-data.js (NZQA register). Anything else (stray letters, made-up names) is refused, and entries like
+     that saved by an older version of the page are dropped when it loads. */
+  const institutions = () => TOP.map(t => ({ name: t.name, alt: t.reo })).concat((window.NZ_UNIVERSITIES || []).map(u => ({ name: u.name, alt: u.alt || '' })));
+  let knownSet = null;
+  const isKnown = n => { if (!knownSet) knownSet = new Set(institutions().map(u => u.name)); return knownSet.has(n); };
+  // on the main page the 195-provider list arrives a moment after the page (nz.js loads it once the page is idle);
+  // until then a saved entry is kept if it could be a name, and checked properly when the list arrives
+  const dataReady = () => !!window.NZ_UNIVERSITIES;
+  const plausible = n => (String(n).match(/[A-Za-z]/g) || []).length >= 3;
+  // what the student typed → { name } of the one institution it means, or { err } saying why it can't be added
+  function resolve(typed) {
+    const q = String(typed || '').toLowerCase().replace(/\s+/g, ' ').trim(), all = institutions();
+    if (!q) return { err: '' };
+    const exact = all.find(u => u.name.toLowerCase() === q); if (exact) return { name: exact.name };
+    if (q === 'aut') return { name: 'Auckland University of Technology' };
+    const words = q.split(/[^a-z0-9\u00c0-\u024f]+/).filter(w => w.length >= 2);
+    if (q.replace(/[^a-z]/g, '').length < 3 || !words.length) return { err: '“' + typed + '” is too short to find. Type at least three letters of the name, then pick it from the list.' };
+    const hits = [...new Set(all.filter(u => { const hay = (u.name + ' ' + u.alt).toLowerCase(); return words.every(w => hay.includes(w)); }).map(u => u.name))];
+    if (hits.length === 1) return { name: hits[0] };
+    const unis = hits.filter(n => byName(n));
+    if (unis.length === 1) return { name: unis[0] };   // "otago": the university, not Otago Polytechnic
+    if (hits.length > 1) return { err: 'More than one institution matches “' + typed + '”. Pick the one you mean from the list.' };
+    return { err: '“' + typed + '” isn’t a New Zealand university or institute we know. Pick one from the list.' };
+  }
   const KEY = 'tc_shortlist';
-  const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v.filter(x => typeof x === 'string').slice(0, 20) : []; } catch (e) { return []; } };
+  const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v.filter(x => typeof x === 'string' && (dataReady() ? isKnown(x) : byName(x) || plausible(x))).slice(0, 20) : []; } catch (e) { return []; } };
   let list = read();
   const subs = [];
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* private mode */ } subs.forEach(f => f(list)); };
@@ -31,12 +76,15 @@
   const Shortlist = {
     get: () => list.slice(),
     has: n => list.includes(n),
-    toggle(n) { list = list.includes(n) ? list.filter(x => x !== n) : list.concat(n); save(); if (list.includes(n)) added(n); return list.includes(n); },
-    add(n) { if (!list.includes(n)) { list = list.concat(n); save(); added(n); } },
+    toggle(n) { if (!list.includes(n) && (!isKnown(n) || list.length >= 20)) return false; list = list.includes(n) ? list.filter(x => x !== n) : list.concat(n); save(); if (list.includes(n)) added(n); return list.includes(n); },
+    add(n) { if (!list.includes(n) && isKnown(n) && list.length < 20) { list = list.concat(n); save(); added(n); } },
+    resolve, isKnown,
     remove(n) { list = list.filter(x => x !== n); save(); },
     clear() { list = []; save(); },
     on(f) { subs.push(f); f(list); }
   };
+  try { if (dataReady() && JSON.stringify(list) !== (localStorage.getItem(KEY) || '[]')) localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* private mode */ }
+  addEventListener('tc-unis-data', () => { knownSet = null; const ok = list.filter(isKnown); if (ok.length !== list.length) { list = ok; save(); } });
   addEventListener('storage', e => { if (e.key === KEY) { list = read(); subs.forEach(f => f(list)); } });   // other tab
   window.TCShortlist = Shortlist;
 
@@ -59,19 +107,22 @@
       (known.length ? '<p class="um__lbl">Known for</p><ul class="um__chips">' + known.map(k => '<li>' + esc(k) + '</li>').join('') + '</ul>' : '') +
       '<dl class="um__facts">' + rows.map(r => '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>').join('') + '</dl>' +
       '<div class="um__acts"><button type="button" class="btn btn--gold um__sl' + (on ? ' is-on' : '') + '" data-um-sl>' + (on ? CHECK + 'Shortlisted' : PLUS + 'Add to shortlist') + '</button>' +
-      (t.web ? '<a class="btn btn--line um__web" href="' + esc(t.web) + '" target="_blank" rel="noopener">Official website <svg class="ic"><use href="#i-arrow"/></svg></a>' : '') + '</div>';
+      (window.TCAI ? '<button type="button" class="btn btn--line um__ai" data-um-ai><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Ask Tutee AI about it</button>' : '') + '</div>';
     $('[data-um-sl]', modal).addEventListener('click', () => { Shortlist.toggle(u.name); render(u); });
+    // the questions go to Tutee AI on this page: the pop-up closes and the chat opens on this university
+    const ai = $('[data-um-ai]', modal);
+    if (ai) ai.addEventListener('click', () => { const q = Object.assign({}, u, t.name ? t : {}); close(() => window.TCAI.askAbout(q)); });
   }
   function open(u) {
     current = u; lastFocus = document.activeElement; render(u); modal.hidden = false;
     document.documentElement.classList.add('imm-lock');
     void modal.offsetWidth; modal.classList.add('on'); $('.um__x', modal).focus({ preventScroll: true });
   }
-  function close() {
+  function close(then) {
     if (modal.hidden) return; modal.classList.remove('on');
-    setTimeout(() => { modal.hidden = true; document.documentElement.classList.remove('imm-lock'); if (lastFocus) lastFocus.focus({ preventScroll: true }); }, 220);
+    setTimeout(() => { modal.hidden = true; document.documentElement.classList.remove('imm-lock'); if (typeof then === 'function') then(); else if (lastFocus) lastFocus.focus({ preventScroll: true }); }, 220);
   }
-  $$('[data-um-close]', modal).forEach(b => b.addEventListener('click', close));
+  $$('[data-um-close]', modal).forEach(b => b.addEventListener('click', () => close()));
   modal.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   /* ---------------- shortlist tray ("cart") ----------------
@@ -84,7 +135,7 @@
   tray.className = 'sl'; tray.innerHTML =
     '<button type="button" class="sl__btn" aria-expanded="false" aria-controls="sl-panel"><b class="sl__n">0</b><span class="sl__lbl" aria-live="polite">' + LBL + '</span><svg class="ic sl__up" aria-hidden="true"><use href="#i-chev"/></svg></button>' +
     '<div class="sl__panel" id="sl-panel" hidden><div class="sl__head"><b>My shortlist</b><button type="button" class="sl__clear">Clear</button></div><ul class="sl__list"></ul>' +
-    '<a class="btn btn--go btn--block sl__go" href="' + (onIndex ? '#consult' : '/#consult') + '">Add to my counselling form <svg class="ic"><use href="#i-arrow"/></svg></a><p class="sl__note">A counsellor will check entry requirements, fees and intakes for each.</p></div>';
+    '<a class="btn btn--go btn--block sl__go" href="' + (onIndex ? '#consult' : './index.html#consult') + '">Add to my counselling form <svg class="ic"><use href="#i-arrow"/></svg></a><p class="sl__note">A counsellor will check entry requirements, fees and intakes for each.</p></div>';
   document.body.appendChild(tray);
   const tBtn = $('.sl__btn', tray), tPanel = $('.sl__panel', tray);
   const setOpen = on => { tPanel.hidden = !on; tBtn.setAttribute('aria-expanded', on); tray.classList.toggle('is-open', on); };
@@ -136,11 +187,13 @@
 
   /* ---------------- shortlist chips in the counselling form (index.html) ----------------
      Each shortlisted university is a chip whose × removes it from the shortlist itself (so the tray and the buttons
-     update too). The add box keeps what the old free-text field allowed: anything typed becomes a chip. */
+     update too). The add box takes any real New Zealand institution, typed in full, in part ("mass", "uoa") or picked
+     from the list; anything else stays in the box with a message under it. */
   const chips = document.getElementById('sl-chips');
   if (chips) {
-    const add = document.getElementById('c-unis-add'), addBtn = document.getElementById('c-unis-addbtn'), empty = document.getElementById('sl-empty');
+    const add = document.getElementById('c-unis-add'), addBtn = document.getElementById('c-unis-addbtn'), empty = document.getElementById('sl-empty'), msg = document.getElementById('sl-msg');
     const KNOWN = TOP.map(t => t.name);
+    const say = t => { msg.textContent = t; add.closest('.slbox').classList.toggle('bad', !!t); add.setAttribute('aria-invalid', t ? 'true' : 'false'); };
     let refocus = -1;
     Shortlist.on(l => {
       chips.innerHTML = l.map(n => '<li class="slchip"><span>' + esc(n) + '</span><button type="button" data-rm="' + esc(n) + '" aria-label="Remove ' + esc(n) + ' from your shortlist"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button></li>').join('');
@@ -150,18 +203,27 @@
     });
     chips.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; refocus = $$('button', chips).indexOf(b); Shortlist.remove(b.dataset.rm); });
     // one entry or several separated by commas; a known university is stored under its usual name so its button lights up
+    // returns true when the box is empty afterwards (everything typed was added)
     const fromBox = () => {
-      const v = add.value; add.value = '';
-      v.split(/[,;]/).map(s => s.trim().replace(/\s+/g, ' ').slice(0, 120)).filter(Boolean).forEach(s => {
-        const n = KNOWN.find(k => k.toLowerCase() === s.toLowerCase()) || (/^aut$/i.test(s) ? 'Auckland University of Technology' : s);
-        if (Shortlist.get().length < 20 && !Shortlist.get().some(x => x.toLowerCase() === n.toLowerCase())) Shortlist.add(n);
+      const left = [], errs = [];
+      add.value.split(/[,;]/).map(s => s.trim().replace(/\s+/g, ' ').slice(0, 120)).filter(Boolean).forEach(s => {
+        const r = resolve(s);
+        if (!r.name) { left.push(s); if (r.err) errs.push(r.err); return; }
+        if (Shortlist.has(r.name)) return;
+        if (Shortlist.get().length >= 20) { left.push(s); errs.push('Your shortlist is full (20). Remove one to add another.'); return; }
+        Shortlist.add(r.name);
       });
+      add.value = left.join(', '); say(errs[0] || '');
+      return !left.length;
     };
+    add.addEventListener('input', () => { if (msg.textContent) say(''); });
+    window.TCShortlistBox = { flush: fromBox };   // the form's check (nz.js) adds what's typed, or stops on a bad entry
     add.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ',') && !e.isComposing) { e.preventDefault(); fromBox(); } });   // Enter adds, never submits
     add.addEventListener('input', e => { if ((!e.inputType || e.inputType === 'insertReplacementText') && KNOWN.includes(add.value.trim())) fromBox(); });   // picked from the suggestions
     add.addEventListener('blur', fromBox);   // typed but not added: kept when they move on
     addBtn.addEventListener('click', () => { fromBox(); add.focus(); });
-    document.addEventListener('submit', e => { if (e.target.id === 'cform') fromBox(); }, true);   // runs before the form's own handler reads the field
+    add.addEventListener('tc-pick', fromBox);   // a university picked from the suggestion list (nz.js)
+    // (the form's own check calls TCShortlistBox.flush before it reads the shortlist)
   }
 
   /* ---------------- shortlist buttons on the universities map list (index.html) ----------------

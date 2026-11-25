@@ -14,7 +14,7 @@ const all = ctx.window.NZ_UNIVERSITIES;
 
 // the same helpers as unis.js / unis-dir.js
 const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const initials = n => n.replace(/\b(of|and|the)\b/gi, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 3).toUpperCase();
+const initials = n => { const s = n.replace(/\b(of|and|the)\b/gi, '').split(/\s+/).filter(w => /^[A-Za-zÀ-ɏ&]/.test(w)).map(w => w[0]).join(''); return (s.slice(0, 3).endsWith('&') ? s.replace('&', '') : s).slice(0, 3).toUpperCase(); };
 const typeLabel = t => t === 'Private Training Establishment' ? 'Private training' : t === 'Wananga' ? 'Wānanga' : t;
 const PLUS = '<svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>';
 
